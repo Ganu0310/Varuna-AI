@@ -867,3 +867,187 @@ button:disabled {
   color: var(--tier-insufficient);
   border-color: var(--tier-insufficient);
 }
+
+/* ── report (Phase 12) ─────────────────────────────────────────────────
+   The dossier renders in LIGHT theme at A4 width: it is printed, not viewed on a dark
+   screen, and a dark-background PDF is unreadable on paper and wastes toner. */
+.report {
+  --surface-0: #ffffff;
+  --surface-1: #ffffff;
+  --surface-2: #f5f7fa;
+  --surface-3: #eef2f6;
+  --surface-inset: #f0f3f7;
+  --border-subtle: #dde3ea;
+  --border-default: #c3ccd6;
+  --ink-primary: #10161f;
+  --ink-secondary: #3d4a59;
+  --ink-tertiary: #667585;
+  --accent-500: #0e6f77;
+  --accent-400: #0e6f77;
+
+  background: #fff;
+  color: var(--ink-primary);
+  max-width: 210mm;
+  margin: 0 auto;
+  padding: 18mm 16mm;
+  font-size: 10.5pt;
+  line-height: 1.55;
+}
+.rp-kicker {
+  font-size: 9pt;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-tertiary);
+  margin: 0;
+}
+.rp-cover h1 {
+  font-size: 22pt;
+  margin: var(--space-2) 0 var(--space-3);
+}
+.rp-ref {
+  color: var(--ink-secondary);
+  margin: 0 0 var(--space-5);
+}
+.rp-meta {
+  display: grid;
+  grid-template-columns: 11rem 1fr;
+  gap: 3px var(--space-5);
+  font-size: 9.5pt;
+  margin: var(--space-5) 0;
+}
+.rp-meta dt {
+  color: var(--ink-tertiary);
+}
+.rp-meta dd {
+  margin: 0;
+}
+.rp-disclaimer {
+  border: 1px solid var(--border-default);
+  border-left: 3px solid #b45309;
+  padding: var(--space-4) var(--space-5);
+  font-size: 9.5pt;
+  background: #fffbeb;
+}
+.rp-section {
+  margin-top: var(--space-8);
+}
+.rp-section h2 {
+  font-size: 13pt;
+  border-bottom: 1px solid var(--border-default);
+  padding-bottom: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+.rp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 8.5pt;
+  margin-top: var(--space-3);
+}
+.rp-table th {
+  text-align: left;
+  border-bottom: 1px solid var(--border-default);
+  padding: 4px 6px;
+  color: var(--ink-tertiary);
+  font-size: 8pt;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.rp-table td {
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--border-subtle);
+  vertical-align: top;
+}
+/* Identifiers wrap rather than truncate: a product ID an evaluator cannot read in full is
+   not a citation (13_REAL_DATA_POLICY §13.9). */
+.rp-id {
+  word-break: break-all;
+  font-size: 7.5pt;
+}
+.rp-caveat {
+  border-left: 3px solid #b45309;
+  padding-left: var(--space-4);
+  color: var(--ink-secondary);
+  font-size: 9.5pt;
+}
+/* The two sections that can never be removed. */
+.rp-mandatory {
+  border: 1px solid var(--border-default);
+  padding: var(--space-5);
+  background: var(--surface-2);
+}
+.rp-locked {
+  font-size: 8.5pt;
+  color: var(--ink-tertiary);
+  font-style: italic;
+  margin-top: 0;
+}
+.rp-uncert {
+  margin: var(--space-4) 0;
+  padding-left: var(--space-4);
+  border-left: 3px solid var(--border-default);
+}
+.rp-uncert.sev-limitation {
+  border-left-color: #b91c1c;
+}
+.rp-uncert.sev-caveat {
+  border-left-color: #b45309;
+}
+.rp-uncert.sev-info {
+  border-left-color: #0e6f77;
+}
+.rp-uncert h3 {
+  font-size: 10pt;
+  margin: 0 0 2px;
+}
+.rp-sev {
+  font-size: 7.5pt;
+  letter-spacing: 0.08em;
+  color: var(--ink-tertiary);
+}
+.rp-uncert p {
+  margin: 0;
+  font-size: 9.5pt;
+}
+.rp-overall {
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-default);
+  font-weight: 600;
+  font-size: 9.5pt;
+}
+.rp-manifest {
+  font-size: 7.5pt;
+  background: var(--surface-inset);
+  padding: var(--space-4);
+  border: 1px solid var(--border-subtle);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+  .report {
+    padding: 0;
+    max-width: none;
+  }
+  .top-bar {
+    display: none;
+  }
+  /* Each evidence page and each mandatory section starts on a fresh sheet. */
+  .rp-break {
+    break-before: page;
+  }
+  .rp-section,
+  .rp-uncert {
+    break-inside: avoid;
+  }
+  .rp-table {
+    break-inside: auto;
+  }
+  tr {
+    break-inside: avoid;
+  }
+}

@@ -21,6 +21,7 @@ import { scenesRouter } from './modules/scenes/router.js';
 import { detectionsRouter } from './modules/detections/router.js';
 import { aisRouter } from './modules/ais/router.js';
 import { candidatesRouter } from './modules/candidates/router.js';
+import { reportsRouter } from './modules/reports/router.js';
 import { jobsRouter } from './modules/jobs/router.js';
 import { adminRouter } from './modules/admin/router.js';
 import { openApiDocument } from './openapi.js';
@@ -80,6 +81,7 @@ export function createApp(): Express {
   app.use('/api/v1', aisRouter);
   app.use('/api/v1/investigations', candidatesRouter);
   app.use('/api/v1', candidatesRouter);
+  app.use('/api/v1/investigations', reportsRouter);
   app.use('/api/v1/jobs', jobsRouter);
   app.use('/api/v1/admin', adminRouter);
 

@@ -11,6 +11,9 @@ import { CreateInvestigationPage } from '../features/investigations/CreateInvest
 import { CataloguePage } from '../features/catalogue/CataloguePage.tsx';
 // MapLibre and deck.gl are ~1 MB of the bundle and are only needed inside a workspace.
 // Splitting them out keeps the login and list routes small (05_FRONTEND §5.9 budgets).
+const ReportPage = lazy(() =>
+  import('../features/reports/ReportPage.tsx').then((m) => ({ default: m.ReportPage })),
+);
 const WorkspacePage = lazy(() =>
   import('../features/investigations/WorkspacePage.tsx').then((m) => ({
     default: m.WorkspacePage,
@@ -98,6 +101,18 @@ export function App() {
                       <WorkspacePage />
                     </Suspense>
                   </AppChrome>
+                </RequireAuth>
+              }
+            />
+            {/* The report renders standalone: no app chrome, so the printed page is only
+                the dossier. */}
+            <Route
+              path="/investigations/:id/report"
+              element={
+                <RequireAuth>
+                  <Suspense fallback={<main className="page">Preparing dossier…</main>}>
+                    <ReportPage />
+                  </Suspense>
                 </RequireAuth>
               }
             />
