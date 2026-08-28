@@ -249,10 +249,10 @@ describe('detection review (real MongoDB)', () => {
 
     const first = await agent.get(`/api/v1/detections/${id}/geometry`);
     expect(first.status).toBe(200);
-    const etag = first.headers.etag;
+    const etag = first.headers.etag as string | undefined;
     expect(etag).toBeTruthy();
 
-    const cached = await agent.get(`/api/v1/detections/${id}/geometry`).set('If-None-Match', etag);
+    const cached = await agent.get(`/api/v1/detections/${id}/geometry`).set('If-None-Match', etag!);
     expect(cached.status).toBe(304);
 
     const simplified = await agent.get(`/api/v1/detections/${id}/geometry?simplify=z8`);
