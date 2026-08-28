@@ -1,5 +1,10 @@
-import { Geodesic } from 'geographiclib-geodesic';
+// geographiclib-geodesic ships CommonJS: under real ESM a named import throws at runtime
+// ("does not provide an export named 'Geodesic'"), even though the types permit it and
+// bundler-based test runners paper over it. Import the default and destructure.
+import geographiclib from 'geographiclib-geodesic';
 import type { Feature, LineString, Point, Polygon, Position } from 'geojson';
+
+const { Geodesic } = geographiclib;
 import { area as turfArea } from '@turf/turf';
 import { km, metres, sqKm, type Kilometres, type Metres, type SquareKm } from '@varuna/shared';
 

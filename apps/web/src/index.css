@@ -23,20 +23,230 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-.shell {
-  padding: var(--space-9);
-  max-width: 62ch;
-}
-
-.shell h1 {
+h1,
+h2 {
   font-family: var(--font-display);
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .mono {
   font-family: var(--font-mono);
+}
+.muted {
+  color: var(--ink-tertiary);
+}
+.num {
+  text-align: right;
+}
+
+/* ── shell ─────────────────────────────────────────────────────────── */
+.app-shell {
+  min-height: 100%;
+}
+.top-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+  height: 56px;
+  padding: 0 var(--space-5);
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.wordmark {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--accent-400);
+  text-decoration: none;
+}
+.top-sub {
+  color: var(--ink-tertiary);
+  font-size: 12px;
+}
+.top-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  font-size: 12px;
+}
+
+.page {
+  padding: var(--space-8);
+  max-width: 1100px;
+}
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+}
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+/* ── auth ──────────────────────────────────────────────────────────── */
+.auth-shell {
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+  padding: var(--space-6);
+}
+.auth-card {
+  width: min(400px, 100%);
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-md);
+  padding: var(--space-8);
+  box-shadow: var(--elev-2);
+  display: flex;
+  flex-direction: column;
+}
+.auth-sub,
+.auth-alt {
+  color: var(--ink-tertiary);
+  font-size: 12px;
+}
+.auth-alt {
+  margin-top: var(--space-5);
+}
+a {
+  color: var(--accent-400);
+}
+
+/* ── forms ─────────────────────────────────────────────────────────── */
+.card {
+  background: var(--surface-1);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-md);
+  padding: var(--space-6);
+}
+label {
+  display: block;
+  margin-top: var(--space-5);
+  margin-bottom: var(--space-2);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
   color: var(--ink-secondary);
+}
+input,
+textarea,
+select {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-inset);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-sm);
+  color: var(--ink-primary);
+  font: inherit;
+}
+textarea {
+  resize: vertical;
+}
+/* Reserved space so validation never shifts the layout (04_UIUX §4.8.1). */
+.field-error,
+.form-error {
+  min-height: 18px;
+  font-size: 12px;
+  color: var(--status-danger);
+}
+.form-error {
+  margin: var(--space-4) 0;
+}
+.field-hint,
+.readout {
+  min-height: 18px;
+  font-size: 12px;
+  color: var(--ink-tertiary);
+  margin-top: var(--space-2);
+}
+
+button {
+  font: inherit;
+  cursor: pointer;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border-default);
+  background: var(--surface-2);
+  color: var(--ink-primary);
+}
+button[type='submit'],
+.btn-primary {
+  background: var(--accent-600);
+  border-color: var(--accent-700);
+  color: var(--ink-inverse);
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-block;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--r-sm);
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  color: var(--ink-secondary);
+}
+
+/* ── data ──────────────────────────────────────────────────────────── */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: var(--space-6);
+  font-size: 13px;
+}
+.data-table th {
+  text-align: left;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--ink-tertiary);
+  border-bottom: 1px solid var(--border-default);
+  padding: var(--space-3);
+}
+.data-table td {
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.data-table tr:hover td {
+  background: var(--surface-2);
+}
+
+/* Taxonomy tokens are ALL-CAPS and machine-shaped (04_UIUX §4.2.2 T9). */
+.token {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border-radius: var(--r-xs);
+  background: var(--surface-3);
+  border: 1px solid var(--border-default);
+  color: var(--ink-secondary);
+}
+.token-warn {
+  color: var(--status-warn);
+  border-color: var(--status-warn);
+}
+
+.empty-state,
+.panel-error {
+  margin-top: var(--space-7);
+  padding: var(--space-7);
+  border: 1px dashed var(--border-default);
+  border-radius: var(--r-md);
+  max-width: 62ch;
+}
+.panel-error {
+  border-style: solid;
+  border-color: var(--status-danger);
+  color: var(--status-danger);
 }
 
 :focus-visible {

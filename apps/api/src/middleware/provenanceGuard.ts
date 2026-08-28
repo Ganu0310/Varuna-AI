@@ -44,6 +44,24 @@ function walk(
 ): unknown {
   if (Array.isArray(value)) return value.map((v) => walk(v, stats, seen));
   if (value === null || typeof value !== 'object') return value;
+
+  // Dates, ObjectIds and Buffers serialise themselves; walking them would destroy them.
+  if (value instanceof Date || Buffer.isBuffer(value)) return value;
+
+  /*
+   * Mongoose documents keep their fields behind getters over an internal `_doc`, so
+   * `Object.entries()` on one yields internal plumbing rather than the data. Normalising
+   * through `toJSON()` first is what keeps a document response intact — without it this
+   * guard silently emptied every document it inspected.
+   */
+  const maybeSerialisable = value as { toJSON?: () => unknown };
+  if (typeof maybeSerialisable.toJSON === 'function') {
+    const plain = maybeSerialisable.toJSON();
+    // toJSON may return a primitive (e.g. ObjectId -> string); only recurse into objects.
+    if (plain === null || typeof plain !== 'object') return plain;
+    return walk(plain, stats, seen);
+  }
+
   if (seen.has(value as object)) return value;
   seen.add(value as object);
 
