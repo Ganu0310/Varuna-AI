@@ -20,6 +20,7 @@ import { connectMongo, disconnectMongo } from '../../db/connection.js';
 import { rewindPolygon } from '../../geo/envelope.js';
 import { reconstructTracks } from '../ais/tracks.js';
 import { rankCandidates, type CandidateInput, type ScoringContext } from './features.js';
+import { bootstrapCi, calibrationState } from './bootstrap.js';
 
 function arg(name: string, fallback?: string): string {
   const i = process.argv.indexOf(`--${name}`);
@@ -71,6 +72,8 @@ async function main() {
     releaseEarliest,
     releaseLatest,
     slickOrientationDeg: det.morphology.orientationDeg,
+    slickElongationRatio: det.morphology.elongationRatio,
+    releaseWindowStatus: 'WIDE',
     originDegraded: true,
   };
 
@@ -86,6 +89,19 @@ async function main() {
   }));
 
   const ranked = rankCandidates(candidates, ctx);
+
+  // Confidence intervals for the vessels a reader would actually act on. 500 iterations for
+  // 200 candidates would dominate the run, so the interval is computed for the top ten and
+  // the rest carry their point score until requested.
+  const cis = new Map<number, ReturnType<typeof bootstrapCi>>();
+  for (const r of ranked.slice(0, 10)) {
+    const c = candidates.find((x) => x.mmsi === r.mmsi)!;
+    cis.set(r.mmsi, bootstrapCi(c, ctx, 300, r.mmsi));
+  }
+
+  // No validated incidents are loaded, so the calibrator is the identity and scores are raw
+  // weighted evidence, not probabilities.
+  const calibration = calibrationState(0);
 
   // ── report ────────────────────────────────────────────────────────
   const ring = det.geometry.coordinates[0]!;
@@ -122,22 +138,32 @@ AIS
 RANKED CANDIDATES
 `);
 
-  const header = `  ${'#'.padStart(2)} ${'MMSI'.padEnd(10)} ${'score'.padStart(6)} ${'tier'.padEnd(22)} ${'feat'.padStart(5)} ${'fixes'.padStart(6)}`;
+  const header = `  ${'#'.padStart(2)} ${'MMSI'.padEnd(10)} ${'score'.padStart(14)} ${'tier'.padEnd(22)} ${'feat'.padStart(5)} ${'fixes'.padStart(6)}`;
   console.log(header);
   console.log('  ' + '─'.repeat(header.length));
 
   ranked.slice(0, 10).forEach((r, i) => {
     const t = tracks.find((x) => x.mmsi === r.mmsi)!;
+    const ci = cis.get(r.mmsi);
+    // The interval is shown beside every score: "71 ±6" and "71 ±22" are different claims.
+    const scoreText = ci
+      ? `${r.score.toFixed(1)} [${ci.ci[0].toFixed(0)}-${ci.ci[1].toFixed(0)}]`
+      : r.score.toFixed(1);
     console.log(
-      `  ${String(i + 1).padStart(2)} ${String(r.mmsi).padEnd(10)} ${r.score.toFixed(1).padStart(6)} ${r.tier.padEnd(22)} ${`${r.measuredFeatureCount}/12`.padStart(5)} ${String(t.fixes.length).padStart(6)}`,
+      `  ${String(i + 1).padStart(2)} ${String(r.mmsi).padEnd(10)} ${scoreText.padStart(14)} ${r.tier.padEnd(22)} ${`${r.measuredFeatureCount}/12`.padStart(5)} ${String(t.fixes.length).padStart(6)}`,
     );
   });
+
+  console.log(`
+  CALIBRATION: ${calibration.note}`);
+  const topCi = ranked[0] ? cis.get(ranked[0].mmsi) : undefined;
+  if (topCi) console.log(`  BOOTSTRAP  : ${topCi.note}`);
 
   const top = ranked[0];
   if (top) {
     console.log(`\n  ── evidence for MMSI ${top.mmsi} ─────────────────────────────────────────`);
     for (const f of top.features) {
-      const mark = f.status === 'MEASURED' ? '●' : '○';
+      const mark = f.status === 'MEASURED' ? '●' : f.status === 'NOT_APPLICABLE' ? '◌' : '○';
       const val =
         f.status === 'MEASURED'
           ? `${f.rawValue!.toFixed(2)} ${f.rawUnit} → ${f.normalised!.toFixed(2)} × ${f.weight} = ${f.contribution!.toFixed(3)}`

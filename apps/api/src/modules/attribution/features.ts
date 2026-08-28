@@ -88,6 +88,10 @@ export interface ScoringContext {
   releaseLatest: string;
   /** Detection long-axis bearing in degrees (0-180), used for axis continuity. */
   slickOrientationDeg: number | null;
+  /** Major/minor axis ratio; below 2.5 the axis carries no directional information. */
+  slickElongationRatio: number | null;
+  /** WIDE means the window spans the whole horizon and cannot separate candidates. */
+  releaseWindowStatus: 'OK' | 'WIDE';
   /** Set when the origin zone came from a degraded method — widens the honest uncertainty. */
   originDegraded: boolean;
 }
@@ -100,6 +104,32 @@ const UNITS = Object.fromEntries(ATTRIBUTION_FEATURES.map((f) => [f.key, f.unit]
   AttributionFeatureKey,
   string
 >;
+
+/**
+ * NOT_APPLICABLE is a THIRD state, distinct from MISSING.
+ *
+ *   MEASURED       we looked and got a value
+ *   MISSING        we could not look (no data)
+ *   NOT_APPLICABLE the question is meaningless here
+ *
+ * A round slick has no long axis, so "does the vessel's heading align with it?" has no
+ * answer — not an unknown one. Both MISSING and NOT_APPLICABLE are excluded from the
+ * renormalisation denominator, but they are shown differently, because "we lack the data"
+ * and "this cannot apply" tell a reviewer different things about the case.
+ */
+function notApplicable(key: AttributionFeatureKey, why: string): FeatureResult {
+  return {
+    key,
+    rawValue: null,
+    rawUnit: UNITS[key],
+    normalised: null,
+    weight: WEIGHTS[key],
+    contribution: null,
+    status: 'NOT_APPLICABLE',
+    evidenceRefs: [],
+    explanation: why,
+  };
+}
 
 function missing(key: AttributionFeatureKey, why: string): FeatureResult {
   return {
@@ -150,7 +180,8 @@ function spatialProximity(c: CandidateInput, ctx: ScoringContext): FeatureResult
   return measured(
     'spatial_proximity',
     km,
-    decay(km, 5),
+    Math.exp(-km / 8), // 07_AIML 7.6: half-weight at ~5.5 km, near zero beyond ~25 km
+
     km === 0
       ? 'The vessel track passes through the origin zone.'
       : `Closest approach to the origin zone: ${km.toFixed(2)} km.`,
@@ -166,6 +197,16 @@ function temporalAlignment(c: CandidateInput, ctx: ScoringContext): FeatureResul
   const end = Date.parse(ctx.releaseLatest);
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
     return missing('temporal_alignment', 'Release window could not be established.');
+  }
+  // A WIDE release window spans the whole back-tracking horizon, so "was the vessel present
+  // during it?" is true of almost every vessel in the area and separates nothing. Scoring it
+  // would hand every candidate the same 0.16 and dilute the features that do discriminate.
+  if (ctx.releaseWindowStatus === 'WIDE') {
+    return notApplicable(
+      'temporal_alignment',
+      'The release window is WIDE (drift too slow to date the slick), so presence within it ' +
+        'does not distinguish between vessels.',
+    );
   }
 
   const inWindow = c.fixes.filter((f) => {
@@ -212,6 +253,17 @@ function headingAlignment(c: CandidateInput, ctx: ScoringContext): FeatureResult
   if (ctx.slickOrientationDeg === null) {
     return missing('heading_alignment', 'The detection has no measurable long axis.');
   }
+  // A slick must be genuinely elongated for its axis to carry directional information.
+  // Below ~2.5:1 the "long axis" of a near-round blob is essentially arbitrary, and
+  // comparing a heading to it would manufacture agreement or disagreement from noise
+  // (07_AIML 7.6).
+  if (ctx.slickElongationRatio !== null && ctx.slickElongationRatio < 2.5) {
+    return notApplicable(
+      'heading_alignment',
+      `The slick is not elongated enough (${ctx.slickElongationRatio.toFixed(2)}:1, below 2.5:1) ` +
+        'for its long axis to indicate a direction, so heading alignment cannot be assessed.',
+    );
+  }
   const near = nearestFixes(c, ctx, 3);
   if (near.length < 2) {
     return missing(
@@ -227,10 +279,13 @@ function headingAlignment(c: CandidateInput, ctx: ScoringContext): FeatureResult
   let diff = Math.abs((courseDeg % 180) - ctx.slickOrientationDeg);
   if (diff > 90) diff = 180 - diff; // axis comparison
 
+  // cos^2 of the angular difference (07_AIML 7.6): falls off smoothly and reaches zero at
+  // 90 degrees, where a heading tells you nothing about an axis.
+  const normalised = Math.cos((diff * Math.PI) / 180) ** 2;
   return measured(
     'heading_alignment',
     diff,
-    1 - diff / 90,
+    normalised,
     `Vessel course ${courseDeg.toFixed(0)}° versus slick axis ${ctx.slickOrientationDeg.toFixed(0)}° — ${diff.toFixed(0)}° apart.`,
   );
 }

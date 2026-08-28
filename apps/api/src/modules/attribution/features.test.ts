@@ -33,6 +33,8 @@ const CTX: ScoringContext = {
   releaseEarliest: '2025-09-21T14:00:00Z',
   releaseLatest: '2025-09-21T20:00:00Z',
   slickOrientationDeg: 45,
+  slickElongationRatio: 3.0, // elongated enough for the axis to mean something
+  releaseWindowStatus: 'OK',
   originDegraded: false,
 };
 
@@ -214,5 +216,64 @@ describe('a degraded origin estimate is reflected honestly', () => {
     const f = s.features.find((x) => x.key === 'origin_density_at_track')!;
     expect(f.status).toBe('MISSING');
     expect(f.explanation).toMatch(/degraded/i);
+  });
+});
+
+describe('NOT_APPLICABLE is a third state, distinct from MISSING', () => {
+  it('a round slick makes heading alignment NOT_APPLICABLE, not MISSING', () => {
+    // "Does the vessel's heading match the slick's long axis?" has no answer for a blob —
+    // it is not an unknown answer. Scoring it would manufacture agreement from noise.
+    const round = scoreCandidate(throughTheZone(), { ...CTX, slickElongationRatio: 1.3 });
+    const f = round.features.find((x) => x.key === 'heading_alignment')!;
+    expect(f.status).toBe('NOT_APPLICABLE');
+    expect(f.explanation).toMatch(/not elongated enough/i);
+    expect(f.contribution).toBeNull();
+
+    const elongated = scoreCandidate(throughTheZone(), { ...CTX, slickElongationRatio: 4.0 });
+    expect(elongated.features.find((x) => x.key === 'heading_alignment')!.status).toBe('MEASURED');
+  });
+
+  it('a WIDE release window makes temporal alignment NOT_APPLICABLE', () => {
+    // A window spanning the whole horizon is true of nearly every vessel present, so it
+    // separates nothing and must not hand all candidates the same contribution.
+    const wide = scoreCandidate(throughTheZone(), { ...CTX, releaseWindowStatus: 'WIDE' });
+    const f = wide.features.find((x) => x.key === 'temporal_alignment')!;
+    expect(f.status).toBe('NOT_APPLICABLE');
+    expect(f.explanation).toMatch(/does not distinguish between vessels/i);
+  });
+
+  it('NOT_APPLICABLE features are excluded from the denominator, like MISSING', () => {
+    const applicable = scoreCandidate(throughTheZone(), CTX);
+    const notApplicable = scoreCandidate(throughTheZone(), { ...CTX, slickElongationRatio: 1.1 });
+    expect(notApplicable.measuredWeight).toBeLessThan(applicable.measuredWeight);
+    // Removing an applicable-but-favourable feature must not collapse the score.
+    expect(notApplicable.score).toBeGreaterThan(applicable.score * 0.7);
+  });
+});
+
+describe('normalisation curves match 07_AIML 7.6', () => {
+  it('spatial proximity decays as exp(-d/8)', () => {
+    const s = scoreCandidate(throughTheZone(), CTX);
+    const f = s.features.find((x) => x.key === 'spatial_proximity')!;
+    // The track passes through the zone, so distance 0 -> exp(0) = 1.
+    expect(f.rawValue).toBe(0);
+    expect(f.normalised).toBeCloseTo(1, 5);
+  });
+
+  it('heading alignment uses cos squared, reaching zero at 90 degrees', () => {
+    const aligned = scoreCandidate(throughTheZone(), {
+      ...CTX,
+      slickElongationRatio: 4,
+      slickOrientationDeg: 45,
+    });
+    const perpendicular = scoreCandidate(throughTheZone(), {
+      ...CTX,
+      slickElongationRatio: 4,
+      slickOrientationDeg: 135,
+    });
+    const a = aligned.features.find((x) => x.key === 'heading_alignment')!;
+    const p = perpendicular.features.find((x) => x.key === 'heading_alignment')!;
+    expect(a.normalised!).toBeGreaterThan(p.normalised!);
+    expect(p.normalised!).toBeLessThan(0.2);
   });
 });
