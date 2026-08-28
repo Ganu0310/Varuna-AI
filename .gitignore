@@ -53,3 +53,10 @@ Thumbs.db
 
 # Local dataset downloads (real data cached on this machine, never committed).
 DATASET DOW/
+
+# scratch files from interactive runs
+*.tmp.py
+*.tmp.json
+*.tmp.npy
+*.tmp.pkl
+*.tmp
