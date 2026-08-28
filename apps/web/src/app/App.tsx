@@ -9,6 +9,7 @@ import { RegisterPage } from '../features/auth/RegisterPage.tsx';
 import { InvestigationListPage } from '../features/investigations/InvestigationListPage.tsx';
 import { CreateInvestigationPage } from '../features/investigations/CreateInvestigationPage.tsx';
 import { CataloguePage } from '../features/catalogue/CataloguePage.tsx';
+import { WorkspacePage } from '../features/investigations/WorkspacePage.tsx';
 import { AppChrome } from './AppChrome.tsx';
 
 const queryClient = new QueryClient({
@@ -76,19 +77,12 @@ export function App() {
                 </RequireAuth>
               }
             />
-            {/* The workspace itself arrives with the map subsystem in Phase 10. */}
             <Route
               path="/investigations/:id"
               element={
                 <RequireAuth>
                   <AppChrome>
-                    <main className="page">
-                      <h1>Workspace</h1>
-                      <p className="muted">
-                        The investigation workspace — persistent map, layer stack, timeline and
-                        evidence panel — is built in Phase 10.
-                      </p>
-                    </main>
+                    <WorkspacePage />
                   </AppChrome>
                 </RequireAuth>
               }

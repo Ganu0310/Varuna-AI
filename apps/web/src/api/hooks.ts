@@ -228,3 +228,139 @@ export function useJobs(investigationId?: string) {
     staleTime: 5_000,
   });
 }
+
+// ── scenes & detections (Phase 4/6) ─────────────────────────────────
+export interface Scene {
+  _id: string;
+  productId: string;
+  platform: string;
+  acquiredAt: string;
+  crs: string;
+  gsdMeters: number;
+  status: string;
+  polarisations: string[];
+  orbitDirection: string | null;
+  storage?: { bucket?: string; cogKey?: string; sizeBytes?: number };
+  processing?: { preprocessing?: string };
+  provenance: {
+    sourceType: string;
+    provider: string;
+    datasetId: string;
+    externalId: string;
+    licence: string;
+    retrievedAt: string;
+    accessUrl?: string;
+  };
+}
+
+export interface DetectionConfidence {
+  meanOilProbability: number | null;
+  lookAlikeCompetition: number;
+  windSuitability: number;
+  overall: number;
+  modelTerm?: number;
+  separationTerm?: number;
+  windTerm?: number;
+  shapeTerm?: number;
+}
+
+export interface Detection {
+  _id: string;
+  sceneId: string;
+  geometry: { type: 'Polygon'; coordinates: number[][][] };
+  areaKm2: number;
+  perimeterKm: number;
+  morphology: {
+    majorAxisKm: number;
+    minorAxisKm: number;
+    elongationRatio: number;
+    orientationDeg: number;
+    convexity: number;
+  };
+  model: { name: string; version: string; artefactSha256: string };
+  confidence: DetectionConfidence;
+  reviewStatus: 'UNREVIEWED' | 'CONFIRMED' | 'REJECTED' | 'EDITED';
+  reviewHistory: Array<{ userId: string; action: string; at: string; note?: string }>;
+  provenance: { sourceType: string; provider: string; datasetId: string; externalId: string };
+}
+
+export function useScenes(investigationId: string | undefined) {
+  return useQuery({
+    queryKey: ['scenes', investigationId],
+    queryFn: () => api.get<{ items: Scene[] }>(`/investigations/${investigationId}/scenes`),
+    enabled: Boolean(investigationId),
+    staleTime: 30_000,
+  });
+}
+
+export function useDetections(investigationId: string | undefined) {
+  return useQuery({
+    queryKey: ['detections', investigationId],
+    queryFn: () => api.get<{ items: Detection[] }>(`/investigations/${investigationId}/detections`),
+    enabled: Boolean(investigationId),
+    staleTime: 15_000,
+  });
+}
+
+export function useDetection(id: string | undefined) {
+  return useQuery({
+    queryKey: ['detection', id],
+    queryFn: () => api.get<Detection>(`/detections/${id}`),
+    enabled: Boolean(id),
+  });
+}
+
+export interface DetectionVersion {
+  version: number;
+  action: string;
+  at: string;
+  userId: string | null;
+  note?: string;
+  geometry: { type: 'Polygon'; coordinates: number[][][] };
+  isModelOutput: boolean;
+}
+
+export function useDetectionVersions(id: string | undefined) {
+  return useQuery({
+    queryKey: ['detection-versions', id],
+    queryFn: () =>
+      api.get<{ items: DetectionVersion[]; note: string }>(`/detections/${id}/versions`),
+    enabled: Boolean(id),
+  });
+}
+
+export function useReviewDetection(investigationId?: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (v: {
+      id: string;
+      action: 'CONFIRM' | 'REJECT' | 'EDIT' | 'REOPEN';
+      note?: string;
+      geometry?: { type: 'Polygon'; coordinates: number[][][] };
+    }) =>
+      api.post<{ detectionId: string; reviewStatus: string; version: number; areaKm2: number }>(
+        `/detections/${v.id}/review`,
+        { action: v.action, note: v.note, geometry: v.geometry },
+      ),
+    onSuccess: (_d, v) => {
+      void qc.invalidateQueries({ queryKey: ['detection', v.id] });
+      void qc.invalidateQueries({ queryKey: ['detection-versions', v.id] });
+      void qc.invalidateQueries({ queryKey: ['detections', investigationId] });
+    },
+  });
+}
+
+export function useIngestScene(investigationId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (productId: string) =>
+      api.post<{ jobId: string; deduplicated: boolean }>(
+        `/investigations/${investigationId}/scenes/ingest`,
+        { productId },
+      ),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['jobs'] });
+      void qc.invalidateQueries({ queryKey: ['scenes', investigationId] });
+    },
+  });
+}

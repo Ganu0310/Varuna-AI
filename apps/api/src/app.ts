@@ -18,6 +18,7 @@ import { authRouter } from './modules/auth/router.js';
 import { catalogueRouter } from './modules/catalogue/router.js';
 import { investigationsRouter } from './modules/investigations/router.js';
 import { scenesRouter } from './modules/scenes/router.js';
+import { detectionsRouter } from './modules/detections/router.js';
 import { jobsRouter } from './modules/jobs/router.js';
 import { adminRouter } from './modules/admin/router.js';
 import { openApiDocument } from './openapi.js';
@@ -72,6 +73,7 @@ export function createApp(): Express {
   app.use('/api/v1/catalogue', catalogueRouter);
   app.use('/api/v1/investigations', investigationsRouter);
   app.use('/api/v1/investigations', scenesRouter);
+  app.use('/api/v1/detections', detectionsRouter);
   app.use('/api/v1/jobs', jobsRouter);
   app.use('/api/v1/admin', adminRouter);
 
