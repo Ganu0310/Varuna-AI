@@ -23,6 +23,9 @@
 ## 3.2 System context
 
 ```mermaid
+---
+id: e0dbda72-796b-4f6e-8ec2-5bd86f767e97
+---
 flowchart TB
   subgraph Users
     A1["Coast Guard officer"]
@@ -106,6 +109,9 @@ would call an image-processing service.
 ## 3.4 Data flow — end to end
 
 ```mermaid
+---
+id: 668bcd47-cd6d-4bf8-924e-5b86a23d56ba
+---
 sequenceDiagram
     autonumber
     actor An as Analyst
@@ -287,6 +293,9 @@ apps/web/src/
 ## 3.6 Job queue architecture
 
 ```mermaid
+---
+id: cc0d6098-cbc3-4aff-9d3f-31f76e814bb8
+---
 flowchart LR
   API["API<br/>producer"] -->|add| Q1["queue: ingest"]
   API -->|add| Q2["queue: inference"]

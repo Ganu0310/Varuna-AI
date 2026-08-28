@@ -1,0 +1,12 @@
+{
+  "sourceType": "SATELLITE_SCENE",
+  "provider": "Microsoft Planetary Computer",
+  "datasetId": "sentinel-1-grd",
+  "externalId": "STAC search: Ennore/Chennai AOI, 2017-01-25/2017-02-08",
+  "retrievedAt": "2026-08-28T13:47:30Z",
+  "licence": "Copernicus Sentinel Data — free, full and open",
+  "accessUrl": "https://planetarycomputer.microsoft.com/api/stac/v1/search",
+  "checksum": "sha256:3d0423520542578530769a5d12a903ebca23f7d30db2a99e7a6f9cc0a955f29c",
+  "derivedFrom": [],
+  "note": "Captured real STAC response, replayed in tests for determinism (13_REAL_DATA_POLICY §13.7). Not hand-authored; not modified after capture."
+}

@@ -4,13 +4,14 @@ import { useCreateInvestigation } from '../../api/hooks.ts';
 import { ApiError } from '../../api/client.ts';
 import { formatAreaKm2 } from '../../lib/format.ts';
 import { approxPolygonAreaKm2, parsePolygon } from '../../lib/geo.ts';
+import { CataloguePanel } from '../catalogue/CataloguePanel.tsx';
 
 /**
  * `/investigations/new` — 05_FRONTEND §5.5.4.
  *
- * Phase 2 scope: AOI is pasted as GeoJSON. Map drawing arrives with the map subsystem
- * (Phase 10) and the live catalogue preview with the provider chain (Phase 3) — the
- * preview slot below says so plainly rather than showing a fabricated count.
+ * AOI is pasted as GeoJSON; map drawing arrives with the map subsystem (Phase 10).
+ * The Review step runs a LIVE catalogue search so nobody creates an investigation for a
+ * window with no possible data — every count shown comes from a real provider query.
  */
 export function CreateInvestigationPage() {
   const navigate = useNavigate();
@@ -150,15 +151,14 @@ export function CreateInvestigationPage() {
         <section className="card">
           <h2>Review</h2>
           {/*
-            05_FRONTEND §5.5.4 calls for a live catalogue preview here so nobody creates an
-            investigation with no possible data. That needs the provider chain (Phase 3);
-            saying so is the honest interim, rather than showing an invented count.
+            Live provider query (05_FRONTEND §5.5.4). Not auto-run: it consumes a real
+            provider quota, so the analyst asks for it explicitly.
           */}
-          <p className="muted">
-            The live catalogue preview — “N Sentinel-1 acquisitions intersect this AOI in this
-            window” — is added when the satellite provider chain lands. No scene count is shown
-            until it can be queried for real.
-          </p>
+          <CataloguePanel
+            aoi={parsed.polygon}
+            from={windowStart ? new Date(windowStart).toISOString() : ''}
+            to={windowEnd ? new Date(windowEnd).toISOString() : ''}
+          />
 
           <div className="form-error" role="alert" aria-live="polite">
             {create.isError

@@ -16,7 +16,10 @@ export function AppChrome({ children }: { children: ReactNode }) {
         <Link className="wordmark" to="/investigations">
           VARUNA
         </Link>
-        <span className="top-sub">Vessel attribution from SAR + AIS</span>
+        <nav className="top-nav">
+          <Link to="/investigations">Investigations</Link>
+          <Link to="/catalogue">Catalogue</Link>
+        </nav>
         <div className="top-right">
           {/* A dropped socket is surfaced, not hidden — the view may be behind (08 §8.7). */}
           {stale ? (

@@ -269,3 +269,82 @@ button:disabled {
   letter-spacing: 0.08em;
   margin-bottom: var(--space-2);
 }
+
+/* ── catalogue (Phase 3) ───────────────────────────────────────────── */
+.stack-sm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+
+.provider-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.provider-chip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-sm);
+  font-size: 11px;
+}
+.provider-reason {
+  max-width: 34ch;
+}
+.token-ok {
+  color: var(--status-ok);
+  border-color: var(--status-ok);
+}
+.token-danger {
+  color: var(--status-danger);
+  border-color: var(--status-danger);
+}
+
+.catalogue-table {
+  font-size: 12px;
+  width: 100%;
+}
+/* The product ID is the identifier an evaluator uses to find the same acquisition —
+   it is shown in full and never truncated (13_REAL_DATA_POLICY §13.9). */
+.product-id {
+  font-size: 11px;
+  word-break: break-all;
+  color: var(--ink-secondary);
+}
+
+.attempted {
+  list-style: none;
+  padding: 0;
+  margin: var(--space-3) 0;
+  font-size: 12px;
+}
+.consequence {
+  color: var(--ink-secondary);
+  border-left: 2px solid var(--status-danger);
+  padding-left: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+/* Wide tables scroll inside their own container; the page never scrolls sideways. */
+.card,
+.page {
+  overflow-x: auto;
+}
+
+.top-nav {
+  display: flex;
+  gap: var(--space-5);
+  font-size: 13px;
+}
+.top-nav a {
+  color: var(--ink-secondary);
+  text-decoration: none;
+}
+.top-nav a:hover {
+  color: var(--ink-primary);
+}

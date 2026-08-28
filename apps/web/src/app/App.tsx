@@ -8,6 +8,7 @@ import { LoginPage } from '../features/auth/LoginPage.tsx';
 import { RegisterPage } from '../features/auth/RegisterPage.tsx';
 import { InvestigationListPage } from '../features/investigations/InvestigationListPage.tsx';
 import { CreateInvestigationPage } from '../features/investigations/CreateInvestigationPage.tsx';
+import { CataloguePage } from '../features/catalogue/CataloguePage.tsx';
 import { AppChrome } from './AppChrome.tsx';
 
 const queryClient = new QueryClient({
@@ -61,6 +62,16 @@ export function App() {
                 <RequireAuth>
                   <AppChrome>
                     <CreateInvestigationPage />
+                  </AppChrome>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/catalogue"
+              element={
+                <RequireAuth>
+                  <AppChrome>
+                    <CataloguePage />
                   </AppChrome>
                 </RequireAuth>
               }

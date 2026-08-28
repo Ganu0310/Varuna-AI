@@ -12,7 +12,8 @@
  *   5  the dataset manifest declares real data only
  *   6  provenance-required Mongoose models apply the provenance plugin
  */
-import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { join, extname, basename, relative } from 'node:path';
 
 const ROOT = process.cwd();
@@ -94,8 +95,35 @@ console.log('▸ 3/6  Every test fixture carries a provenance sibling');
   if (fixtures.length === 0) ok('no real fixtures yet');
   for (const f of fixtures) {
     const sib = f.replace(/\.json$/, '.provenance.json');
-    if (!existsSync(sib)) fail(`${relative(ROOT, f)} has no .provenance.json sibling`);
+    if (!existsSync(sib)) {
+      fail(`${relative(ROOT, f)} has no .provenance.json sibling`);
+      continue;
+    }
+    // A captured provider response is evidence: if its bytes no longer match the checksum
+    // recorded at capture time, it was modified after capture and can no longer be cited
+    // (13_REAL_DATA_POLICY §13.7). Reformatting counts as modification.
+    let prov;
+    try {
+      prov = JSON.parse(readFileSync(sib, 'utf8'));
+    } catch {
+      fail(`${relative(ROOT, sib)} is not valid JSON`);
+      continue;
+    }
+    const recorded = String(prov.checksum ?? '').replace(/^sha256:/, '');
+    if (!recorded) {
+      fail(`${relative(ROOT, sib)} records no checksum`);
+      continue;
+    }
+    const actual = createHash('sha256').update(readFileSync(f)).digest('hex');
+    if (actual !== recorded) {
+      fail(
+        `${relative(ROOT, f)} was MODIFIED AFTER CAPTURE — sha256 ${actual.slice(0, 16)}… ` +
+          `does not match the recorded ${recorded.slice(0, 16)}…. Re-capture it rather than editing it.`,
+      );
+    }
   }
+  if (fixtures.length > 0 && !failed)
+    ok(`${fixtures.length} fixture(s) verified against their recorded checksums`);
 }
 
 // ── 4 · no fixtures outside __fixtures__/real/ ───────────────────────

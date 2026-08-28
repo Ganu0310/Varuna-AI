@@ -6,6 +6,7 @@ import {
 import { z } from 'zod';
 import { ProblemDetails } from '@varuna/shared';
 import { LoginBody, PublicUser, RegisterBody } from './modules/auth/schema.js';
+import { CatalogueSearchQuery } from './modules/catalogue/schema.js';
 import {
   AddMemberBody,
   CreateInvestigationBody,
@@ -195,6 +196,71 @@ function buildRegistry(): OpenAPIRegistry {
         content: { 'application/json': { schema: z.unknown() } },
       },
       404: problem,
+    },
+  });
+
+  r.registerPath({
+    method: 'get',
+    path: '/api/v1/catalogue/search',
+    tags: ['catalogue'],
+    summary:
+      'Live satellite catalogue search. Queries every configured provider in parallel and ' +
+      'returns a normalised, de-duplicated list plus a per-provider status. Nothing is ' +
+      'persisted. A provider returning zero results is reported as NO_RESULTS (a real ' +
+      'answer about coverage), not as a failure.',
+    request: { query: CatalogueSearchQuery },
+    responses: {
+      200: {
+        description: 'Normalised results with per-provider status',
+        content: {
+          'application/json': {
+            schema: z.object({
+              items: z.array(z.unknown()),
+              providerStatus: z.array(
+                z.object({
+                  provider: z.string(),
+                  status: z.enum([
+                    'OK',
+                    'NO_RESULTS',
+                    'CIRCUIT_OPEN',
+                    'QUOTA_EXHAUSTED',
+                    'NOT_CONFIGURED',
+                    'TIMEOUT',
+                    'ERROR',
+                  ]),
+                  count: z.number(),
+                  latencyMs: z.number().nullable(),
+                  reason: z.string().optional(),
+                  retryAt: z.string().optional(),
+                }),
+              ),
+            }),
+          },
+        },
+      },
+      400: problem,
+      429: problem,
+      503: {
+        description:
+          'Every provider in the chain failed. The body carries attempted[] and a ' +
+          'consequence string; no results are returned rather than results from an ' +
+          'unverified source.',
+        content: { 'application/problem+json': { schema: ProblemDetails } },
+      },
+    },
+  });
+
+  r.registerPath({
+    method: 'get',
+    path: '/api/v1/catalogue/providers',
+    tags: ['catalogue'],
+    summary: 'Provider health: circuit state, quota consumed, p95 latency, last success.',
+    responses: {
+      200: {
+        description: 'Provider health',
+        content: { 'application/json': { schema: z.object({ items: z.array(z.unknown()) }) } },
+      },
+      401: problem,
     },
   });
 

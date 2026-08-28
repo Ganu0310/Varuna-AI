@@ -6,3 +6,7 @@ pnpm-lock.yaml
 data
 *.md
 services/ml
+
+# Captured provider responses — verbatim, never reformatted (13_REAL_DATA_POLICY §13.7).
+# Their recorded sha256 must keep matching the bytes on disk.
+**/__fixtures__/real/

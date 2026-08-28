@@ -15,6 +15,7 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { NotFoundError } from './errors.js';
 import { healthRouter } from './modules/health/router.js';
 import { authRouter } from './modules/auth/router.js';
+import { catalogueRouter } from './modules/catalogue/router.js';
 import { investigationsRouter } from './modules/investigations/router.js';
 import { jobsRouter } from './modules/jobs/router.js';
 import { adminRouter } from './modules/admin/router.js';
@@ -67,6 +68,7 @@ export function createApp(): Express {
   app.get('/api/v1', (_req, res) => res.json({ name: 'varuna-api', version: 'v1' }));
   app.get('/api/v1/openapi.json', (_req, res) => res.json(openApiDocument()));
   app.use('/api/v1/auth', authRouter);
+  app.use('/api/v1/catalogue', catalogueRouter);
   app.use('/api/v1/investigations', investigationsRouter);
   app.use('/api/v1/jobs', jobsRouter);
   app.use('/api/v1/admin', adminRouter);
