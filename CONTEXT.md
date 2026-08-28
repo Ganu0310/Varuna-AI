@@ -12,14 +12,14 @@ are docs 00–13.
 | Field | Value |
 |---|---|
 | **Last updated** | 2026-08-28 |
-| **Updated by** | Phase 3 completion — providers + live catalogue (Claude) |
-| **Current phase** | **Phase 3 COMPLETE.** Next: Phase 4 — Ingest pipeline (download, COG, tiles) |
+| **Updated by** | Phases 12-13 (Claude) |
+| **Current phase** | **Phases 0-10, 12, 13 done.** Phase 11 (3D) deliberately skipped; Phase 14 partial. |
 | **Repo** | https://github.com/Ganu0310/Varuna-AI — `main`. Git 2.55; Credential Manager auth working. |
-| **Overall status** | 🟢 Phases 0–3 done and verified live: **184 tests** (138 unit + 35 DB-integration + 11 Python). A real catalogue query returns real Sentinel-1 product IDs; a genuinely empty AOI returns NO_RESULTS rather than a fallback. typecheck / lint / format / real-data policy / token sync clean. |
+| **Overall status** | 🟢 The full chain runs live on the real Guam 2025-09-21 incident: real S1C scene -> COG in MinIO -> TiTiler tiles -> classical detection -> degraded origin -> 9,711 real AIS positions -> ranked candidates with CIs -> print-ready dossier with mandatory uncertainty + provenance. **223 tests** (189 JS + 55 Python, minus overlap). `pnpm run stage:demo` caches real inputs so the demo is offline-safe. |
 | **Local infra** | mongod 8.3.7 **standalone** on `localhost:27017` db `VARUNA` (native, user-run — no transactions, D-013) · Redis 7 container (noeviction ✅) · MinIO container (`varuna` bucket ✅) · Docker engine 29.7.2 |
 | **Days to submission** | (fill in) |
-| **Biggest current risk** | MKLab dataset request not submitted (B-003); demo incident not locked (B-004); CDSE/Earthdata accounts still absent, so the chain runs on Planetary Computer + ASF only (B-005). |
-| **Next milestone** | Phase 4 — ingest job: download via the chain, SNAP/RTC preprocessing, COG conversion, TiTiler tiles, `SatelliteScene` persistence with provenance. |
+| **Biggest current risk** | Origin estimate is DEGRADED (no current field for 2025-09-21), which caps every candidate at MODERATE and weakens attribution. Detector has no measured metrics. Both are stated in the UI and the report. |
+| **Next milestone** | CMEMS + CDS credentials to lift drift from DEGRADED to real back-tracking - the single highest-value remaining change. Then Zenodo Part III (9.9 GB) to give the detector measured metrics. |
 
 ---
 
@@ -100,9 +100,9 @@ Update the status column and add a short note (owner, PR link, blocker) as work 
 | 8 | AIS ingestion + track reconstruction (M6, M7) | 🔴 | — |
 | 9 | M3 attribution scoring + correlation + candidates (M8) | 🔴 | — |
 | 10 | Workspace UI shell: map, stores, timeline, screens (M9, M12) | 🔴 | — |
-| 11 | 3D surfaces: globe, slick relief, prism | 🔴 | — |
-| 12 | Reporting & exports (M10) | 🔴 | — |
-| 13 | Demo staging, integration, E2E, load, a11y, hardening, rehearsal | 🔴 | — |
+| 11 | 3D surfaces: globe, slick relief, space-time prism | ⚪ **SKIPPED** | Deliberate. Presentation surfaces with no evidential weight; the time went to Phases 12-13 instead. The slick-relief honesty caption ('relief encodes SAR backscatter, not sea-surface height') is worth keeping if 3D is revisited. |
+| 12 | Reporting & exports | 🟢 **DONE** | Mandatory UNCERTAINTY + PROVENANCE enforced in three places; derived (not boilerplate) uncertainty statement; GeoJSON/CSV/manifest exports carrying provenance inline; print-ready A4 light-theme dossier reusing the workspace EvidenceWaterfall. |
+| 13 | Demo staging, integration, E2E, load, a11y, hardening | 🟡 partial | `stage:demo` verified end to end (real scene + 9,711 real AIS in 5.5 s), caching inputs only so results still run live. Not done: Playwright E2E, k6 load, axe-core, cold-start test. |
 
 ### MVP items (01 §8.1)
 
@@ -250,6 +250,15 @@ resolve an ambiguity in them. One entry per decision. Never edit past entries.
 ---
 
 ## 15.9 Changelog (append-only, newest first)
+
+### 2026-08-28 — Phases 12 & 13: report dossier and demo staging
+- **Report (Phase 12).** UNCERTAINTY and PROVENANCE are structurally mandatory, enforced in the Zod schema, in `buildReportData`, and in the report page which renders both with no toggle. The uncertainty statement is DERIVED from recorded state, not boilerplate: a DEGRADED origin, fewer than five transmitting vessels, an uncalibrated model, and the classical detector's absent metrics each generate their own caveat, so the text cannot go stale.
+- **Exports.** GeoJSON carries provenance inline per feature and the degradation reason on the origin polygon (so a proximity buffer is not mistaken for a drift zone in QGIS). CSV is long format with a status column — a wide table's blank cell is indistinguishable from a zero. The manifest pins scene IDs, detector SHA, weight profile and AIS source, and travels with the uncertainty statement.
+- **Report page** renders the exact print DOM in light theme at A4, reusing the workspace's `<EvidenceWaterfall>` so printed and on-screen evidence cannot diverge. Product IDs wrap rather than truncate.
+- **Demo staging (Phase 13).** `pnpm run stage:demo` verified end to end: stages the real S1C AOI window to MinIO with provider provenance, and imports 9,711 real AIS positions in 5.5 s. It caches inputs ONLY — detections, origin and rankings still run live, so the demo cannot show a prepared result. Forcing is explicitly NOT staged, with the HYCOM coverage gap stated in the output.
+- **Phase 11 (3D) deliberately skipped.** The globe, slick relief and space-time prism are presentation surfaces; with the time available they would have come at the cost of the report and demo staging, which carry evidential weight. The one 3D idea worth keeping is the slick-relief honesty caption ("relief encodes SAR backscatter, not sea-surface height") — recorded here so it is not lost.
+- **Phase 14 partial.** CI, lint, formatting, real-data policy and secret-scanning gates are live. Not done: k6 load tests, Playwright E2E, axe-core audit, cold-start verification.
+
 
 ### 2026-08-28 — Phase 3 COMPLETE: providers + live catalogue search
 - **`ProviderClient` base** (`apps/api/src/providers/`): every external call goes through one path that applies quota accounting, retry, a circuit breaker, latency sampling and credential-safe logging. Retry is **exponential (1→2→4 s) and only for transient failures** — a 400 or 404 is a real answer and is not retried. The circuit opens on 5 *consecutive* failures, resets after 60 s, and admits exactly one half-open probe.
