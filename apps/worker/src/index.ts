@@ -5,6 +5,8 @@ import { JOB_QUEUES, type QueueName } from '@varuna/shared';
 import { connectMongo, disconnectMongo } from '@varuna/api/src/db/connection.js';
 import { bootstrapDatabase } from '@varuna/api/src/db/bootstrap.js';
 import { processIngest, type IngestJobData } from './processors/ingest.js';
+import { processDrift, type DriftJobData } from './processors/drift.js';
+import { processCorrelate, type CorrelateJobData } from './processors/correlate.js';
 
 /**
  * BullMQ consumers. The worker runs from the same image as the API with a different
@@ -44,9 +46,20 @@ async function main() {
   register<Awaited<ReturnType<typeof processIngest>>>('ingest', (job) =>
     processIngest(job as unknown as Parameters<typeof processIngest>[0]),
   );
+  register<Awaited<ReturnType<typeof processDrift>>>('drift', (job) =>
+    processDrift(job as unknown as Parameters<typeof processDrift>[0]),
+  );
+  register<Awaited<ReturnType<typeof processCorrelate>>>('scoring', (job) =>
+    processCorrelate(job as unknown as Parameters<typeof processCorrelate>[0]),
+  );
 
   logger.info(
-    { registered: ['ingest'], pending: ['inference', 'drift', 'ais-import', 'scoring', 'report'] },
+    {
+      registered: ['ingest', 'drift', 'scoring'],
+      // Still unregistered ON PURPOSE: a queue with a stub processor would mark work
+      // complete without doing it, which is worse than leaving the job queued.
+      pending: ['inference', 'ais-import', 'report'],
+    },
     'varuna-worker ready',
   );
 }
@@ -67,4 +80,4 @@ main().catch((err) => {
   process.exit(1);
 });
 
-export type { IngestJobData };
+export type { IngestJobData, DriftJobData, CorrelateJobData };

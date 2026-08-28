@@ -180,7 +180,7 @@ export function toManifest(data: ReportData): Record<string, unknown> {
       scenes: data.scenes.length,
       detections: data.detections.length,
       candidates: data.candidates.length,
-      provenanceRecords: data.provenance.records.length,
+      provenanceRecords: data.provenanceAppendix.records.length,
     },
     aisCoverage: data.aisCoverage
       ? {
@@ -191,6 +191,6 @@ export function toManifest(data: ReportData): Record<string, unknown> {
         }
       : null,
     uncertainty: data.uncertainty,
-    provenance: data.provenance,
+    provenanceAppendix: data.provenanceAppendix,
   };
 }

@@ -72,7 +72,7 @@ interface ReportData {
     statements: Array<{ topic: string; text: string; severity: string }>;
     overall: string;
   };
-  provenance: {
+  provenanceAppendix: {
     records: Array<{
       id: string;
       sourceType: string;
@@ -316,7 +316,7 @@ export function ReportPage() {
         <p className="rp-locked">
           This section is always included and cannot be removed from a VARUNA dossier.
         </p>
-        <p>{data.provenance.lineageNote}</p>
+        <p>{data.provenanceAppendix.lineageNote}</p>
         <table className="rp-table rp-prov">
           <thead>
             <tr>
@@ -329,7 +329,7 @@ export function ReportPage() {
             </tr>
           </thead>
           <tbody>
-            {data.provenance.records.map((r) => (
+            {data.provenanceAppendix.records.map((r) => (
               <tr key={r.id}>
                 <td className="mono">{r.sourceType}</td>
                 <td>{r.provider}</td>

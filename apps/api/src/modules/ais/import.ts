@@ -42,6 +42,8 @@ export interface AisImportResult {
   skippedOutOfBbox: number;
   skippedUnparseable: number;
   duplicates: number;
+  /** Rows removed before re-import so the slice is replaced, not doubled. */
+  clearedBeforeImport: number;
   flagged: {
     mmsiInvalid: number;
     sentinelSog: number;
@@ -139,6 +141,7 @@ export async function importAisCsv(opts: AisImportOptions): Promise<AisImportRes
     skippedOutOfBbox: 0,
     skippedUnparseable: 0,
     duplicates: 0,
+    clearedBeforeImport: 0,
     flagged: { mmsiInvalid: 0, sentinelSog: 0, sentinelCog: 0, sentinelHeading: 0 },
     distinctMmsi: 0,
     provenanceId,
@@ -146,6 +149,44 @@ export async function importAisCsv(opts: AisImportOptions): Promise<AisImportRes
   };
 
   const collection = db.collection('ais_positions');
+
+  /*
+   * Make re-import IDEMPOTENT by clearing this exact window and box first.
+   *
+   * `ais_positions` is a time-series collection and cannot carry a unique index, so the
+   * in-process `seen` set below only deduplicates WITHIN one run. Without this delete, a
+   * second import of the same slice silently doubles every fix — which inflates the coverage
+   * count and drives the median reporting interval to 0 s, because each fix now has a
+   * duplicate at the identical timestamp. That corrupts the AIS coverage assessment, and
+   * that assessment is one of the honesty statements in the report.
+   */
+  const cleared = await collection.deleteMany({
+    t: { $gte: new Date(fromMs), $lte: new Date(toMs) },
+    position: {
+      $geoWithin: {
+        $geometry: {
+          type: 'Polygon',
+          coordinates: [
+            [
+              [west, south],
+              [east, south],
+              [east, north],
+              [west, north],
+              [west, south],
+            ],
+          ],
+        },
+      },
+    },
+  });
+  if (cleared.deletedCount > 0) {
+    logger.info(
+      { deleted: cleared.deletedCount, from: opts.from, to: opts.to },
+      'cleared existing AIS positions for this window before re-import',
+    );
+  }
+
+  res.clearedBeforeImport = cleared.deletedCount;
   const seen = new Set<string>();
   const mmsis = new Set<number>();
   let batch: Record<string, unknown>[] = [];

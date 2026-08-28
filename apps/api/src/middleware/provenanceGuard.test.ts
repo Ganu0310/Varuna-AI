@@ -61,3 +61,32 @@ describe('provenanceGuard', () => {
     expect(res.headers['x-provenance-stripped']).toBe('1');
   });
 });
+
+describe('the `provenance` key is RESERVED', () => {
+  it('an object using `provenance` for something else is stripped — as it should be', async () => {
+    // This bit the report module: it exposed an APPENDIX (records + lineageNote) under the
+    // key `provenance`, and the guard correctly refused it as a malformed provenance record,
+    // blanking the whole response. The guard is right; the field was misnamed. Anything that
+    // is not a provenance record must use a different key (the report now uses
+    // `provenanceAppendix`).
+    const appendix = {
+      _id: 'r1',
+      uncertainty: { overall: 'a ranking of leads' },
+      provenance: { records: [], lineageNote: 'not a provenance record' },
+    };
+    const res = await request(appWith(appendix)).get('/x');
+    expect(res.body).toEqual({ _id: 'r1', __provenanceMissing: true });
+    expect(res.headers['x-provenance-stripped']).toBe('1');
+  });
+
+  it('the same payload survives once the appendix is renamed', async () => {
+    const renamed = {
+      _id: 'r1',
+      uncertainty: { overall: 'a ranking of leads' },
+      provenanceAppendix: { records: [], lineageNote: 'not a provenance record' },
+    };
+    const res = await request(appWith(renamed)).get('/x');
+    expect(res.body.provenanceAppendix.lineageNote).toBe('not a provenance record');
+    expect(res.headers['x-provenance-stripped']).toBeUndefined();
+  });
+});

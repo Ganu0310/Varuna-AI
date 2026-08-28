@@ -40,6 +40,7 @@ async function main() {
   );
 
   console.log(`
+  cleared first       ${res.clearedBeforeImport.toLocaleString()}
   read                ${res.read.toLocaleString()}
   imported            ${res.imported.toLocaleString()}
   distinct MMSI       ${res.distinctMmsi}

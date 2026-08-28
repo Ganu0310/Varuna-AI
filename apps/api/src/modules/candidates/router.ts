@@ -3,9 +3,13 @@ import { z } from 'zod';
 import { Types } from 'mongoose';
 import { ATTRIBUTION_FEATURES, DEFAULT_WEIGHT_PROFILE_ID } from '@varuna/shared';
 import { rbac, canAccessInvestigation, requireInvestigationAccess } from '../../middleware/rbac.js';
+import { jobCreationLimiter } from '../../middleware/rateLimits.js';
+import { enqueue } from '../../queue/producer.js';
+import { latestOriginForInvestigation } from '../origin/service.js';
 import { validate, param } from '../../middleware/validate.js';
 import { reqId } from '../../middleware/requestId.js';
-import { NotFoundError } from '../../errors.js';
+import { audit } from '../audit/service.js';
+import { HttpError, NotFoundError } from '../../errors.js';
 import { CandidateVesselModel } from './model.js';
 import { DEFAULT_WEIGHTS, excludeCandidate, reweight } from './service.js';
 
@@ -105,6 +109,75 @@ candidatesRouter.get(
         // A feature that could not be measured still answers "why not".
         measurable: feature.status === 'MEASURED',
       });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+const CorrelateBody = z
+  .object({
+    detectionId: z.string().regex(/^[a-f\d]{24}$/i),
+    originEstimateId: z
+      .string()
+      .regex(/^[a-f\d]{24}$/i)
+      .optional(),
+  })
+  .strict();
+
+/**
+ * Run correlation: AIS in the origin envelope, ranked against the twelve features.
+ *
+ * Requires an origin estimate. Refusing without one is deliberate — correlating against a
+ * bare detection footprint would silently produce the weakest possible attribution while
+ * looking like a normal result.
+ */
+candidatesRouter.post(
+  '/:id/candidates/correlate',
+  rbac('analyst'),
+  jobCreationLimiter,
+  validate({ params: IdParam, body: CorrelateBody }),
+  requireInvestigationAccess('analyst'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const investigationId = param(req, 'id');
+
+      let originEstimateId = req.body.originEstimateId;
+      if (!originEstimateId) {
+        const latest = await latestOriginForInvestigation(investigationId);
+        if (!latest) {
+          throw new HttpError(
+            409,
+            'No origin estimate exists',
+            'Correlation needs a release zone and window to search against. Run back-tracking ' +
+              'first: correlating against the detection footprint alone cannot distinguish a ' +
+              'discharging vessel from passing traffic.',
+            'https://varuna.dev/problems/origin-required',
+          );
+        }
+        originEstimateId = String(latest._id);
+      }
+
+      const jobKey = `scoring:${investigationId}:${req.body.detectionId}`;
+      const { jobId, deduplicated } = await enqueue({
+        queue: 'scoring',
+        kind: 'SCORING',
+        jobKey,
+        payload: { investigationId, detectionId: req.body.detectionId, originEstimateId },
+        investigationId,
+        userId: req.user!.id,
+      });
+
+      await audit({
+        actorId: req.user!.id,
+        action: 'CORRELATION_REQUESTED',
+        entityType: 'Investigation',
+        entityId: investigationId,
+        after: { detectionId: req.body.detectionId, originEstimateId, jobId },
+        requestId: reqId(req),
+      });
+
+      res.status(deduplicated ? 200 : 202).json({ jobId, deduplicated, originEstimateId });
     } catch (err) {
       next(err);
     }

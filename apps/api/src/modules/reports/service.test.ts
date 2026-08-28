@@ -159,7 +159,7 @@ const DATA: ReportData = {
     },
   ],
   uncertainty: { statements: [], overall: 'A ranking of investigative leads.' },
-  provenance: { records: [], lineageNote: 'note' },
+  provenanceAppendix: { records: [], lineageNote: 'note' },
   manifest: {
     pipelineVersion: 'varuna-1.0.0',
     detectorSha: 'ed1867ad',
@@ -241,6 +241,6 @@ describe('run manifest', () => {
   it('keeps the uncertainty statement with the manifest, so they never travel apart', () => {
     const m = toManifest(DATA) as Record<string, unknown>;
     expect(m.uncertainty).toBeTruthy();
-    expect(m.provenance).toBeTruthy();
+    expect(m.provenanceAppendix).toBeTruthy();
   });
 });

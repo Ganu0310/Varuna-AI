@@ -91,7 +91,12 @@ export interface ReportData {
   aisCoverage: Awaited<ReturnType<typeof coverage>> | null;
   candidates: Record<string, unknown>[];
   uncertainty: UncertaintyStatement;
-  provenance: ProvenanceAppendix;
+  /**
+   * NOTE: deliberately NOT named `provenance`. That key is reserved for a provenance
+   * RECORD, and `provenanceGuard` validates any object carrying it against the shared Zod
+   * schema — an appendix under that name is stripped from the response as malformed.
+   */
+  provenanceAppendix: ProvenanceAppendix;
   manifest: RunManifest;
   sections: ReportSection[];
   generatedAt: string;
@@ -261,7 +266,7 @@ export async function buildReportData(
       candidates as unknown as Record<string, unknown>[],
       detections as unknown as Record<string, unknown>[],
     ),
-    provenance: {
+    provenanceAppendix: {
       records: provRecords.map((p) => ({
         id: String(p._id),
         sourceType: String(p.sourceType),
