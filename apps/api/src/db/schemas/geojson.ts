@@ -3,11 +3,20 @@ import { Schema } from 'mongoose';
 /**
  * GeoJSON sub-schemas for Mongoose. EPSG:4326, coordinate order [lon, lat] (02_TRD TR-2).
  *
- * The winding validator is load-bearing: MongoDB interprets a wrongly-wound `2dsphere`
- * polygon as its COMPLEMENT — the entire globe minus the intended area — so a `$geoWithin`
- * against it matches nearly every AIS position on Earth (06_BACKEND §6.3.2, 12 F-10).
- * Callers normalise winding with the Turf `rewindPolygon` helper on write; this validator is
- * the backstop that rejects anything that slipped through.
+ * Why the winding validator exists — the accurate version (see CONTEXT.md D-011, and
+ * geo/winding.integration.test.ts which pins the measured behaviour):
+ *
+ *  - MongoDB 8 with the DEFAULT CRS ignores ring orientation for a single-ring query
+ *    polygon and takes the smaller of the two regions. So the "wrongly-wound polygon
+ *    matches the whole globe" failure asserted in 06_BACKEND §6.3.2 / 12 F-10 does NOT
+ *    happen by default. The server also accepts either winding on insert.
+ *  - It DOES happen under the opt-in `urn:x-mongodb:crs:strictwinding:EPSG:4326` CRS,
+ *    which is required for any AOI genuinely larger than a hemisphere.
+ *  - RFC 7946 §3.1.6 mandates right-hand winding for GeoJSON interchange, and our report
+ *    exports are consumed by QGIS / Turf / Shapely, which do care about orientation.
+ *
+ * Since MongoDB will not enforce it, this validator is the only thing that does. Callers
+ * normalise with the Turf `rewindPolygon` helper on write; this is the backstop.
  */
 
 const lonLatValid = (c: number[]): boolean =>

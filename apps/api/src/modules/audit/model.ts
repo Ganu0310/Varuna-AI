@@ -16,7 +16,7 @@ const AuditLogSchema = new Schema(
     requestId: String,
     at: { type: Date, required: true, default: () => new Date() },
   },
-  { versionKey: false },
+  { versionKey: false, collection: 'audit_log' },
 );
 
 AuditLogSchema.index({ actorId: 1, at: -1 });

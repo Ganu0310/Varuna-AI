@@ -34,6 +34,32 @@ jobs:
       - run: pnpm test
       - run: pnpm check:tokens
 
+  integration:
+    name: Integration — API against a real MongoDB
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        # Standalone is enough for the Phase 1 suite (time-series + 2dsphere semantics).
+        # A replica set is only required once we use multi-document transactions.
+        image: mongo:8
+        ports: ['27017:27017']
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand({ ping: 1 }).ok'"
+          --health-interval 10s --health-timeout 5s --health-retries 10
+    env:
+      MONGODB_URI_TEST: mongodb://localhost:27017
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile=false
+      - run: pnpm --filter @varuna/api test:integration
+
   real-data-policy:
     name: Real-data policy (required)
     runs-on: ubuntu-latest

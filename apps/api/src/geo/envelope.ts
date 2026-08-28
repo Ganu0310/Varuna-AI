@@ -7,10 +7,11 @@ import type { Kilometres } from '@varuna/shared';
  * runs in Turf and the result is persisted back as an indexed GeoJSON document
  * (02_TRD §2.6.3, 06_BACKEND §6.6.2).
  *
- * The result is right-hand-rule wound. A wrongly-wound polygon is interpreted by MongoDB as
- * its COMPLEMENT — the whole globe minus the intended area — so a `$geoWithin` against it
- * matches nearly every AIS position on Earth (06_BACKEND §6.3.2, 12 F-10). `rewind` here and
- * the Mongoose winding validator on save are the two guards against that.
+ * The result is right-hand-rule wound. MongoDB 8 with the default CRS tolerates either
+ * winding (it takes the smaller region), but under the `strictwinding` CRS a clockwise ring
+ * becomes the globe complement, and RFC 7946 requires RHR for the GeoJSON we export.
+ * `rewind` here and the Mongoose winding validator on save are the two guards.
+ * Measured behaviour: geo/winding.integration.test.ts; rationale: CONTEXT.md D-011.
  */
 export function buildSearchEnvelope(support: Polygon, radiusKm: Kilometres): Polygon {
   const buffered = turfBuffer(support as Feature<Polygon> | Polygon, radiusKm as number, {

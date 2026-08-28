@@ -30,7 +30,7 @@ const VesselSchema = new Schema(
       beamM: Number,
     },
   },
-  { timestamps: true },
+  { timestamps: true, collection: 'vessels' },
 );
 VesselSchema.plugin(provenancePlugin);
 VesselSchema.index({ name: 'text' });
@@ -84,7 +84,7 @@ const VesselTrackSchema = new Schema(
       removedOutlierCount: { type: Number, default: 0 },
     },
   },
-  { timestamps: true },
+  { timestamps: true, collection: 'vessel_tracks' },
 );
 VesselTrackSchema.plugin(provenancePlugin);
 VesselTrackSchema.index({ investigationId: 1, mmsi: 1 });

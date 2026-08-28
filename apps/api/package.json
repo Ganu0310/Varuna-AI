@@ -8,8 +8,10 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/index.js",
+    "db:bootstrap": "tsx src/db/cli.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:watch": "vitest",
     "lint": "eslint src"
   },
@@ -19,6 +21,7 @@
     "@turf/turf": "^7.2.0",
     "@varuna/shared": "workspace:*",
     "geographiclib-geodesic": "^2.1.1",
+    "dotenv": "^16.4.7",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "express": "^5.0.1",

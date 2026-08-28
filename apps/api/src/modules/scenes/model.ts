@@ -40,7 +40,7 @@ const SatelliteSceneSchema = new Schema(
     },
     failureReason: String,
   },
-  { timestamps: true },
+  { timestamps: true, collection: 'satellite_scenes' },
 );
 
 SatelliteSceneSchema.plugin(provenancePlugin);

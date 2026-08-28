@@ -49,7 +49,7 @@ const CandidateVesselSchema = new Schema(
       default: null,
     },
   },
-  { timestamps: true },
+  { timestamps: true, collection: 'candidate_vessels' },
 );
 
 CandidateVesselSchema.plugin(provenancePlugin);

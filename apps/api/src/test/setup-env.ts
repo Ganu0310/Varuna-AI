@@ -6,7 +6,8 @@
 process.env.NODE_ENV = 'test';
 process.env.PORT = '0';
 process.env.PUBLIC_APP_URL = 'http://localhost:5173';
-process.env.MONGODB_URI = 'mongodb://localhost:27017/?replicaSet=rs0';
+// Integration tests use a throwaway database on the local mongod; unit tests never connect.
+process.env.MONGODB_URI = process.env.MONGODB_URI_TEST ?? 'mongodb://localhost:27017';
 process.env.MONGODB_DB_NAME = 'varuna_test';
 process.env.REDIS_URL = 'redis://localhost:6379';
 process.env.S3_ENDPOINT = 'http://localhost:9000';

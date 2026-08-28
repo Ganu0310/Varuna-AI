@@ -19,7 +19,7 @@ const ProvenanceRecordSchema = new Schema(
     derivedFrom: [{ type: Schema.Types.ObjectId, ref: 'ProvenanceRecord' }],
     processingManifestId: String,
   },
-  { timestamps: { createdAt: true, updatedAt: false } },
+  { timestamps: { createdAt: true, updatedAt: false }, collection: 'provenance_records' },
 );
 
 ProvenanceRecordSchema.index({ externalId: 1 });

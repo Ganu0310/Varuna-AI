@@ -53,7 +53,7 @@ const OriginEstimateSchema = new Schema(
       centroid: PointSchema,
     },
   },
-  { timestamps: true },
+  { timestamps: true, collection: 'origin_estimates' },
 );
 
 OriginEstimateSchema.plugin(provenancePlugin);

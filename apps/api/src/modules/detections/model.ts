@@ -82,7 +82,7 @@ const SpillDetectionSchema = new Schema(
     },
     reviewHistory: { type: [ReviewEntrySchema], default: [] },
   },
-  { timestamps: true },
+  { timestamps: true, collection: 'spill_detections' },
 );
 
 SpillDetectionSchema.plugin(provenancePlugin);

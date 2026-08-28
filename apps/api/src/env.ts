@@ -1,10 +1,19 @@
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
+import { config as loadDotenv } from 'dotenv';
 import { z } from 'zod';
 
 /**
  * Boot-time environment validation. Exits non-zero on any missing REQUIRED key
  * (11_API_KEYS §11.7, 02_TRD SEC-9). Provider credentials are optional at the type level;
  * a runtime check warns (does not exit) on an empty provider chain.
+ *
+ * Secrets come from the environment only. In development we additionally read the
+ * git-ignored repo-root `.env`; a real environment variable always wins over the file, so
+ * containers and CI are unaffected (02_TRD SEC-9, 11_API_KEYS KEY-3).
  */
+const HERE = dirname(fileURLToPath(import.meta.url));
+loadDotenv({ path: resolve(HERE, '../../../.env'), override: false, quiet: true });
 const EnvSchema = z.object({
   // ── core ──────────────────────────────────────────────────────────
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
