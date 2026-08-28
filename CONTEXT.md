@@ -12,9 +12,10 @@ are docs 00–13.
 | Field | Value |
 |---|---|
 | **Last updated** | 2026-08-28 |
-| **Updated by** | Phase 1 pass (Claude) |
+| **Updated by** | Phase 1 pass + repo push (Claude) |
 | **Current phase** | Phase 1 — Data-plane spine (code-complete; DB-integration verification pending Docker) |
-| **Overall status** | 🟡 Phases 0–1 code done and green: **70 tests pass** (59 JS + 11 Python), typecheck / lint / format / real-data policy / token sync all clean. Geodesy known-answer suite agrees across Node (GeographicLib) and Python (pyproj) within 0.1%. Blocked on git + Docker install + accounts + demo incident. |
+| **Repo** | https://github.com/Ganu0310/Varuna-AI — `main`, initial commit `ad7758a` (144 files). Git 2.55 installed; Credential Manager auth working. |
+| **Overall status** | 🟡 Phases 0–1 code done, green, and pushed: **70 tests pass** (59 JS + 11 Python), typecheck / lint / format / real-data policy / token sync all clean. Geodesy known-answer suite agrees across Node (GeographicLib) and Python (pyproj) within 0.1%. Blocked on Docker install + accounts + demo incident. |
 | **Days to submission** | (fill in) |
 | **Biggest current risk** | **git and Docker not installed** (B-001/B-002) — blocks version control and DB-integration tests; MKLab request not submitted (B-003); demo incident not locked (B-004) |
 | **Next milestone** | Install Docker → run `bootstrapDatabase()` against real Mongo (verify `ais_positions` time-series + winding `$geoWithin` behaviour), then Phase 2 (auth, RBAC, investigations, jobs, realtime) |
@@ -200,8 +201,8 @@ Next: pick a specific documented Danish/US discharge incident with a confirmed s
 
 | ID | Blocker | Blocks | Owner | Raised | Needed by | Status |
 |---|---|---|---|---|---|---|
-| B-001 | **Git not installed** on the dev machine (`git` not on PATH). No version control yet. | All — no commits, no branches, CI can't run against a repo | DevOps | 2026-08-28 | immediately | ⛔ Install Git for Windows, then `git init` at `e:\SIH` and make the first commit. |
-| B-002 | **Docker Desktop not installed.** `docker` / `docker compose` unavailable. | Cold-start release criterion; local Mongo/Redis/MinIO/TiTiler; integration tests | DevOps | 2026-08-28 | before Phase 1 wiring (needs a running Mongo) | ⛔ Install Docker Desktop, then `docker compose up -d mongo redis minio`. |
+| B-001 | ~~Git not installed~~ | — | DevOps | 2026-08-28 | — | 🟢 RESOLVED — Git 2.55 installed via winget; repo pushed to https://github.com/Ganu0310/Varuna-AI (`main`, `ad7758a`). Git on this shell needs `$env:Path = "C:\Program Files\Git\cmd;$env:Path"` per session (installer ran after the shell started). |
+| B-002 | **Docker Desktop not installed.** `docker` / `docker compose` unavailable. | Cold-start release criterion; local Mongo/Redis/MinIO/TiTiler; integration tests; Phase 1 DB-verification | DevOps | 2026-08-28 | before Phase 2 wiring (needs a running Mongo) | ⛔ Install Docker Desktop, then `docker compose up -d mongo redis minio`. (`winget install Docker.DockerDesktop` — needs a reboot.) |
 | B-003 | MKLab/CERTH dataset request not yet submitted. | Phase 5 training | Data | 2026-08-28 | end of Week 2 | ⛔ Submit the request form (10 §10.2.1). |
 | B-004 | Demo incident not selected; S-1 + free-AIS coverage unverified. | Phases 4/7/8/13, `stage:demo` | Data | 2026-08-28 | end of Week 1 | ⛔ See §15.6. |
 
@@ -225,10 +226,16 @@ resolve an ambiguity in them. One entry per decision. Never edit past entries.
 | D-007 | 2026-08-28 | Heavy Python deps (torch, rasterio, GDAL, OpenDrift, xarray…) deliberately **not** in `services/ml/pyproject.toml` yet — only FastAPI + pydantic + (Phase 1) numpy/pyproj/shapely. | Keep the skeleton installable fast; add per phase. | `pyproject.toml` comments list which deps land in which phase. | — |
 | D-008 | 2026-08-28 | Geodesic **distance/length/area** on the Node side uses **`geographiclib-geodesic`** (Karney), not `@turf/distance`. Turf is kept only for topology (buffer, rewind, point-in-polygon, nearest-point-on-line). | 02_TRD §2.6.3 lists "Turf" for geodesic distance, but `@turf/distance` is spherical haversine (~0.5% off the WGS84 ellipsoid for 1°) — it could never agree with `pyproj.Geod` within the mandated 0.1%. GeographicLib is the same algorithm PROJ/pyproj use. | Cross-stack known-answer suite (`packages/shared/geo-known-answers.json`) passes < 0.1% on both stacks. Turf's spherical `area` is exposed as `approxPolygonAreaKm2` for the AOI size guard only. | refines 02_TRD §2.6.3 |
 | D-009 | 2026-08-28 | `provenanceGuard` **strips** objects with invalid provenance (→ `__provenanceMissing` marker) and logs severity-1, rather than throwing a 500 for the whole response. | 02_TRD TR-P3 says "strips and logs ... rather than emitting it"; the FE `<DataObject>` then renders the loud panel for just that object. A whole-response 500 is harsher than the spec's intent. | `X-Provenance-Stripped` header signals it happened; the ProvenanceError→500 path in `errorHandler` remains for cases where a guard elsewhere decides to throw. | — |
+| D-010 | 2026-08-28 | **Version control workflow:** commit straight to `main` (no PR flow for this solo hackathon repo). One commit per completed phase — message `feat: Phase N — <title>` — that also bumps CONTEXT.md. Push after every phase. Initial import was a single commit; phase-by-phase history starts at Phase 2. | User: "update the repo each time we complete a phase." | Clean, legible history aligned to IMPLEMENTATION_PLAN phases. See §15.13. | — |
 
 ---
 
 ## 15.9 Changelog (append-only, newest first)
+
+### 2026-08-28 — Repo live on GitHub
+- Installed Git 2.55 (winget). `git init` at `e:\SIH`, identity set local, `.gitattributes` added (LF normalisation).
+- Single initial commit `ad7758a` (144 files: docs 00–15, Phase 0 scaffold, Phase 1 spine). Pushed to `origin` = https://github.com/Ganu0310/Varuna-AI, `main`. Credential Manager auth OK.
+- Going forward: one commit + push per completed phase (D-010, §15.13).
 
 ### 2026-08-28 — Phase 1: data-plane spine (code-complete, DB-verify pending)
 - **Geodesy — the CI gate.** `packages/shared/geo-known-answers.json` is the cross-stack contract (values from GeographicLib/Karney). Node side (`apps/api/src/geo/geodesy.ts`) uses `geographiclib-geodesic`; Python side (`services/ml/varuna_ml/geo/geodesy.py`) uses `pyproj.Geod` — same algorithm. Both test suites assert the same references within 0.1% (equator quarter, 1° meridian arc, Wellington→Salamanca 19959679.27 m, 1°×1° cell 12308.78 km²). `envelope.ts` (Turf buffer + rewind), `trackGeometry.ts` (point-to-polygon-edge distance — the thing MongoDB can't do), `projections.py` (local LAEA for morphology). Installed: `@turf/turf`, `geographiclib-geodesic`, `pyproj`, `shapely`.
@@ -272,7 +279,8 @@ resolve an ambiguity in them. One entry per decision. Never edit past entries.
 | Q-003 | Hosted demo target (Fly.io / Render / Railway) or local-only for the presentation? | DevOps | Week 8 | — |
 | Q-004 | Do we run MongoDB Atlas M0 for a hosted showcase with a reduced AIS slice, or local-only? (11 A8 constraint) | BE | Week 8 | — |
 | Q-005 | SNAP in-container vs rely entirely on MPC RTC for preprocessing? (RTC removes the SNAP dependency from the critical path — 07 §7.2.4) | ML | Phase 4 | — |
-| Q-006 | Install Git for Windows + Docker Desktop on this machine, or develop on a different machine / WSL2? Blocks version control and the local datastore stack. | DevOps | immediately | — |
+| Q-006 | Install Git + Docker Desktop on this machine, or develop on a different machine / WSL2? | DevOps | immediately | **Git: done** (2.55 via winget). **Docker: still needed** — install Docker Desktop (`winget install Docker.DockerDesktop`, needs reboot) to run Mongo/Redis/MinIO for Phase 1 DB-verification + Phase 2. |
+| Q-007 | Demo incident: US-waters (NOAA Marine Cadastre, best free AIS) vs Danish (DMA) vs Ennore/Chennai (GFW only)? Marine Cadastre `/accessais/` is usable and is the highest-quality free source (§15.5). | Data | end of Week 1 | Leaning: build/validate on a **US-waters** incident (Marine Cadastre 1-min AIS), then also demo Ennore/Chennai for national relevance. Needs a specific documented US incident + `search-scenes.mjs` coverage check. |
 
 ---
 
@@ -286,9 +294,9 @@ resolve an ambiguity in them. One entry per decision. Never edit past entries.
 | R4 | Insufficient labelled training data | 🟠 watch | hinges on MKLab approval — see B-001 / §15.5 |
 | R5 | API quota exhaustion mid-demo | 🟡 open | `stage:demo` + quota tracking planned Phase 3/13 |
 | R6 | Attribution misused as proof of guilt | 🟡 open | tier labels + mandatory uncertainty + INSUFFICIENT_EVIDENCE planned Phase 9/12 |
-| R7 | MongoDB lacks polygon-distance functions | 🟡 open | Turf/Shapely compensation layer planned Phase 1 |
-| R8 | Data volume (1 GB scenes, 10⁷ AIS rows/mo) | 🟡 open | COG + time-series + partitions planned Phase 1/4/8 |
-| R9 | Timezone/CRS errors corrupting correlation | 🟡 open | known-answer geodesy CI gate planned Phase 1 |
+| R7 | MongoDB lacks polygon-distance functions | 🟢 mitigated | Compensation layer built: `apps/api/src/geo/{geodesy,envelope,trackGeometry}.ts` (GeographicLib + Turf) + `services/ml/varuna_ml/geo/`. Point-to-polygon-edge distance implemented; centroid shortcut avoided. |
+| R8 | Data volume (1 GB scenes, 10⁷ AIS rows/mo) | 🟡 open | `ais_positions` time-series bootstrap built (Phase 1); COG + partitions Phase 4/8 |
+| R9 | Timezone/CRS errors corrupting correlation | 🟢 mitigated | Known-answer geodesy suite is a CI gate; Node ↔ Python agree < 0.1%. UTC-with-`Z` enforced by `utcIso` brand + Zod. Winding validator rejects the "matches the globe" bug. |
 | R10 | Judges assume the demo is faked | 🟡 open | live provenance inspector planned Phase 10/13 |
 
 ---
@@ -305,3 +313,23 @@ resolve an ambiguity in them. One entry per decision. Never edit past entries.
 - [ ] PDF dossier opens to the Uncertainty + Provenance appendices
 - [ ] Offline-safe: demo does not depend on provider uptime / quota
 - [ ] All 15 docs current with the shipped build
+
+---
+
+## 15.13 Version control workflow
+
+**Repo:** https://github.com/Ganu0310/Varuna-AI · branch `main` · commit straight to `main` (no PR flow).
+
+**On this Windows dev box:** git was installed after the shell started, so each terminal
+session needs `$env:Path = "C:\Program Files\Git\cmd;$env:Path"` before `git` resolves.
+
+**Per phase** (D-010):
+
+1. Finish the phase; all gates green (`pnpm typecheck && pnpm test && pnpm lint && pnpm exec prettier --check . && node scripts/check-real-data-policy.mjs && node scripts/tokens-sync-check.mjs`, plus Python `pytest` where touched).
+2. Update this file: §15.3 status board, §15.9 changelog entry, §15.11 risks, any decisions/blockers.
+3. `git add -A`
+4. `git commit -m "feat: Phase N — <phase title>"` (body: what landed + test counts + what's still pending).
+5. `git push`
+
+Fix-ups between phases: `fix:` / `chore:` / `docs:` commits, pushed as made.
+Initial import = one commit (`ad7758a`); phase-by-phase history starts at Phase 2.
