@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
 from .config import get_settings
-from .routers import health, ingest
+from .routers import health, ingest, segment
 
 logging.basicConfig(level=get_settings().log_level.upper())
 log = logging.getLogger("varuna_ml")
@@ -20,6 +20,7 @@ app = FastAPI(
 
 app.include_router(health.router)
 app.include_router(ingest.router)
+app.include_router(segment.router)
 
 
 @app.get("/")
