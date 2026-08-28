@@ -1,0 +1,32 @@
+{
+  "name": "varuna",
+  "version": "0.1.0",
+  "private": true,
+  "description": "VARUNA — Vessel Attribution through Remote-sensing & Unified Navigational Analytics (SIH26143)",
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=20.11.0",
+    "pnpm": ">=9"
+  },
+  "scripts": {
+    "build": "pnpm -r --stream build",
+    "dev": "pnpm -r --parallel --stream dev",
+    "lint": "pnpm -r --stream lint",
+    "typecheck": "pnpm -r --stream typecheck",
+    "test": "pnpm -r --stream test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check:real-data": "node scripts/check-real-data-policy.mjs",
+    "check:tokens": "node scripts/tokens-sync-check.mjs",
+    "stage:demo": "tsx scripts/stage-demo.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.18.0",
+    "@types/node": "^22.10.5",
+    "eslint": "^9.18.0",
+    "prettier": "^3.4.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.20.0"
+  }
+}

@@ -1,0 +1,41 @@
+# VARUNA training dataset manifest — 07_AIML §7.4.5.
+#
+# The training pipeline runs `validate_manifest()` and REFUSES TO START if any entry is
+# incomplete or declares non-real content (13_REAL_DATA_POLICY §13.6 check 5).
+#
+# This is a SKELETON. Fill in `sha256` and `retrieved_at` once the MKLab/CERTH dataset
+# request is approved and the archive is downloaded (CONTEXT.md §15.5, Phase 5).
+
+dataset_manifest:
+  version: '2026.08.28-draft'
+  entries:
+    - id: mklab-certh-oil-spill-v1
+      provider: 'MKLab, CERTH'
+      citation: >
+        Krestenitis, M., Orfanidis, G., Ioannidis, K., Avgerinakis, K., Vrochidis, S.,
+        Kompatsiaris, I. (2019). Oil Spill Identification from Satellite Images Using Deep
+        Neural Networks. Remote Sensing, 11(15), 1762.
+      licence: 'Research use, attribution required'
+      access_url: 'https://mklab.iti.gr/results/oil-spill-detection-dataset/'
+      retrieved_at: 'PENDING_DOWNLOAD'
+      sha256: 'PENDING_DOWNLOAD'
+      real_data: true
+      synthetic_content: none
+      tiles: 1112
+      split: { train: 0.70, val: 0.15, test: 0.15 }
+      split_strategy: 'by scene and geography, never by random tile'
+
+  augmentation:
+    permitted:
+      - hflip
+      - vflip
+      - rot90
+      - random_crop
+      - brightness_jitter_10pct
+      - sensor_speckle
+    forbidden:
+      - gan_synthesis
+      - diffusion_synthesis
+      - pasted_slicks
+      - simulated_ais
+  assertion: 'no_synthetic_samples'

@@ -1,0 +1,61 @@
+@import './design/tokens.css';
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 22px;
+  color: var(--ink-primary);
+  background: var(--surface-0);
+  -webkit-font-smoothing: antialiased;
+  font-variant-numeric: tabular-nums;
+}
+
+.shell {
+  padding: var(--space-9);
+  max-width: 62ch;
+}
+
+.shell h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  color: var(--ink-secondary);
+}
+
+:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+/* Deliberately ugly — a broken layout beats an unsourced number (13_REAL_DATA_POLICY §13.4 L4). */
+.provenance-missing {
+  border: 2px dashed var(--status-danger);
+  background: color-mix(in srgb, var(--status-danger) 12%, var(--surface-1));
+  color: var(--status-danger);
+  padding: var(--space-4);
+  border-radius: var(--r-sm);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.provenance-missing strong {
+  display: block;
+  letter-spacing: 0.08em;
+  margin-bottom: var(--space-2);
+}

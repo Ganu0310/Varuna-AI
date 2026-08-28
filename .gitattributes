@@ -1,0 +1,28 @@
+# Normalise line endings — the repo is developed on Windows and Linux CI.
+* text=auto eol=lf
+
+*.ps1   text eol=crlf
+*.bat   text eol=crlf
+*.sh    text eol=lf
+
+# Binary / generated — never diff or normalise
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.avif  binary
+*.ico   binary
+*.pdf   binary
+*.tif   binary
+*.tiff  binary
+*.nc    binary
+*.parquet binary
+*.pt    binary
+*.pth   binary
+*.onnx  binary
+*.ktx2  binary
+*.woff  binary
+*.woff2 binary
+
+pnpm-lock.yaml -diff linguist-generated

@@ -1,0 +1,25 @@
+# gitleaks configuration — KEY-7 (11_API_KEYS §11.9). Runs in CI and as a pre-commit hook.
+title = "VARUNA gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Non-secret placeholders and documentation"
+paths = [
+  '''\.env\.example''',
+  '''(^|/)docs/''',
+  '''^\d\d_.*\.md$''',
+  '''IMPLEMENTATION_PLAN\.md''',
+  '''CONTEXT\.md''',
+  '''README\.md''',
+]
+regexTarget = "match"
+regexes = [
+  '''REPLACE_ME''',
+  '''REPLACE_ME_WITH_A_.*''',
+  '''minioadmin''',
+  '''dev-service-token''',
+  '''test-access-secret-that-is-long-enough-000000''',
+  '''test-refresh-secret-that-is-long-enough-00000''',
+]

@@ -1,0 +1,14 @@
+{
+  "sourceType": "VESSEL_REGISTRY",
+  "provider": "ITU Maritime Identification Digits (community machine-readable mirror: github.com/michaeljfazio/MIDs)",
+  "datasetId": "ITU-MID-TABLE",
+  "externalId": "michaeljfazio/MIDs@master mids.json",
+  "retrievedAt": "2026-08-28T09:00:00Z",
+  "licence": "ITU MID assignments are public reference information. This JSON is a third-party mirror; its own licence is unconfirmed. RE-VERIFY against the authoritative ITU source before submission (10_DATASETS_and_Sources.md §10.7 verification note).",
+  "accessUrl": "https://raw.githubusercontent.com/michaeljfazio/MIDs/master/mids.json",
+  "checksum": "sha256:94d4be029c1174af41b56426f9310155cf52d2ff331dd98ab0d19dd0c65ff58c",
+  "derivedFrom": [],
+  "note": "Authoritative source: https://www.itu.int/en/ITU-R/terrestrial/fmd/Pages/mid.aspx (HTML, not machine-readable). Used for MMSI country-prefix validation (01_PRD FR-4.3, MMSI_INVALID quality flag). Format: { \"<MID>\": [\"<ISO2>\", \"<ISO3>\", \"<subdivision>\", \"<country name>\"] }. 292 entries, MID range 201-775.",
+  "vendored": true,
+  "runtimeFetch": false
+}

@@ -1,0 +1,52 @@
+# ── dependencies ──────────────────────────────────────────────────────
+node_modules/
+.pnpm-store/
+**/__pycache__/
+.venv/
+venv/
+*.egg-info/
+
+# ── build output ──────────────────────────────────────────────────────
+dist/
+build/
+*.tsbuildinfo
+apps/web/dist/
+coverage/
+.vitest/
+playwright-report/
+test-results/
+
+# ── secrets & local config ────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# ── data blobs (real data, cached locally — never committed) ───────────
+data/raw/
+data/processed/
+data/models/
+data/**/*.nc
+data/**/*.tif
+data/**/*.parquet
+data/**/*.csv
+data/**/*.zip
+!data/manifests/
+!data/**/.gitkeep
+
+# ── ML / experiment tracking ──────────────────────────────────────────
+mlruns/
+mlartifacts/
+*.pt
+*.pth
+*.onnx
+lightning_logs/
+
+# ── editor / OS ───────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.shared.json
+*.log

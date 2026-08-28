@@ -1,0 +1,15 @@
+**/node_modules
+**/dist
+**/build
+**/coverage
+**/.venv
+**/__pycache__
+**/*.tsbuildinfo
+.git
+.github
+data/raw
+data/processed
+data/models
+mlruns
+*.log
+.env

@@ -1,0 +1,52 @@
+{
+  "$comment": "Cross-stack geodesy known-answer contract — 02_TRD §2.6.4 / §2.15. Reference values derived from GeographicLib (Karney's algorithm). pyproj.Geod uses the SAME algorithm via PROJ, and geographiclib-geodesic (npm) is Karney's official JS port, so the Node and Python stacks must reproduce these within 0.1%. Coordinates are [longitude, latitude]. Do not edit a value without re-deriving it and citing the source.",
+  "geodesicInverse": [
+    {
+      "name": "equator_quarter",
+      "from": [0, 0],
+      "to": [90, 0],
+      "expectedMetres": 10018754.1714,
+      "tolMetres": 1.0,
+      "note": "a*pi/2; the equator is a geodesic. a = 6378137 m (WGS84)."
+    },
+    {
+      "name": "one_degree_latitude_from_equator",
+      "from": [0, 0],
+      "to": [0, 1],
+      "expectedMetres": 110574.3886,
+      "tolMetres": 1.0,
+      "note": "Meridian arc equator -> 1 deg N, WGS84."
+    },
+    {
+      "name": "wellington_to_salamanca",
+      "from": [174.81, -41.32],
+      "to": [-5.5, 40.96],
+      "expectedMetres": 19959679.2674,
+      "tolMetres": 3.0,
+      "note": "GeographicLib documentation reference example."
+    },
+    {
+      "name": "london_to_new_york",
+      "from": [-0.1278, 51.5074],
+      "to": [-74.006, 40.7128],
+      "expectedMetres": 5585233.579,
+      "tolMetres": 50.0,
+      "note": "City-centre coordinates."
+    }
+  ],
+  "polygonAreaGeodesic": [
+    {
+      "name": "one_by_one_degree_cell_at_equator",
+      "ringLonLat": [
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 1],
+        [0, 0]
+      ],
+      "expectedSquareMetres": 12308778361.47,
+      "tolSquareMetres": 2000.0,
+      "note": "~12308.78 km^2. Matches 02_TRD §2.6.4 'area of a 1x1 deg cell at the equator ~ 12,308 km^2'."
+    }
+  ]
+}

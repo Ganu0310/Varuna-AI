@@ -1,0 +1,147 @@
+/**
+ * VARUNA design tokens — 04_UIUX_Design_System §4.2–§4.5.
+ *
+ * These CSS custom properties are the single source of colour/spacing/motion. A typed
+ * mirror lives in tokens.ts for deck.gl and Three.js (which cannot read CSS variables); a
+ * CI check asserts the two stay in sync (04_UIUX §4.13). Do not hardcode a colour anywhere.
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+:root {
+  --font-display: 'Space Grotesk', 'IBM Plex Sans', system-ui, sans-serif;
+  --font-ui: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* ---- surface ramp (dark, default) ---- */
+  --surface-0: #05080d;
+  --surface-1: #0a0f16;
+  --surface-2: #101823;
+  --surface-3: #17212e;
+  --surface-4: #1f2c3c;
+  --surface-inset: #04070b;
+
+  /* ---- borders / dividers ---- */
+  --border-subtle: #1a2431;
+  --border-default: #243243;
+  --border-strong: #34465c;
+  --border-focus: #45e0e6;
+
+  /* ---- ink ---- */
+  --ink-primary: #e8eff7;
+  --ink-secondary: #9fb2c6;
+  --ink-tertiary: #6b7f94;
+  --ink-disabled: #47586b;
+  --ink-inverse: #05080d;
+
+  /* ---- brand / interactive: sonar cyan ---- */
+  --accent-50: #e6fcfd;
+  --accent-200: #9df0f4;
+  --accent-400: #45e0e6;
+  --accent-500: #22c9d1;
+  --accent-600: #14a2ac;
+  --accent-700: #0c7a84;
+  --accent-900: #063e45;
+
+  /* ---- semantic: oil / detection (navigation amber) ---- */
+  --oil-400: #ffc163;
+  --oil-500: #f0a73c;
+  --oil-600: #c9821f;
+  --oil-glow: rgba(240, 167, 60, 0.28);
+
+  /* ---- semantic: origin probability (violet, sequential) ---- */
+  --origin-100: #2a1d46;
+  --origin-300: #5b3fa0;
+  --origin-500: #8b63e8;
+  --origin-700: #b99bff;
+
+  /* ---- status ---- */
+  --status-ok: #3ed598;
+  --status-warn: #f5b944;
+  --status-danger: #f2564b;
+  --status-info: #22c9d1;
+  --status-neutral: #6b7f94;
+
+  /* ---- confidence tiers (also always labelled) ---- */
+  --tier-strong: #f2564b;
+  --tier-moderate: #f0a73c;
+  --tier-weak: #4fa3d1;
+  --tier-insufficient: #6b7f94;
+
+  /* ---- AIS track categorical ramp (colour-blind safe, 8 hues) ---- */
+  --track-1: #45e0e6;
+  --track-2: #ffb454;
+  --track-3: #7fd97f;
+  --track-4: #e389d8;
+  --track-5: #7ea6ff;
+  --track-6: #f2a0a0;
+  --track-7: #c9b458;
+  --track-8: #9fb2c6;
+
+  /* ---- elevation ---- */
+  --elev-1: 0 1px 2px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  --elev-2: 0 4px 12px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --elev-3: 0 12px 32px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --elev-glow-accent: 0 0 0 1px var(--accent-700), 0 0 24px rgba(34, 201, 209, 0.18);
+
+  /* ---- radii (deliberately tight — reads as "instrument") ---- */
+  --r-xs: 3px;
+  --r-sm: 5px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-full: 999px;
+
+  /* ---- spacing scale (4px base) ---- */
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 8px;
+  --space-4: 12px;
+  --space-5: 16px;
+  --space-6: 20px;
+  --space-7: 24px;
+  --space-8: 32px;
+  --space-9: 40px;
+  --space-10: 48px;
+  --space-11: 64px;
+  --space-12: 80px;
+
+  /* ---- motion ---- */
+  --dur-instant: 80ms;
+  --dur-fast: 140ms;
+  --dur-base: 220ms;
+  --dur-slow: 380ms;
+  --dur-deliberate: 620ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --ease-emphasis: cubic-bezier(0.2, 0, 0, 1.12);
+}
+
+/* Light theme — for the report and printing only. Tokens redefined; no component hardcodes a colour. */
+:root[data-theme='light'] {
+  --surface-0: #f7f9fb;
+  --surface-1: #ffffff;
+  --surface-2: #f1f5f9;
+  --surface-3: #ffffff;
+  --surface-4: #e6edf3;
+  --surface-inset: #edf2f7;
+  --border-subtle: #e2e8f0;
+  --border-default: #cbd5e1;
+  --border-strong: #94a3b8;
+  --ink-primary: #0b1622;
+  --ink-secondary: #3e5265;
+  --ink-tertiary: #64748b;
+  --ink-inverse: #ffffff;
+  --accent-500: #0e8a93;
+  --accent-400: #14a2ac;
+  --oil-500: #b9761a;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-instant: 0ms;
+    --dur-fast: 0ms;
+    --dur-base: 0ms;
+    --dur-slow: 0ms;
+    --dur-deliberate: 0ms;
+  }
+}
