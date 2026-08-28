@@ -93,7 +93,8 @@ services:
       AWS_SECRET_ACCESS_KEY: minioadmin
       AWS_S3_ENDPOINT: http://minio:9000
       AWS_VIRTUAL_HOSTING: 'FALSE'
-    ports: ['8001:8000']
+    # the official titiler image serves on port 80 inside the container, not 8000
+    ports: ['8001:80']
     depends_on:
       minio:
         condition: service_healthy
