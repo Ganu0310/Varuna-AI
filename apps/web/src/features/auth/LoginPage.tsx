@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useLogin } from '../../api/hooks.ts';
+import { AuthShell } from './AuthShell.tsx';
 import { ApiError } from '../../api/client.ts';
 
 /** `/login` — 05_FRONTEND §5.5.1. Labels are always visible, never placeholder-as-label. */
@@ -21,10 +22,11 @@ export function LoginPage() {
   const problem = login.error instanceof ApiError ? login.error.problem : null;
 
   return (
-    <main className="auth-shell">
+    <AuthShell>
       <form className="auth-card" onSubmit={onSubmit} noValidate>
-        <h1>Sign in</h1>
-        <p className="auth-sub">VARUNA — maritime spill attribution</p>
+        {/* h2, not h1: the page's h1 is the VARUNA wordmark in the shell. Two h1s give a
+            screen-reader user two competing page titles. */}
+        <h2 className="auth-heading">Sign in</h2>
 
         <label htmlFor="email">Email</label>
         <input
@@ -63,6 +65,6 @@ export function LoginPage() {
           No account? <Link to="/register">Create one</Link>
         </p>
       </form>
-    </main>
+    </AuthShell>
   );
 }

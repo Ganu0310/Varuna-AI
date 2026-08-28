@@ -5,6 +5,7 @@ import type { Layer } from '@deck.gl/core';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useMapStore, timeChannel, useTimeStore } from '../state/stores.ts';
 import { DARK_STYLE } from './style.ts';
+import { graticuleFor, chooseStep } from './graticule.ts';
 
 /**
  * The single MapLibre instance — 05_FRONTEND §5.4.1, 12 F-23.
@@ -57,7 +58,30 @@ export function MapRoot({ layers, children }: Props) {
     const o = new MapboxOverlay({ interleaved: true, layers: [] });
     m.addControl(o as unknown as maplibregl.IControl);
 
-    m.on('load', () => setReady(true));
+    /**
+     * Redraw the graticule for whatever is on screen.
+     *
+     * Runs on `move`, not only `moveend`, so the grid stays put under the cursor during a
+     * drag instead of snapping into place when the gesture finishes.
+     */
+    const redrawGraticule = () => {
+      const b = m.getBounds();
+      const bounds = {
+        west: b.getWest(),
+        south: b.getSouth(),
+        east: b.getEast(),
+        north: b.getNorth(),
+      };
+      const step = chooseStep(Math.max(bounds.east - bounds.west, bounds.north - bounds.south));
+      const src = m.getSource('graticule') as maplibregl.GeoJSONSource | undefined;
+      src?.setData(graticuleFor(bounds, step));
+    };
+
+    m.on('load', () => {
+      redrawGraticule();
+      setReady(true);
+    });
+    m.on('move', redrawGraticule);
     m.on('moveend', () => {
       const c = m.getCenter();
       useMapStore.getState().setView({
@@ -83,6 +107,9 @@ export function MapRoot({ layers, children }: Props) {
 
     map.current = m;
     overlay.current = o;
+    // Dev-only handle so the map can be inspected from a browser harness or the console.
+    // Guarded on DEV so it is absent from a production bundle.
+    if (import.meta.env.DEV) (window as unknown as { __varunaMap?: unknown }).__varunaMap = m;
 
     return () => {
       // Only on real teardown (app unmount), never on navigation.

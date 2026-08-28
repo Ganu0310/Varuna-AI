@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useRegister } from '../../api/hooks.ts';
+import { AuthShell } from './AuthShell.tsx';
 import { ApiError } from '../../api/client.ts';
 
 /** `/register` — 05_FRONTEND §5.5.1. */
@@ -23,10 +24,9 @@ export function RegisterPage() {
   const fieldErrors = err?.fieldErrors ?? {};
 
   return (
-    <main className="auth-shell">
+    <AuthShell>
       <form className="auth-card" onSubmit={onSubmit} noValidate>
-        <h1>Create an account</h1>
-        <p className="auth-sub">New accounts are created with the analyst role.</p>
+        <h2 className="auth-heading">Create an account</h2>
 
         <label htmlFor="name">Name</label>
         <input
@@ -87,6 +87,6 @@ export function RegisterPage() {
           Already have an account? <Link to="/login">Sign in</Link>
         </p>
       </form>
-    </main>
+    </AuthShell>
   );
 }

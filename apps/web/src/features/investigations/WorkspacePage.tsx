@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { useInvestigation, useScenes, useDetections, type Detection } from '../../api/hooks.ts';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client.ts';
@@ -43,7 +43,7 @@ export function WorkspacePage() {
   const { id } = useParams<{ id: string }>();
   const [tab, setTab] = useState<Tab>('scenes');
 
-  const { data: inv, isLoading } = useInvestigation(id);
+  const { data: inv, isLoading, isError, error } = useInvestigation(id);
   const scenes = useScenes(id);
   const detections = useDetections(id);
   const addLayer = useLayerStore((s) => s.addLayer);
@@ -176,10 +176,41 @@ export function WorkspacePage() {
     [inv, detections.data, tracks.data, highlightMmsi, hoveredMmsi, layerVisible],
   );
 
-  if (isLoading || !inv) {
+  if (isLoading) {
     return (
       <main className="page">
         <p className="muted">Loading…</p>
+      </main>
+    );
+  }
+
+  // A failed request must NOT render as a loading state. The previous branch was
+  // `isLoading || !inv`, so an error — react-query sets `isLoading` false and leaves `data`
+  // undefined — showed "Loading…" forever. The user waits on a request that already failed,
+  // and the most common cause is the one they most need told: they do not have access to
+  // this investigation.
+  if (isError || !inv) {
+    const status = (error as { status?: number } | null)?.status;
+    const problem = (error as { problem?: { title?: string; detail?: string } } | null)?.problem;
+    return (
+      <main className="page">
+        <h1>Investigation unavailable</h1>
+        <p className="muted">
+          {status === 403
+            ? 'You do not have access to this investigation. Ask its lead to add you.'
+            : status === 404
+              ? 'No investigation with this ID exists, or it has been deleted.'
+              : (problem?.detail ??
+                problem?.title ??
+                'The investigation could not be loaded. The API may be unreachable.')}
+        </p>
+        <p className="muted mono">
+          {id}
+          {status ? ` · HTTP ${status}` : ''}
+        </p>
+        <p>
+          <Link to="/investigations">← Back to investigations</Link>
+        </p>
       </main>
     );
   }

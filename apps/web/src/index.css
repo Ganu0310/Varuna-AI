@@ -74,7 +74,12 @@ h2 {
 
 .page {
   padding: var(--space-8);
+  /* 1100px suits prose. A page whose content is a data table wants the width instead —
+     at 1100 on a 1600 screen the cells wrapped while half the viewport sat empty. */
   max-width: 1100px;
+}
+.page-wide {
+  max-width: 1600px;
 }
 .page-head {
   display: flex;
@@ -91,9 +96,81 @@ h2 {
 /* ── auth ──────────────────────────────────────────────────────────── */
 .auth-shell {
   display: grid;
-  place-items: center;
+  /* Two columns on a desktop, stacking below it. The brand side is fixed-ish so the form
+     never drifts to an awkward width on a very wide screen. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   min-height: 100vh;
-  padding: var(--space-6);
+}
+.auth-brand {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: var(--space-5);
+  padding: var(--space-12) var(--space-10);
+  background:
+    radial-gradient(120% 80% at 15% 20%, rgba(34, 201, 209, 0.09), transparent 60%),
+    var(--surface-1);
+  border-right: 1px solid var(--border-subtle);
+}
+.auth-eyebrow {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--accent-600);
+}
+.auth-wordmark {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(40px, 5vw, 64px);
+  letter-spacing: 0.14em;
+  color: var(--ink-primary);
+}
+.auth-tagline {
+  margin: 0;
+  max-width: 34ch;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--ink-secondary);
+}
+.auth-principles {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  margin: var(--space-5) 0 0;
+  max-width: 46ch;
+}
+.auth-principles dt {
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  color: var(--accent-400);
+  margin-bottom: var(--space-2);
+}
+.auth-principles dd {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink-tertiary);
+}
+.auth-form-side {
+  display: grid;
+  place-items: center;
+  padding: var(--space-8);
+}
+
+@media (max-width: 900px) {
+  .auth-shell {
+    grid-template-columns: 1fr;
+  }
+  .auth-brand {
+    border-right: none;
+    border-bottom: 1px solid var(--border-subtle);
+    padding: var(--space-9) var(--space-6);
+  }
+  /* On a phone the principles are below the fold anyway and push the form off-screen. */
+  .auth-principles {
+    display: none;
+  }
 }
 .auth-card {
   width: min(400px, 100%);
@@ -104,6 +181,10 @@ h2 {
   box-shadow: var(--elev-2);
   display: flex;
   flex-direction: column;
+}
+.auth-heading {
+  font-size: 24px;
+  margin: 0 0 var(--space-5);
 }
 .auth-sub,
 .auth-alt {
@@ -275,7 +356,9 @@ button:disabled {
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
-  align-items: flex-start;
+  /* `flex-start` sized each card to its own content, so a card holding a narrow table sat
+     visibly narrower than the one above it. Cards in a stack share an edge. */
+  align-items: stretch;
 }
 
 .provider-strip {
@@ -544,7 +627,12 @@ button:disabled {
 /* ── workspace (Phase 10) ──────────────────────────────────────────── */
 .workspace {
   display: grid;
-  grid-template-columns: 260px 1fr 420px;
+  /*
+   * The right panel holds evidence tables that were overflowing their card and wrapping
+   * badly at 420px. `clamp` lets it take real width on a laptop screen without starving the
+   * map on a smaller one.
+   */
+  grid-template-columns: 260px 1fr clamp(420px, 30vw, 560px);
   height: calc(100vh - 56px);
   overflow: hidden;
 }
@@ -603,10 +691,23 @@ button:disabled {
   position: relative;
   min-width: 0;
 }
-.map-root,
-.map-canvas {
+.map-root {
   position: absolute;
   inset: 0;
+}
+
+/*
+ * Explicit dimensions rather than `position: absolute; inset: 0`.
+ *
+ * MapLibre's own stylesheet sets `.maplibregl-map { position: relative }` on the container it
+ * mounts into, and it loads after this file. That overrode our `position: absolute`, at which
+ * point `inset: 0` no longer sized the element and its height collapsed to zero — MapLibre
+ * then fell back to a default 300px canvas inside a 944px slot, so the map appeared blank.
+ * Sizing with width/height survives whatever `position` MapLibre applies.
+ */
+.map-canvas {
+  width: 100%;
+  height: 100%;
 }
 .ws-scrubber {
   position: absolute;
@@ -1050,4 +1151,168 @@ button:disabled {
   tr {
     break-inside: avoid;
   }
+}
+
+/* ── scene records (workspace panel) ──────────────────────────────────────
+   A side panel is too narrow for a wide table whose cells include an
+   untruncatable identifier. These render one scene per card instead, so the
+   product ID gets a full-width line and nothing is elided. */
+.record-list {
+  list-style: none;
+  margin: var(--space-5) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.record {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  padding: var(--space-4);
+}
+.record-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+.record-title {
+  font-size: 13px;
+  color: var(--ink-primary);
+}
+.record-grid {
+  display: grid;
+  grid-template-columns: auto 1fr auto 1fr;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  font-size: 12px;
+  align-items: baseline;
+}
+.record-grid dt {
+  color: var(--ink-tertiary);
+  white-space: nowrap;
+}
+.record-grid dd {
+  margin: 0;
+  color: var(--ink-secondary);
+}
+/* The product ID is the string an evaluator uses to retrieve the same acquisition
+   (13_REAL_DATA_POLICY §13.9), so it wraps rather than truncating — but it wraps at
+   arbitrary characters, which is only safe because it now has the full card width. */
+.record-id {
+  margin: var(--space-3) 0 0;
+  padding-top: var(--space-3);
+  border-top: 1px dashed var(--border-subtle);
+  font-size: 11px;
+  color: var(--ink-tertiary);
+  word-break: break-all;
+  line-height: 1.5;
+}
+
+/* ── panel table density ──────────────────────────────────────────────────
+   A wide table in a narrow panel must scroll rather than force its container to
+   overflow: a cell pushed outside the card is simply unreadable, and the reader
+   gets no indication anything is missing. */
+.table-scroll {
+  overflow-x: auto;
+  margin-top: var(--space-5);
+}
+.ws-panel .data-table {
+  font-size: 12px;
+}
+.ws-panel .data-table th,
+.ws-panel .data-table td {
+  padding: var(--space-3) var(--space-2);
+  vertical-align: top;
+}
+/* The tier label carries meaning and is never shortened — it is one of the four
+   redundant channels the assessment is encoded in — so it wraps inside its badge
+   instead of stretching the column. */
+.candidate-table .token {
+  white-space: normal;
+  line-height: 1.3;
+  text-align: left;
+}
+.candidate-table .score-ci {
+  display: block;
+  font-size: 11px;
+  color: var(--ink-tertiary);
+  /* The interval is a single quantity. Allowing "[72–" and "81]" onto separate lines makes
+     it read as two numbers, which is exactly the misreading the interval exists to prevent. */
+  white-space: nowrap;
+}
+/* Enough room for "100.0" plus its interval without the column collapsing. */
+.candidate-table th:nth-child(3),
+.candidate-table td:nth-child(3) {
+  min-width: 68px;
+}
+
+/* ── form controls ────────────────────────────────────────────────────────
+   Checkboxes and range inputs were rendering in the browser's default blue,
+   which in a dark instrument panel reads as an unstyled control rather than a
+   deliberate one. */
+input[type='checkbox'] {
+  accent-color: var(--accent-500);
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+input[type='range'] {
+  accent-color: var(--accent-500);
+  height: 3px;
+  cursor: pointer;
+}
+
+/* The map attribution sat on top of the time scrubber, so neither was fully
+   legible. The scrubber is a control; it wins the space. */
+.maplibregl-ctrl-bottom-right {
+  bottom: var(--space-3);
+}
+.ws-scrubber {
+  z-index: 2;
+}
+
+/* ── list tables ──────────────────────────────────────────────────────────
+   Quantities and timestamps are single tokens. Wrapping "2026-08-28 18:57:48 Z"
+   across two lines makes one value look like two, and a wrapped "1,438 km²"
+   separates a number from its unit. */
+.list-table td.nowrap,
+.list-table th.nowrap {
+  white-space: nowrap;
+}
+.list-table .num {
+  text-align: right;
+}
+
+/* ── panel table legibility ───────────────────────────────────────────────
+   A quantity and its unit are one token: "1.2" on one line and "km²" on the
+   next reads as two separate values. */
+.ws-panel .data-table td.num {
+  white-space: nowrap;
+}
+/* Enough width that "Look-alike risk" wraps to two lines rather than three,
+   which was driving the whole header row to 83px. */
+.ws-panel .data-table th {
+  min-width: 4.5rem;
+}
+
+/* The MapLibre scale control inherits a white pill background that reads as a
+   rendering artefact against a dark instrument panel. */
+.maplibregl-ctrl-scale {
+  background: rgba(10, 15, 22, 0.72);
+  border-color: var(--border-default);
+  color: var(--ink-secondary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  border-radius: var(--r-xs);
+}
+.maplibregl-ctrl-attrib {
+  background: rgba(10, 15, 22, 0.72) !important;
+  color: var(--ink-tertiary);
+  font-size: 10px;
+}
+.maplibregl-ctrl-attrib a {
+  color: var(--ink-tertiary);
 }

@@ -31,38 +31,39 @@ export function DetectionsPanel({ investigationId }: { investigationId: string }
             ingest it by product ID.
           </p>
         ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Acquired (UTC)</th>
-                <th>Platform</th>
-                <th>Pol.</th>
-                <th>CRS</th>
-                <th>Preprocessing</th>
-                <th>Source</th>
-              </tr>
-            </thead>
-            <tbody>
-              {scenes.data!.items.map((s) => (
-                <tr key={s._id}>
-                  <td className="mono">{formatUtc(s.acquiredAt)}</td>
-                  <td>{s.platform}</td>
-                  <td className="mono">{s.polarisations.join('+')}</td>
-                  <td className="mono">{s.crs}</td>
-                  <td>
-                    <span className="token">{s.processing?.preprocessing ?? '—'}</span>
-                  </td>
-                  {/* The provider and product id are shown so a reader can find the same
-                      acquisition themselves (13_REAL_DATA_POLICY §13.9). */}
-                  <td className="mono src-cell" title={s.provenance.externalId}>
-                    {s.provenance.provider}
-                    <br />
-                    <span className="muted">{s.provenance.externalId}</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          /*
+           * Stacked records, not a table. Six columns plus an untruncated product ID do not
+           * fit a 480px side panel: the ID has no break opportunities, so in a ~54px column
+           * the browser wrapped it one character per line and made a single row 457px tall.
+           *
+           * Truncating it is not the fix — 13_REAL_DATA_POLICY §13.9 requires the product ID
+           * be shown in full, because it is the string an evaluator uses to pull the same
+           * acquisition themselves. So the layout gives it a full-width line of its own.
+           */
+          <ul className="record-list">
+            {scenes.data!.items.map((s) => (
+              <li key={s._id} className="record">
+                <div className="record-head">
+                  <span className="mono record-title">{formatUtc(s.acquiredAt)}</span>
+                  <span className="token">{s.processing?.preprocessing ?? '—'}</span>
+                </div>
+                <dl className="record-grid">
+                  <dt>Platform</dt>
+                  <dd>{s.platform}</dd>
+                  <dt>Pol.</dt>
+                  <dd className="mono">{s.polarisations.join('+')}</dd>
+                  <dt>CRS</dt>
+                  <dd className="mono">{s.crs}</dd>
+                  <dt>Provider</dt>
+                  <dd>{s.provenance.provider}</dd>
+                </dl>
+                {/* Full width, wrapping on its own line, never elided. */}
+                <p className="record-id mono" title={s.provenance.externalId}>
+                  {s.provenance.externalId}
+                </p>
+              </li>
+            ))}
+          </ul>
         )}
 
         <label htmlFor="pid">Ingest a scene by product ID</label>

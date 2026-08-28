@@ -12,7 +12,7 @@ export function InvestigationListPage() {
 
   if (isLoading) {
     return (
-      <main className="page">
+      <main className="page page-wide">
         <h1>Investigations</h1>
         <p className="muted">Loading…</p>
       </main>
@@ -21,7 +21,7 @@ export function InvestigationListPage() {
 
   if (isError) {
     return (
-      <main className="page">
+      <main className="page page-wide">
         <h1>Investigations</h1>
         {/* Errors state the cause and the next action (04_UIUX §4.11). */}
         <div className="panel-error" role="alert">
@@ -36,7 +36,7 @@ export function InvestigationListPage() {
   const items = data?.items ?? [];
 
   return (
-    <main className="page">
+    <main className="page page-wide">
       <header className="page-head">
         <h1>Investigations</h1>
         <Link className="btn-primary" to="/investigations/new">
@@ -57,14 +57,14 @@ export function InvestigationListPage() {
           </Link>
         </div>
       ) : (
-        <table className="data-table">
+        <table className="data-table list-table">
           <thead>
             <tr>
               <th>Name</th>
               <th>Status</th>
-              <th className="num">AOI</th>
+              <th className="num nowrap">AOI</th>
               <th>Window (UTC)</th>
-              <th>Updated</th>
+              <th className="nowrap">Updated</th>
             </tr>
           </thead>
           <tbody>
@@ -79,11 +79,11 @@ export function InvestigationListPage() {
                 <td>
                   <span className="token">{inv.status}</span>
                 </td>
-                <td className="num mono">{formatAreaKm2(inv.aoiAreaKm2)}</td>
-                <td className="mono">
+                <td className="num mono nowrap">{formatAreaKm2(inv.aoiAreaKm2)}</td>
+                <td className="mono nowrap">
                   {formatUtc(inv.windowStart)} → {formatUtc(inv.windowEnd)}
                 </td>
-                <td className="mono">{formatUtc(inv.updatedAt)}</td>
+                <td className="mono nowrap">{formatUtc(inv.updatedAt)}</td>
               </tr>
             ))}
           </tbody>

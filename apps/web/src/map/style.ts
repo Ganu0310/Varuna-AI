@@ -1,24 +1,36 @@
 import type { StyleSpecification } from 'maplibre-gl';
+import type { FeatureCollection } from 'geojson';
 
+const EMPTY: FeatureCollection = { type: 'FeatureCollection', features: [] };
 /**
- * A minimal dark basemap defined inline — 03_ARCHITECTURE ADR, 02_TRD TR-7.
- *
- * No tile-provider token, no third-party request. That matters for two reasons beyond
- * convenience: the client must never hold a credential, and a demo must not fail because a
- * map vendor is unreachable. The ocean is a flat token colour and the data layers carry the
- * information — for a SAR analysis surface, a decorative basemap would compete with the
- * imagery rather than help read it.
+ * `glyphs` is OMITTED, not set to `undefined`. MapLibre validates the style on load and
+ * rejects an explicit `undefined` with "glyphs: string expected, undefined found", which
+ * aborts the whole style — the map then renders nothing at all. The key may simply be absent,
+ * and it is safe to omit here because no layer below uses `text-field`; deck.gl draws its own
+ * labels and does not need a glyph endpoint.
  */
 export const DARK_STYLE: StyleSpecification = {
   version: 8,
   name: 'VARUNA dark',
-  glyphs: undefined,
-  sources: {},
+  sources: {
+    // Populated by MapRoot on every camera move — see `graticule.ts` for why the spacing
+    // cannot be fixed at build time.
+    graticule: { type: 'geojson', data: EMPTY },
+  },
   layers: [
     {
       id: 'background',
       type: 'background',
       paint: { 'background-color': '#05080d' },
+    },
+    // A graticule, generated locally. Without it the ocean is an unbroken black rectangle
+    // that reads as a failed render rather than as open water, and an analyst has no sense of
+    // scale or orientation until a data layer happens to be in view.
+    {
+      id: 'graticule',
+      type: 'line',
+      source: 'graticule',
+      paint: { 'line-color': '#1c2836', 'line-width': 1 },
     },
   ],
 };

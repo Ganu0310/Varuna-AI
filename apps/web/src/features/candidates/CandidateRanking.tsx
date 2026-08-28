@@ -103,58 +103,62 @@ export function CandidateRanking({ investigationId }: { investigationId: string 
           </p>
         </div>
       ) : (
-        <table className="data-table candidate-table">
-          <thead>
-            <tr>
-              <th className="num">#</th>
-              <th>MMSI</th>
-              <th className="num">Score</th>
-              <th>Assessment</th>
-              <th className="num">Features</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((c) => (
-              <tr
-                key={c._id}
-                className={openId === c._id ? 'row-open' : ''}
-                onMouseEnter={() => hover({ kind: 'vessel', mmsi: c.mmsi })}
-                onMouseLeave={() => hover({ kind: 'none' })}
-              >
-                <td className="num mono">{c.rank}</td>
-                <td className="mono">{c.mmsi}</td>
-                <td className="num mono">
-                  {c.score.toFixed(1)}
-                  {/* Uncertainty travels with the number, always. */}
-                  <span className="muted">
-                    {' '}
-                    [{c.scoreCI[0].toFixed(0)}–{c.scoreCI[1].toFixed(0)}]
-                  </span>
-                </td>
-                <td>
-                  {/* Four channels: position, label text, interval, and colour last. */}
-                  <span className={`token tier-${c.tier.toLowerCase()}`}>{TIER_TEXT[c.tier]}</span>
-                </td>
-                <td className="num mono">{c.measuredFeatureCount}/12</td>
-                <td>
-                  <button
-                    className="btn-ghost"
-                    onClick={() => {
-                      const next = openId === c._id ? null : c._id;
-                      setOpenId(next);
-                      if (next) {
-                        select({ kind: 'candidate', id: c._id, mmsi: c.mmsi });
-                      }
-                    }}
-                  >
-                    {openId === c._id ? 'Hide evidence' : 'Evidence'}
-                  </button>
-                </td>
+        <div className="table-scroll">
+          <table className="data-table candidate-table">
+            <thead>
+              <tr>
+                <th className="num">#</th>
+                <th>MMSI</th>
+                <th className="num">Score</th>
+                <th>Assessment</th>
+                <th className="num">Features</th>
+                <th />
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {items.map((c) => (
+                <tr
+                  key={c._id}
+                  className={openId === c._id ? 'row-open' : ''}
+                  onMouseEnter={() => hover({ kind: 'vessel', mmsi: c.mmsi })}
+                  onMouseLeave={() => hover({ kind: 'none' })}
+                >
+                  <td className="num mono">{c.rank}</td>
+                  <td className="mono">{c.mmsi}</td>
+                  <td className="num mono">
+                    {c.score.toFixed(1)}
+                    {/* Uncertainty travels with the number, always. On its own line so the
+                      interval cannot wrap mid-bracket in a narrow column. */}
+                    <span className="score-ci">
+                      [{c.scoreCI[0].toFixed(0)}–{c.scoreCI[1].toFixed(0)}]
+                    </span>
+                  </td>
+                  <td>
+                    {/* Four channels: position, label text, interval, and colour last. */}
+                    <span className={`token tier-${c.tier.toLowerCase()}`}>
+                      {TIER_TEXT[c.tier]}
+                    </span>
+                  </td>
+                  <td className="num mono">{c.measuredFeatureCount}/12</td>
+                  <td>
+                    <button
+                      className="btn-ghost"
+                      onClick={() => {
+                        const next = openId === c._id ? null : c._id;
+                        setOpenId(next);
+                        if (next) {
+                          select({ kind: 'candidate', id: c._id, mmsi: c.mmsi });
+                        }
+                      }}
+                    >
+                      {openId === c._id ? 'Hide evidence' : 'Evidence'}
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {openId ? (
