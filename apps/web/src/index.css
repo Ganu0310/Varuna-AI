@@ -540,3 +540,330 @@ button:disabled {
   float: right;
   color: var(--ink-tertiary);
 }
+
+/* ── workspace (Phase 10) ──────────────────────────────────────────── */
+.workspace {
+  display: grid;
+  grid-template-columns: 260px 1fr 420px;
+  height: calc(100vh - 56px);
+  overflow: hidden;
+}
+.ws-rail,
+.ws-panel {
+  overflow-y: auto;
+  padding: var(--space-5);
+  background: var(--surface-1);
+}
+.ws-rail {
+  border-right: 1px solid var(--border-subtle);
+}
+.ws-panel {
+  border-left: 1px solid var(--border-subtle);
+}
+.ws-title {
+  font-size: 15px;
+  margin: 0 0 var(--space-3);
+}
+.ws-sub {
+  font-size: 11px;
+  line-height: 1.6;
+}
+.ws-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: var(--space-6) 0;
+}
+.ws-tab {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  text-align: left;
+  background: transparent;
+  border-color: transparent;
+  color: var(--ink-secondary);
+  font-size: 13px;
+}
+.ws-tab.on {
+  background: var(--surface-3);
+  border-color: var(--border-default);
+  color: var(--ink-primary);
+}
+.badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: var(--r-full);
+  background: var(--surface-4);
+  color: var(--ink-secondary);
+}
+
+/* The map fills its column and is never unmounted by tab changes. */
+.ws-map {
+  position: relative;
+  min-width: 0;
+}
+.map-root,
+.map-canvas {
+  position: absolute;
+  inset: 0;
+}
+.ws-scrubber {
+  position: absolute;
+  left: var(--space-5);
+  right: var(--space-5);
+  bottom: var(--space-5);
+  z-index: 5;
+  background: color-mix(in srgb, var(--surface-1) 92%, transparent);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-md);
+  padding: var(--space-4);
+  backdrop-filter: blur(6px);
+}
+
+/* ── time scrubber ─────────────────────────────────────────────────── */
+.scrubber-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  font-size: 12px;
+}
+.speeds {
+  display: flex;
+  gap: 2px;
+}
+.speed {
+  padding: 2px 6px;
+  font-size: 11px;
+  background: transparent;
+  border-color: var(--border-subtle);
+  color: var(--ink-tertiary);
+}
+.speed.on {
+  background: var(--surface-3);
+  color: var(--accent-400);
+  border-color: var(--accent-700);
+}
+.cursor-time {
+  margin-left: auto;
+  color: var(--ink-primary);
+}
+.scrubber-track {
+  position: relative;
+  margin: var(--space-4) 0 var(--space-2);
+  height: 26px;
+}
+.scrubber-track input[type='range'] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  margin: 0;
+  background: transparent;
+  padding: 0;
+  border: 0;
+}
+/* The release window is a BAND, never a line: the release time is an interval, and a tick
+   would assert a precision the drift model cannot support (04_UIUX §4.7.4). */
+.release-band {
+  position: absolute;
+  top: 4px;
+  height: 18px;
+  background: color-mix(in srgb, var(--origin-500) 30%, transparent);
+  border-left: 1px solid var(--origin-700);
+  border-right: 1px solid var(--origin-700);
+  border-radius: 2px;
+}
+.release-band.wide {
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 4px,
+    color-mix(in srgb, var(--origin-500) 22%, transparent) 4px,
+    color-mix(in srgb, var(--origin-500) 22%, transparent) 8px
+  );
+}
+.release-band-core {
+  position: absolute;
+  top: 8px;
+  height: 10px;
+  background: color-mix(in srgb, var(--origin-700) 55%, transparent);
+  border-radius: 2px;
+}
+.scene-tick {
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 26px;
+  background: var(--accent-400);
+}
+.scrubber-ends {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+}
+
+/* ── layer stack ───────────────────────────────────────────────────── */
+.layer-stack h3 {
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  color: var(--ink-tertiary);
+  margin-bottom: var(--space-3);
+}
+.layer-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--space-2);
+  align-items: center;
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 12px;
+}
+.layer-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-primary);
+}
+.layer-toggle input {
+  width: auto;
+}
+.layer-row input[type='range'] {
+  grid-column: 1 / -1;
+  height: 4px;
+  padding: 0;
+}
+/* Every layer names its source. A layer without one cannot be added at all. */
+.prov-chip {
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: var(--r-xs);
+  background: var(--surface-3);
+  border: 1px solid var(--border-default);
+  color: var(--ink-tertiary);
+  cursor: help;
+  max-width: 12ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── evidence waterfall ────────────────────────────────────────────── */
+.wf-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+.wf-score {
+  font-size: 22px;
+  font-weight: 600;
+}
+.wf-ci {
+  font-size: 13px;
+  color: var(--ink-tertiary);
+}
+.wf-rows {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.wf-row {
+  display: grid;
+  grid-template-columns: 11rem 7rem 1fr 10rem;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) 0;
+  font-size: 11px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.wf-label {
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  color: var(--ink-secondary);
+  font-size: 11px;
+  cursor: pointer;
+  text-decoration: underline dotted;
+}
+.wf-raw {
+  color: var(--ink-primary);
+}
+.wf-bar {
+  height: 7px;
+  background: var(--surface-inset);
+  border-radius: var(--r-full);
+  overflow: hidden;
+}
+.wf-fill {
+  display: block;
+  height: 100%;
+  background: var(--accent-500);
+}
+/* Unmeasured rows are rendered and hatched, never hidden: hiding them would make a
+   candidate scored on six features look as well-evidenced as one scored on twelve. */
+.wf-unmeasured .wf-label {
+  color: var(--ink-tertiary);
+  text-decoration: none;
+  cursor: default;
+}
+.wf-hatched {
+  background: repeating-linear-gradient(
+    45deg,
+    var(--surface-inset),
+    var(--surface-inset) 3px,
+    var(--surface-2) 3px,
+    var(--surface-2) 6px
+  );
+}
+.wf-contribution {
+  text-align: right;
+  color: var(--ink-secondary);
+}
+.wf-note {
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-subtle);
+  font-size: 11px;
+  color: var(--ink-tertiary);
+  line-height: 1.6;
+}
+
+/* ── candidates ────────────────────────────────────────────────────── */
+.disclaimer {
+  font-size: 11px;
+  color: var(--ink-secondary);
+  border-left: 2px solid var(--accent-700);
+  padding-left: var(--space-4);
+  margin: 0 0 var(--space-4);
+  line-height: 1.6;
+}
+.assessment {
+  font-size: 12px;
+  color: var(--ink-secondary);
+  line-height: 1.6;
+}
+.candidate-table .row-open td {
+  background: var(--surface-2);
+}
+.tier-strong {
+  color: var(--tier-strong);
+  border-color: var(--tier-strong);
+}
+.tier-moderate {
+  color: var(--tier-moderate);
+  border-color: var(--tier-moderate);
+}
+.tier-weak {
+  color: var(--tier-weak);
+  border-color: var(--tier-weak);
+}
+.tier-insufficient_evidence {
+  color: var(--tier-insufficient);
+  border-color: var(--tier-insufficient);
+}

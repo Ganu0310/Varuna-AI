@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
-import { useEffect, type ReactNode } from 'react';
+import { Suspense, lazy, useEffect, type ReactNode } from 'react';
 import { SocketProvider } from './providers/SocketProvider.tsx';
 import { setUnauthorisedHandler } from '../api/client.ts';
 import { useMe } from '../api/hooks.ts';
@@ -9,7 +9,13 @@ import { RegisterPage } from '../features/auth/RegisterPage.tsx';
 import { InvestigationListPage } from '../features/investigations/InvestigationListPage.tsx';
 import { CreateInvestigationPage } from '../features/investigations/CreateInvestigationPage.tsx';
 import { CataloguePage } from '../features/catalogue/CataloguePage.tsx';
-import { WorkspacePage } from '../features/investigations/WorkspacePage.tsx';
+// MapLibre and deck.gl are ~1 MB of the bundle and are only needed inside a workspace.
+// Splitting them out keeps the login and list routes small (05_FRONTEND §5.9 budgets).
+const WorkspacePage = lazy(() =>
+  import('../features/investigations/WorkspacePage.tsx').then((m) => ({
+    default: m.WorkspacePage,
+  })),
+);
 import { AppChrome } from './AppChrome.tsx';
 
 const queryClient = new QueryClient({
@@ -82,7 +88,15 @@ export function App() {
               element={
                 <RequireAuth>
                   <AppChrome>
-                    <WorkspacePage />
+                    <Suspense
+                      fallback={
+                        <main className="page">
+                          <p className="muted">Loading workspace…</p>
+                        </main>
+                      }
+                    >
+                      <WorkspacePage />
+                    </Suspense>
                   </AppChrome>
                 </RequireAuth>
               }
