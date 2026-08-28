@@ -68,7 +68,7 @@ function walk(
   const obj = value as Record<string, unknown>;
 
   if ('provenance' in obj) {
-    const result = Provenance.safeParse(obj.provenance);
+    const result = Provenance.safeParse(serialisableProvenance(obj.provenance));
     if (result.success) {
       stats.valid += 1;
     } else {
@@ -79,5 +79,25 @@ function walk(
 
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(obj)) out[k] = walk(v, stats, seen);
+  return out;
+}
+
+/**
+ * Validate provenance in the shape it will actually be SENT, not the shape it is held in.
+ *
+ * `.lean()` and raw driver reads return `retrievedAt` as a `Date` and ids as `ObjectId`,
+ * while the shared Zod contract describes the wire format (ISO string, string id) — which
+ * is what `res.json()` produces a moment later. Validating the in-memory shape rejected
+ * perfectly valid records and blanked them, so the guard normalises first.
+ */
+function serialisableProvenance(value: unknown): unknown {
+  if (value === null || typeof value !== 'object') return value;
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    if (v instanceof Date) out[k] = v.toISOString();
+    else if (Array.isArray(v)) out[k] = v.map((x) => (x === null ? x : String(x)));
+    else if (v && typeof v === 'object' && 'toHexString' in (v as object)) out[k] = String(v);
+    else out[k] = v;
+  }
   return out;
 }
