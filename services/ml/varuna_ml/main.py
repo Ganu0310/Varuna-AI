@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 
 from .config import get_settings
-from .routers import health, ingest, segment
+from .routers import backtrack, health, ingest, segment
 
 logging.basicConfig(level=get_settings().log_level.upper())
 log = logging.getLogger("varuna_ml")
@@ -21,6 +21,7 @@ app = FastAPI(
 app.include_router(health.router)
 app.include_router(ingest.router)
 app.include_router(segment.router)
+app.include_router(backtrack.router)
 
 
 @app.get("/")
@@ -29,4 +30,4 @@ async def root() -> JSONResponse:
 
 
 # Remaining routers land with their phases (07_AIML §7.8):
-#   backtrack (Phase 7), score (Phase 9)
+#   score (Phase 9)
