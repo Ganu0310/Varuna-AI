@@ -24,8 +24,20 @@ import { scoreCandidate } from './features.js';
  */
 
 export interface BootstrapResult {
-  /** 5th and 95th percentiles of the resampled score. */
+  /**
+   * Reported interval. Normally the 5th/95th percentiles of the resampled score; widened to
+   * include the point estimate when a boundary effect puts it outside (see `boundaryEffect`).
+   */
   ci: [number, number];
+  /** The raw percentile interval, before any widening. Kept so the effect stays auditable. */
+  percentileCi: [number, number];
+  /**
+   * Set when the unperturbed score falls outside the resampled interval. This is not an
+   * error: it means the score rests on a feature sitting at its own boundary — a vessel whose
+   * closest approach to the origin zone is 0 km cannot get closer, so every perturbation moves
+   * it further and the resampled distribution lies entirely below the point estimate.
+   */
+  boundaryEffect: string | null;
   iterations: number;
   /** How many fixes were treated as interpolated and therefore perturbable. */
   perturbableFixCount: number;
@@ -125,11 +137,37 @@ export function bootstrapCi(
   }
 
   scores.sort((a, b) => a - b);
-  const lo = scores[Math.floor(iterations * 0.05)] ?? 0;
-  const hi = scores[Math.min(iterations - 1, Math.floor(iterations * 0.95))] ?? 0;
+  const round = (n: number) => Math.round(n * 10) / 10;
+  const lo = round(scores[Math.floor(iterations * 0.05)] ?? 0);
+  const hi = round(scores[Math.min(iterations - 1, Math.floor(iterations * 0.95))] ?? 0);
+
+  // The unperturbed score — the value actually reported to the analyst. Recomputed here from
+  // the same inputs rather than passed in, so this function cannot be handed a score that
+  // came from a different context and silently compare against it.
+  const pointEstimate = round(scoreCandidate(candidate, ctx).score);
+
+  // A point estimate outside its own interval reads as a defect, so say what it is. It
+  // happens when a feature sits at its boundary: `spatial_proximity` at 0 km normalises to
+  // 1.0, and jitter can only move the vessel further away, never closer. Every resample is
+  // then lower than the estimate and the percentile interval lies wholly below it.
+  //
+  // The interval is widened to contain the estimate rather than reported as-is, because
+  // "80.6, CI [72.0, 75.1]" is not a claim a reader can act on. The raw percentile bounds
+  // stay in `percentileCi`, and the asymmetry is named rather than smoothed away — it is
+  // real information: this score is optimistic, and would fall under any perturbation.
+  const outside = pointEstimate < lo || pointEstimate > hi;
+  const boundaryEffect = outside
+    ? `The unperturbed score (${pointEstimate}) lies ${pointEstimate > hi ? 'above' : 'below'} ` +
+      `the resampled 5th–95th percentile range [${lo}, ${hi}]. This happens when the score ` +
+      `rests on a feature already at its limit — a closest approach of 0 km cannot get ` +
+      `closer — so perturbing the uncertain inputs can only move the score one way. Read the ` +
+      `point estimate as the optimistic end of the range, not its centre.`
+    : null;
 
   return {
-    ci: [Math.round(lo * 10) / 10, Math.round(hi * 10) / 10],
+    ci: [Math.min(lo, pointEstimate), Math.max(hi, pointEstimate)],
+    percentileCi: [lo, hi],
+    boundaryEffect,
     iterations,
     perturbableFixCount: perturbableCount,
     realFixCount: realCount,

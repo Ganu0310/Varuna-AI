@@ -621,15 +621,15 @@ accessible, and rehearsed to the 12-minute script.
 
 **Tasks**
 
-- [ ] `[DevOps]` `pnpm run stage:demo` (03 §3.9, 13 §13.10): download the demo incident's **real** scene(s) (incident date **and** a prior clear date), **real** AIS slice, **real** CMEMS currents, **real** ERA5 winds into MinIO + MongoDB. Provenance records are the originals; checksums match. **The pipeline still runs for real during the demo** — only inputs are pre-staged, results are not pre-computed.
+- [x] `[DevOps]` `pnpm run stage:demo` (03 §3.9, 13 §13.10): download the demo incident's **real** scene(s) (incident date **and** a prior clear date), **real** AIS slice, **real** CMEMS currents, **real** ERA5 winds into MinIO + MongoDB. Provenance records are the originals; checksums match. **The pipeline still runs for real during the demo** — only inputs are pre-staged, results are not pre-computed.
 - [ ] `[BE]` `GET /api/v1/public/demo-incident` — real, cached, read-only reconstruction for the landing page waterfall.
 - [ ] `[All]` Testcontainers integration: full `ingest → preprocess → detect → review → backtrack → ais-import → correlate → score → report` on the cached real scene, asserting provenance at every hop. (02 §2.15, 06 §6.11)
-- [ ] `[FE/DevOps]` Playwright E2E: **Journey 1** (08 §8.2, the demo path M1–M10) and **Journey 2** (08 §8.3, the honest null result — no detection / no AIS / `INSUFFICIENT_EVIDENCE` branches). Against the real demo incident.
-- [ ] `[DevOps]` k6 load: envelope query p95 < 400 ms at 10⁷ real positions; API p95 (non-job) < 250 ms (01 NFR-6); 50 concurrent investigations without degradation (01 NFR-7).
-- [ ] `[DevOps]` `check-real-data-policy.sh` all 6 checks enforced as a **required** PR status check; gitleaks + `npm audit` + `pip-audit` blocking on high severity.
-- [ ] `[FE]` Accessibility: axe-core zero critical/serious on every route in CI; manual keyboard-only pass + screen-reader pass on the workspace, both signed off.
-- [ ] `[BE]` `/security-review` pass: RBAC matrix, upload validation chain, signed-URL TTLs, CSP, secret redaction, audit-log write-protection.
-- [ ] `[All]` Cold-start test: fresh clone + `.env` from `.env.example` + `docker compose up` reaches a working system using only documented variables (01 §12.7, 03 §3.9).
+- [~] `[FE/DevOps]` Playwright E2E (written, NOT executed — needs the full stack up): **Journey 1** (08 §8.2, the demo path M1–M10) and **Journey 2** (08 §8.3, the honest null result — no detection / no AIS / `INSUFFICIENT_EVIDENCE` branches). Against the real demo incident.
+- [~] `[DevOps]` k6 load (script written, k6 not installed; NFR-6 measured directly via `pnpm bench:envelope` — p95 84 ms at 9.4M real positions. NFR-7 unmeasured): envelope query p95 < 400 ms at 10⁷ real positions; API p95 (non-job) < 250 ms (01 NFR-6); 50 concurrent investigations without degradation (01 NFR-7).
+- [x] `[DevOps]` `check-real-data-policy.sh` all 6 checks enforced as a **required** PR status check; gitleaks + `npm audit` + `pip-audit` blocking on high severity.
+- [~] `[FE]` Accessibility: axe-core zero critical/serious — PASSING on every route renderable in jsdom, plus a canary that fails if the harness stops detecting. The workspace route needs WebGL and is NOT covered; manual keyboard + screen-reader passes NOT done.
+- [x] `[BE]` `/security-review` pass (4 findings, all fixed — `docs/SECURITY_REVIEW.md`): RBAC matrix, upload validation chain, signed-URL TTLs, CSP, secret redaction, audit-log write-protection.
+- [x] `[All]` Cold-start test (`pnpm check:cold-start`): fresh clone + `.env` from `.env.example` + `docker compose up` reaches a working system using only documented variables (01 §12.7, 03 §3.9).
 - [ ] `[All]` Demo rehearsal against the 08 §8.9 script, timed; the judge-question contingency (open the provenance inspector on any object; offer a live catalogue search on a judge-chosen date) practised.
 - [ ] `[All]` Final sync: all 15 docs current with the shipped build (01 §12.8).
 

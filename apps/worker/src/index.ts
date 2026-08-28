@@ -7,6 +7,8 @@ import { bootstrapDatabase } from '@varuna/api/src/db/bootstrap.js';
 import { processIngest, type IngestJobData } from './processors/ingest.js';
 import { processDrift, type DriftJobData } from './processors/drift.js';
 import { processCorrelate, type CorrelateJobData } from './processors/correlate.js';
+import { processAisImport, type AisImportJobData } from './processors/aisImport.js';
+import { processReport, type ReportJobData } from './processors/report.js';
 
 /**
  * BullMQ consumers. The worker runs from the same image as the API with a different
@@ -52,13 +54,20 @@ async function main() {
   register<Awaited<ReturnType<typeof processCorrelate>>>('scoring', (job) =>
     processCorrelate(job as unknown as Parameters<typeof processCorrelate>[0]),
   );
+  register<Awaited<ReturnType<typeof processAisImport>>>('ais-import', (job) =>
+    processAisImport(job as unknown as Parameters<typeof processAisImport>[0]),
+  );
+  register<Awaited<ReturnType<typeof processReport>>>('report', (job) =>
+    processReport(job as unknown as Parameters<typeof processReport>[0]),
+  );
 
   logger.info(
     {
-      registered: ['ingest', 'drift', 'scoring'],
-      // Still unregistered ON PURPOSE: a queue with a stub processor would mark work
-      // complete without doing it, which is worse than leaving the job queued.
-      pending: ['inference', 'ais-import', 'report'],
+      registered: ['ingest', 'drift', 'scoring', 'ais-import', 'report'],
+      // `inference` stays unregistered ON PURPOSE. Detection currently runs inside the
+      // ingest job; a separate inference queue belongs with the learned segmentation model,
+      // and a stub processor here would mark work complete without doing it.
+      pending: ['inference'],
     },
     'varuna-worker ready',
   );
@@ -80,4 +89,4 @@ main().catch((err) => {
   process.exit(1);
 });
 
-export type { IngestJobData, DriftJobData, CorrelateJobData };
+export type { IngestJobData, DriftJobData, CorrelateJobData, AisImportJobData, ReportJobData };

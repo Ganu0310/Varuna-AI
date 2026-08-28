@@ -18,7 +18,11 @@
     "format:check": "prettier --check .",
     "check:real-data": "node scripts/check-real-data-policy.mjs",
     "check:tokens": "node scripts/tokens-sync-check.mjs",
-    "stage:demo": "tsx scripts/stage-demo.ts"
+    "stage:demo": "tsx scripts/stage-demo.ts",
+    "check:cold-start": "node --import tsx scripts/check-cold-start.mjs",
+    "bench:envelope": "tsx scripts/bench-envelope.ts",
+    "check:audit": "node scripts/check-audit.mjs",
+    "check:lineage": "tsx scripts/check-lineage.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",

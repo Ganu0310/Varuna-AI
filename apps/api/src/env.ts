@@ -14,7 +14,12 @@ import { z } from 'zod';
  */
 const HERE = dirname(fileURLToPath(import.meta.url));
 loadDotenv({ path: resolve(HERE, '../../../.env'), override: false, quiet: true });
-const EnvSchema = z.object({
+/**
+ * Exported so `scripts/check-cold-start.mjs` can validate `.env.example` against the REAL
+ * schema. A duplicated list in the checker would drift from this one and the gate would pass
+ * while a cold start failed.
+ */
+export const EnvSchema = z.object({
   // ── core ──────────────────────────────────────────────────────────
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().default(4000),

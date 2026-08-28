@@ -158,6 +158,7 @@ export async function correlate(input: CorrelateInput): Promise<CorrelateResult>
       mmsi: r.mmsi,
       score: r.score,
       scoreCI: ci ? ci.ci : [r.score, r.score],
+      scoreCiBoundaryEffect: ci?.boundaryEffect ?? null,
       tier: r.tier,
       rank: i + 1,
       features: r.features.map((f) => ({

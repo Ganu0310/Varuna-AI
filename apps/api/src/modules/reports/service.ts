@@ -194,6 +194,20 @@ function buildUncertainty(
       'false-positive rate on a held-out test split.',
   });
 
+  const atBoundary = candidates.filter((c) => c.scoreCiBoundaryEffect);
+  if (atBoundary.length > 0) {
+    s.push({
+      topic: 'Score intervals',
+      severity: 'CAVEAT',
+      text:
+        `${atBoundary.length} candidate(s) have a score sitting at the optimistic end of ` +
+        'their confidence interval rather than its centre. This happens when the evidence ' +
+        'rests on a measurement already at its limit — a closest approach of 0 km cannot get ' +
+        'closer — so any perturbation of the uncertain inputs moves the score down and never ' +
+        'up. Treat those scores as a ceiling, not a best guess.',
+    });
+  }
+
   const insufficient = candidates.filter((c) => c.tier === 'INSUFFICIENT_EVIDENCE').length;
   if (insufficient > 0) {
     s.push({

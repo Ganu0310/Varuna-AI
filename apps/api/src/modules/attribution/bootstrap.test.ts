@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { LineString, Polygon } from 'geojson';
 import { bootstrapCi, calibrationState } from './bootstrap.js';
+import { scoreCandidate } from './features.js';
 import type { CandidateInput, ScoringContext } from './features.js';
 
 /**
@@ -116,5 +117,51 @@ describe('calibration state', () => {
   it('the boundary is inclusive at the minimum', () => {
     expect(calibrationState(29).calibrated).toBe(false);
     expect(calibrationState(30).calibrated).toBe(true);
+  });
+});
+
+describe('boundary effects on the confidence interval', () => {
+  /**
+   * Discovered on the real Guam incident: the rank-1 candidate scored 80.6 with a percentile
+   * interval of [72.0, 75.1] — the point estimate sat entirely outside its own CI, which in a
+   * dossier is indefensible whatever the statistics behind it.
+   *
+   * The cause is a boundary, not an arithmetic slip. That candidate's `spatial_proximity`
+   * measured 0 km and normalised to 1.0, and jitter can only move a vessel further from the
+   * origin zone, never closer — so every resample scored lower than the estimate.
+   */
+  it('always reports an interval containing the point estimate', () => {
+    // A long silence makes several fixes interpolated, so there is something to perturb.
+    const c = candidate(120);
+    const r = bootstrapCi(c, CTX, 200, 42);
+    const point = scoreCandidate(c, CTX).score;
+
+    expect(r.ci[0]).toBeLessThanOrEqual(point);
+    expect(r.ci[1]).toBeGreaterThanOrEqual(point);
+  });
+
+  it('names the boundary effect rather than silently widening the interval', () => {
+    const c = candidate(120);
+    const r = bootstrapCi(c, CTX, 200, 42);
+    const point = scoreCandidate(c, CTX).score;
+
+    const outside = point < r.percentileCi[0] || point > r.percentileCi[1];
+    if (outside) {
+      expect(r.boundaryEffect).toMatch(/optimistic end of the range/);
+      // The unwidened bounds must survive, or the adjustment stops being auditable.
+      expect(r.percentileCi[0]).toBeLessThanOrEqual(r.percentileCi[1]);
+      expect(r.ci).not.toEqual(r.percentileCi);
+    } else {
+      expect(r.boundaryEffect).toBeNull();
+      expect(r.ci).toEqual(r.percentileCi);
+    }
+  });
+
+  it('a fully-observed track has nothing to perturb, so the estimate sits inside', () => {
+    const c = candidate(0);
+    const r = bootstrapCi(c, CTX, 100, 3);
+    const point = scoreCandidate(c, CTX).score;
+    expect(point).toBeGreaterThanOrEqual(r.ci[0]);
+    expect(point).toBeLessThanOrEqual(r.ci[1]);
   });
 });

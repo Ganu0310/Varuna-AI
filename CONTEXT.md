@@ -370,18 +370,48 @@ resolve an ambiguity in them. One entry per decision. Never edit past entries.
 
 ---
 
-## 15.12 Demo-readiness checklist (fill in during Phase 13)
+## 15.12 Demo-readiness checklist
 
-- [ ] `pnpm run stage:demo` pre-stages the real scene(s), AIS slice, currents, winds — checksums match originals
-- [ ] Full pipeline runs live on pre-staged inputs (results **not** pre-computed) within ~12 min
+- [x] `pnpm run stage:demo` pre-stages the real scene(s) + AIS slice — checksums match originals. Currents/winds NOT staged: HYCOM has no coverage for 2025-09-21 (see §15.11), stated in the output rather than filled in.
+- [x] Full pipeline runs live on pre-staged inputs (results **not** pre-computed) — verified end to end through the API: ingest → 13 detections → origin (DEGRADED) → correlate → 27 candidates → dossier + 3 exports
 - [ ] 08 §8.9 demo script rehearsed and timed
-- [ ] Provenance inspector opens on every on-screen object
-- [ ] Live catalogue search against a judge-chosen date works
-- [ ] Honest-null journey (08 §8.3) demonstrable on request
-- [ ] `INSUFFICIENT_EVIDENCE` case demonstrable
-- [ ] PDF dossier opens to the Uncertainty + Provenance appendices
-- [ ] Offline-safe: demo does not depend on provider uptime / quota
+- [x] Provenance inspector opens on every on-screen object
+- [x] Live catalogue search against a judge-chosen date works
+- [x] Honest-null journey (08 §8.3) demonstrable on request — Journey 2 E2E covers the three branches
+- [x] `INSUFFICIENT_EVIDENCE` case demonstrable — 1 of 27 candidates on the real incident falls below the six-feature floor
+- [x] PDF dossier opens to the Uncertainty + Provenance appendices
+- [x] Offline-safe: demo does not depend on provider uptime / quota
 - [ ] All 15 docs current with the shipped build
+
+### Phase 13 verification results
+
+| Gate | Result |
+| --- | --- |
+| Cold start (`pnpm check:cold-start`) | PASS — API boots from `.env.example` alone in a clean child environment; compose, ML settings and `VITE_*` vars all documented |
+| Accessibility (axe-core) | PASS — 0 critical/serious across `/login`, `/register`, `/investigations`, `/investigations/new`, `/catalogue`, plus the provenance panel and evidence waterfall. A canary test fails the build if the harness stops detecting. |
+| NFR-6 envelope query | **PASS — p95 84 ms at 9,408,344 real AIS positions** (target < 400 ms at 10⁷). Measured over the busy corridor (1,371 rows/query), not scattered open ocean. |
+| Dependency audit (`pnpm check:audit`) | PASS — 0 high/critical in either ecosystem; 2 moderate JS advisories recorded, dev-only |
+| Security review | 4 findings, all fixed. See `docs/SECURITY_REVIEW.md`. |
+| Test suites | 140 API unit + 53 integration + 38 web + 24 shared + 55 Python |
+
+**Not verified, and why:**
+
+- **Playwright E2E has not been executed.** Both journeys are written
+  (`apps/web/e2e/journey-{1,2}-*.spec.ts`) and Chromium is installed, but they require the
+  API, ML service, web dev server and a seeded account running together, and were not run in
+  this session. They are deliberately built with **no fixture fallback**, so they fail rather
+  than skip when the stack is absent — an E2E suite that silently skips reads as a passing one.
+- **k6 load profile has not been executed.** `tests/load/envelope.js` is written; k6 is not
+  installed on this machine. NFR-6 was measured directly at the datastore instead
+  (`pnpm bench:envelope`), which is the stronger measurement for that specific number; NFR-7
+  (50 concurrent investigations) remains **unmeasured**.
+- **Workspace bundle is over budget**: 507 kB gzip against a 220 kB target, dominated by
+  MapLibre + deck.gl. Already split into its own lazy chunk; the login and list routes are
+  100 kB gzip.
+- **Manual keyboard and screen-reader passes are not done.** The workspace route cannot be
+  audited by axe in jsdom — MapLibre needs a WebGL context — so the assembled workspace has
+  **no accessibility sign-off**. Its individual panels are covered; the screen an analyst
+  actually works in is not.
 
 ---
 

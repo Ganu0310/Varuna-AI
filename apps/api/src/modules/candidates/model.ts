@@ -32,6 +32,13 @@ const CandidateVesselSchema = new Schema(
     mmsi: { type: Number, required: true, index: true },
     score: { type: Number, required: true, min: 0, max: 100 },
     scoreCI: { type: [Number], validate: (v: number[]) => v.length === 2 },
+    /**
+     * Set when the unperturbed score fell outside the resampled percentile range because a
+     * feature sits at its boundary. Stored, not just logged: the report and the candidate
+     * panel both surface it, and an interval that was widened without saying so would be a
+     * quieter version of the incoherence it fixes.
+     */
+    scoreCiBoundaryEffect: { type: String, default: null },
     tier: { type: String, enum: TIERS, required: true },
     rank: { type: Number, required: true },
     features: { type: [FeatureContributionSchema], required: true },
