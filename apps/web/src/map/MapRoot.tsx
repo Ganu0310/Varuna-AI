@@ -4,6 +4,7 @@ import { MapboxOverlay } from '@deck.gl/mapbox';
 import type { Layer } from '@deck.gl/core';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useMapStore, timeChannel, useTimeStore } from '../state/stores.ts';
+import { nextCursor } from './clock.ts';
 import { DARK_STYLE } from './style.ts';
 
 const SAR_SOURCE_ID = 'sar-scene';
@@ -252,19 +253,29 @@ export function MapRoot({
 
     const tick = (now: number) => {
       const { playing, speed, windowEnd, windowStart } = useTimeStore.getState();
-      const dt = now - lastFrame;
+      const elapsedMs = now - lastFrame;
       lastFrame = now;
 
-      if (playing) {
-        timeChannel.cursor += dt * speed;
-        if (timeChannel.cursor > windowEnd) {
-          timeChannel.cursor = windowStart;
-        }
+      // The step itself lives in `clock.ts`, where the behaviour that matters — what happens
+      // to the playhead when frames stop arriving — is unit-tested without a browser.
+      const hidden = document.hidden;
+      const advanced = nextCursor({
+        cursor: timeChannel.cursor,
+        playing,
+        speed,
+        windowStart,
+        windowEnd,
+        elapsedMs,
+        hidden,
+      });
+
+      if (playing && !hidden) {
+        timeChannel.cursor = advanced;
         if (now - lastSync > 250) {
           lastSync = now;
           useTimeStore.getState().setCursor(timeChannel.cursor);
         }
-      } else {
+      } else if (!playing) {
         timeChannel.cursor = useTimeStore.getState().cursor;
       }
       raf.current = requestAnimationFrame(tick);

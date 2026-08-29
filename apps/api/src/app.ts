@@ -1,4 +1,4 @@
-import express, { type Express } from 'express';
+import express, { type Express, type Router } from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -33,6 +33,36 @@ import { openApiDocument } from './openapi.js';
  *   requestId → pino-http → helmet(CSP) → cors → json → cookieParser → mongoSanitize →
  *   rateLimit → authenticate → router (per-route rbac + validate) → provenanceGuard → errorHandler
  */
+/**
+ * Where each router is mounted.
+ *
+ * A table rather than a run of `app.use` calls because the mount path is not recoverable from
+ * a mounted router afterwards — Express 5 keeps it as a matcher function, not a string. Tools
+ * that need to enumerate the real API surface (`scripts/check-openapi.mjs` measures how much
+ * of it the spec describes) would otherwise have to re-derive it by parsing this file, which
+ * would be a second source of truth and would drift.
+ *
+ * Several routers are mounted twice on purpose: their routes divide into ones scoped to an
+ * investigation and ones addressed globally, and they are written as a single module.
+ */
+export const ROUTE_MOUNTS: ReadonlyArray<readonly [string, Router]> = [
+  ['/', healthRouter],
+  ['/api/v1/auth', authRouter],
+  ['/api/v1/catalogue', catalogueRouter],
+  ['/api/v1/investigations', investigationsRouter],
+  ['/api/v1/investigations', scenesRouter],
+  ['/api/v1/detections', detectionsRouter],
+  ['/api/v1/investigations', aisRouter],
+  ['/api/v1', aisRouter],
+  ['/api/v1/investigations', originRouter],
+  ['/api/v1', originRouter],
+  ['/api/v1/investigations', candidatesRouter],
+  ['/api/v1', candidatesRouter],
+  ['/api/v1/investigations', reportsRouter],
+  ['/api/v1/jobs', jobsRouter],
+  ['/api/v1/admin', adminRouter],
+] as const;
+
 export function createApp(): Express {
   const app = express();
   app.set('trust proxy', 1);
@@ -74,23 +104,9 @@ export function createApp(): Express {
   app.use('/api/v1', provenanceGuard);
 
   // ── routes ────────────────────────────────────────────────────────
-  app.use('/', healthRouter);
   app.get('/api/v1', (_req, res) => res.json({ name: 'varuna-api', version: 'v1' }));
   app.get('/api/v1/openapi.json', (_req, res) => res.json(openApiDocument()));
-  app.use('/api/v1/auth', authRouter);
-  app.use('/api/v1/catalogue', catalogueRouter);
-  app.use('/api/v1/investigations', investigationsRouter);
-  app.use('/api/v1/investigations', scenesRouter);
-  app.use('/api/v1/detections', detectionsRouter);
-  app.use('/api/v1/investigations', aisRouter);
-  app.use('/api/v1', aisRouter);
-  app.use('/api/v1/investigations', originRouter);
-  app.use('/api/v1', originRouter);
-  app.use('/api/v1/investigations', candidatesRouter);
-  app.use('/api/v1', candidatesRouter);
-  app.use('/api/v1/investigations', reportsRouter);
-  app.use('/api/v1/jobs', jobsRouter);
-  app.use('/api/v1/admin', adminRouter);
+  for (const [mount, router] of ROUTE_MOUNTS) app.use(mount, router);
 
   app.use((req, _res, next) => next(new NotFoundError(`No route for ${req.method} ${req.path}`)));
   app.use(errorHandler);

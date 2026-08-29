@@ -1,0 +1,28 @@
+#!/bin/sh
+# Local gate — 14 §14.6 Phase 0.
+#
+# CI runs all of this too. The point of running it HERE is that CI catches a leaked secret
+# only once it is already in a pushed commit, and therefore already in the history: rotating
+# the credential is then the cheap part and rewriting the history is the expensive part. A
+# hook that refuses the commit means there is nothing to rewrite.
+#
+# Deliberately fast. A hook slow enough to be resented is a hook that gets bypassed with
+# --no-verify, so the heavy suites (typecheck, tests, integration) stay in CI where they can
+# take their time. This runs only what needs the working tree in front of it.
+
+set -e
+
+# 1. Secrets. First, because it is the one failure that cannot be undone by a later commit.
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks protect --staged --redact --no-banner
+else
+  echo "  ! gitleaks not installed — secret scan SKIPPED locally (CI still enforces it)."
+  echo "    https://github.com/gitleaks/gitleaks#installing"
+fi
+
+# 2. Format and lint, on staged files only.
+npx lint-staged
+
+# 3. The real-data policy. Cheap (a static scan), and the one rule in this project that is
+#    never negotiable, so it runs on every commit rather than waiting for CI.
+node scripts/check-real-data-policy.mjs

@@ -1,0 +1,5 @@
+{
+  "*.{ts,tsx,js,mjs,json,css,md,yml,yaml}": "prettier --write",
+  "*.{ts,tsx}": "eslint --fix --max-warnings 0",
+  "*.py": ["ruff check --fix", "black --quiet"]
+}

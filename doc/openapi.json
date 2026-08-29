@@ -1,0 +1,2289 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "VARUNA API",
+    "version": "1.0.0",
+    "description": "Vessel Attribution through Remote-sensing & Unified Navigational Analytics (SIH26143). Errors are RFC 9457 application/problem+json. Auth is via httpOnly cookies."
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "components": {
+    "schemas": {},
+    "parameters": {}
+  },
+  "paths": {
+    "/api/v1/auth/register": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Create an account and start a session",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "maxLength": 320,
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 12,
+                    "maxLength": 200
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "orgInviteCode": {
+                    "type": "string",
+                    "maxLength": 120
+                  }
+                },
+                "required": ["email", "password", "name"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created; access and refresh cookies set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "_id": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string",
+                          "format": "email"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": ["viewer", "analyst", "lead", "admin"]
+                        },
+                        "orgId": {
+                          "type": "string"
+                        },
+                        "lastLoginAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": ["_id", "email", "name", "role"]
+                    }
+                  },
+                  "required": ["user"]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "RFC 9457 problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["path", "message"]
+                      }
+                    },
+                    "attempted": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["provider", "outcome"]
+                      }
+                    },
+                    "consequence": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["type", "title", "status"]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RFC 9457 problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["path", "message"]
+                      }
+                    },
+                    "attempted": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["provider", "outcome"]
+                      }
+                    },
+                    "consequence": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["type", "title", "status"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": ["auth"],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "maxLength": 320,
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  }
+                },
+                "required": ["email", "password"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Signed in; cookies set",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "_id": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string",
+                          "format": "email"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": ["viewer", "analyst", "lead", "admin"]
+                        },
+                        "orgId": {
+                          "type": "string"
+                        },
+                        "lastLoginAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": ["_id", "email", "name", "role"]
+                    }
+                  },
+                  "required": ["user"]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "RFC 9457 problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["path", "message"]
+                      }
+                    },
+                    "attempted": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["provider", "outcome"]
+                      }
+                    },
+                    "consequence": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["type", "title", "status"]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RFC 9457 problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["path", "message"]
+                      }
+                    },
+                    "attempted": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["provider", "outcome"]
+                      }
+                    },
+                    "consequence": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["type", "title", "status"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "tags": ["auth"],
+        "summary": "Rotate the refresh token. Reuse of a spent token revokes the whole family.",
+        "responses": {
+          "200": {
+            "description": "Rotated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "_id": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string",
+                          "format": "email"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": ["viewer", "analyst", "lead", "admin"]
+                        },
+                        "orgId": {
+                          "type": "string"
+                        },
+                        "lastLoginAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": ["_id", "email", "name", "role"]
+                    }
+                  },
+                  "required": ["user"]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "RFC 9457 problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["path", "message"]
+                      }
+                    },
+                    "attempted": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["provider", "outcome"]
+                      }
+                    },
+                    "consequence": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["type", "title", "status"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": ["auth"],
+        "responses": {
+          "204": {
+            "description": "Session ended"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "tags": ["auth"],
+        "responses": {
+          "200": {
+            "description": "Current user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "_id": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string",
+                          "format": "email"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "type": "string",
+                          "enum": ["viewer", "analyst", "lead", "admin"]
+                        },
+                        "orgId": {
+                          "type": "string"
+                        },
+                        "lastLoginAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      },
+                      "required": ["_id", "email", "name", "role"]
+                    },
+                    "permissions": {
+                      "type": "object",
+                      "properties": {
+                        "role": {
+                          "type": "string"
+                        }
+                      },
+                      "required": ["role"]
+                    }
+                  },
+                  "required": ["user", "permissions"]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "RFC 9457 problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["path", "message"]
+                      }
+                    },
+                    "attempted": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["provider", "outcome"]
+                      }
+                    },
+                    "consequence": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["type", "title", "status"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/investigations": {
+      "get": {
+        "tags": ["investigations"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "required": false,
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "required": false,
+            "name": "to",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cursor-paginated list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {}
+                    },
+                    "nextCursor": {
+                      "type": ["string", "null"]
+                    }
+                  },
+                  "required": ["items", "nextCursor"]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "RFC 9457 problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["path", "message"]
+                      }
+                    },
+                    "attempted": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["provider", "outcome"]
+                      }
+                    },
+                    "consequence": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["type", "title", "status"]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "RFC 9457 problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["path", "message"]
+                      }
+                    },
+                    "attempted": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["provider", "outcome"]
+                      }
+                    },
+                    "consequence": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["type", "title", "status"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["investigations"],
+        "summary": "Create an investigation. AOI is capped at 50,000 km² (geodesic) and the window at 30 days.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 4000
+                  },
+                  "incidentReference": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "aoi": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": ["Polygon"]
+                      },
+                      "coordinates": {
+                        "type": "array",
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "array",
+                            "prefixItems": [
+                              {
+                                "type": "number",
+                                "minimum": -180,
+                                "maximum": 180
+                              },
+                              {
+                                "type": "number",
+                                "minimum": -90,
+                                "maximum": 90
+                              }
+                            ]
+                          },
+                          "minItems": 4
+                        },
+                        "minItems": 1
+                      }
+                    },
+                    "required": ["type", "coordinates"]
+                  },
+                  "windowStart": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "windowEnd": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "reportedIncidentAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "required": ["name", "aoi", "windowStart", "windowEnd"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "RFC 9457 problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["path", "message"]
+                      }
+                    },
+                    "attempted": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["provider", "outcome"]
+                      }
+                    },
+                    "consequence": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["type", "title", "status"]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "RFC 9457 problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["path", "message"]
+                      }
+                    },
+                    "attempted": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["provider", "outcome"]
+                      }
+                    },
+                    "consequence": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["type", "title", "status"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/investigations/{id}": {
+      "get": {
+        "tags": ["investigations"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Investigation",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "RFC 9457 problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["path", "message"]
+                      }
+                    },
+                    "attempted": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["provider", "outcome"]
+                      }
+                    },
+                    "consequence": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["type", "title", "status"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": ["investigations"],
+        "summary": "Update. Changing the AOI or window invalidates downstream results and says so.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 4000
+                  },
+                  "incidentReference": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "aoi": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": ["Polygon"]
+                      },
+                      "coordinates": {
+                        "type": "array",
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "array",
+                            "prefixItems": [
+                              {
+                                "type": "number",
+                                "minimum": -180,
+                                "maximum": 180
+                              },
+                              {
+                                "type": "number",
+                                "minimum": -90,
+                                "maximum": 90
+                              }
+                            ]
+                          },
+                          "minItems": 4
+                        },
+                        "minItems": 1
+                      }
+                    },
+                    "required": ["type", "coordinates"]
+                  },
+                  "windowStart": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "windowEnd": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "reportedIncidentAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "RFC 9457 problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["path", "message"]
+                      }
+                    },
+                    "attempted": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["provider", "outcome"]
+                      }
+                    },
+                    "consequence": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["type", "title", "status"]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "RFC 9457 problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["path", "message"]
+                      }
+                    },
+                    "attempted": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["provider", "outcome"]
+                      }
+                    },
+                    "consequence": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["type", "title", "status"]
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["investigations"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Soft-deleted"
+          },
+          "404": {
+            "description": "RFC 9457 problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["path", "message"]
+                      }
+                    },
+                    "attempted": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["provider", "outcome"]
+                      }
+                    },
+                    "consequence": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["type", "title", "status"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/investigations/{id}/summary": {
+      "get": {
+        "tags": ["investigations"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pipeline stage roll-up",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "RFC 9457 problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["path", "message"]
+                      }
+                    },
+                    "attempted": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["provider", "outcome"]
+                      }
+                    },
+                    "consequence": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["type", "title", "status"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/investigations/{id}/members": {
+      "post": {
+        "tags": ["investigations"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "role": {
+                    "type": "string",
+                    "enum": ["viewer", "analyst", "lead", "admin"]
+                  }
+                },
+                "required": ["userId", "role"],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Members updated",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "RFC 9457 problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["path", "message"]
+                      }
+                    },
+                    "attempted": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["provider", "outcome"]
+                      }
+                    },
+                    "consequence": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["type", "title", "status"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/catalogue/search": {
+      "get": {
+        "tags": ["catalogue"],
+        "summary": "Live satellite catalogue search. Queries every configured provider in parallel and returns a normalised, de-duplicated list plus a per-provider status. Nothing is persisted. A provider returning zero results is reported as NO_RESULTS (a real answer about coverage), not as a failure.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 2
+            },
+            "required": true,
+            "name": "aoi",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "required": true,
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "required": true,
+            "name": "to",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "platforms",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": ["ASCENDING", "DESCENDING"]
+            },
+            "required": false,
+            "name": "orbitDirection",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": ["VV", "VH", "HH", "HV"]
+            },
+            "required": false,
+            "name": "polarisation",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": ["number", "null"],
+              "minimum": 0,
+              "maximum": 100
+            },
+            "required": false,
+            "name": "maxCloud",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "provider",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 250,
+              "default": 100
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Normalised results with per-provider status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {}
+                    },
+                    "providerStatus": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "OK",
+                              "NO_RESULTS",
+                              "CIRCUIT_OPEN",
+                              "QUOTA_EXHAUSTED",
+                              "NOT_CONFIGURED",
+                              "TIMEOUT",
+                              "ERROR"
+                            ]
+                          },
+                          "count": {
+                            "type": "number"
+                          },
+                          "latencyMs": {
+                            "type": ["number", "null"]
+                          },
+                          "reason": {
+                            "type": "string"
+                          },
+                          "retryAt": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["provider", "status", "count", "latencyMs"]
+                      }
+                    }
+                  },
+                  "required": ["items", "providerStatus"]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "RFC 9457 problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["path", "message"]
+                      }
+                    },
+                    "attempted": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["provider", "outcome"]
+                      }
+                    },
+                    "consequence": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["type", "title", "status"]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RFC 9457 problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["path", "message"]
+                      }
+                    },
+                    "attempted": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["provider", "outcome"]
+                      }
+                    },
+                    "consequence": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["type", "title", "status"]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Every provider in the chain failed. The body carries attempted[] and a consequence string; no results are returned rather than results from an unverified source.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["path", "message"]
+                      }
+                    },
+                    "attempted": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["provider", "outcome"]
+                      }
+                    },
+                    "consequence": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["type", "title", "status"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/catalogue/providers": {
+      "get": {
+        "tags": ["catalogue"],
+        "summary": "Provider health: circuit state, quota consumed, p95 latency, last success.",
+        "responses": {
+          "200": {
+            "description": "Provider health",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {}
+                    }
+                  },
+                  "required": ["items"]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "RFC 9457 problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["path", "message"]
+                      }
+                    },
+                    "attempted": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["provider", "outcome"]
+                      }
+                    },
+                    "consequence": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["type", "title", "status"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/jobs": {
+      "get": {
+        "tags": ["jobs"],
+        "responses": {
+          "200": {
+            "description": "Jobs",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "401": {
+            "description": "RFC 9457 problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["path", "message"]
+                      }
+                    },
+                    "attempted": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["provider", "outcome"]
+                      }
+                    },
+                    "consequence": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["type", "title", "status"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/{id}/cancel": {
+      "post": {
+        "tags": ["jobs"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Acknowledged",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "RFC 9457 problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["path", "message"]
+                      }
+                    },
+                    "attempted": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["provider", "outcome"]
+                      }
+                    },
+                    "consequence": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["type", "title", "status"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/jobs/{id}/retry": {
+      "post": {
+        "tags": ["jobs"],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Acknowledged",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "RFC 9457 problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["path", "message"]
+                      }
+                    },
+                    "attempted": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string"
+                          }
+                        },
+                        "required": ["provider", "outcome"]
+                      }
+                    },
+                    "consequence": {
+                      "type": "string"
+                    }
+                  },
+                  "required": ["type", "title", "status"]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {}
+}

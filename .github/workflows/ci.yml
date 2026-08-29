@@ -33,6 +33,8 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm check:tokens
+      - run: pnpm check:openapi
+      - run: pnpm check:bundle
 
   integration:
     name: Integration — API against a real MongoDB

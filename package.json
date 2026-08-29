@@ -2,7 +2,7 @@
   "name": "varuna",
   "version": "0.1.0",
   "private": true,
-  "description": "VARUNA — Vessel Attribution through Remote-sensing & Unified Navigational Analytics (SIH26143)",
+  "description": "VARUNA \u2014 Vessel Attribution through Remote-sensing & Unified Navigational Analytics (SIH26143)",
   "packageManager": "pnpm@9.15.9",
   "engines": {
     "node": ">=20.11.0",
@@ -22,12 +22,17 @@
     "check:cold-start": "node --import tsx scripts/check-cold-start.mjs",
     "bench:envelope": "tsx scripts/bench-envelope.ts",
     "check:audit": "node scripts/check-audit.mjs",
-    "check:lineage": "tsx scripts/check-lineage.ts"
+    "check:lineage": "tsx scripts/check-lineage.ts",
+    "prepare": "husky",
+    "check:openapi": "node --import tsx scripts/check-openapi.mjs",
+    "check:bundle": "pnpm --filter @varuna/web build && node scripts/check-bundle-budget.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.18.0",
     "@types/node": "^22.10.5",
     "eslint": "^9.18.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.4.1",
     "prettier": "^3.4.2",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3",
