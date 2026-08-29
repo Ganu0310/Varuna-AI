@@ -1,5 +1,6 @@
 import { useProviderHealth } from '../../api/hooks.ts';
 import { formatUtc } from '../../lib/format.ts';
+import { CircuitState } from '../../components/CircuitState.tsx';
 
 /**
  * Circuit state, quota consumption and p95 latency per provider
@@ -41,9 +42,7 @@ export function ProviderHealthTable() {
               </span>
             </td>
             <td>
-              <span className={`token ${p.circuit.state === 'CLOSED' ? 'token-ok' : 'token-warn'}`}>
-                {p.circuit.state}
-              </span>
+              <CircuitState state={p.circuit.state} configured={p.configured} />
               {p.circuit.retryAt ? (
                 <span className="muted mono"> retry {formatUtc(p.circuit.retryAt)}</span>
               ) : null}

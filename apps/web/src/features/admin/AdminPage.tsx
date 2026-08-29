@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { CircuitState } from '../../components/CircuitState.tsx';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError } from '../../api/client.ts';
 import { useMe } from '../../api/hooks.ts';
@@ -169,8 +170,11 @@ export function AdminPage() {
       <section className="card">
         <h2>Provider health</h2>
         <p className="muted">
-          Live circuit-breaker state. An UNCONFIGURED provider has no credential and is skipped by
-          the chain — it is not a failure, and the chain advances past it.
+          Live circuit-breaker state. AVAILABLE means calls are flowing; TRIPPED means too many
+          failures, so calls are refused immediately instead of waiting on a provider that is not
+          answering; TESTING means the next call decides whether it has recovered. A provider with
+          no credential is skipped by the chain — that is not a failure, and the chain advances past
+          it.
         </p>
         <div className="table-scroll">
           <table className="data-table list-table">
@@ -189,17 +193,7 @@ export function AdminPage() {
                 <tr key={p.provider}>
                   <td className="mono">{p.provider}</td>
                   <td>
-                    <span
-                      className={`token ${
-                        !p.configured
-                          ? 'status-neutral'
-                          : p.circuit.state === 'CLOSED'
-                            ? 'status-ok'
-                            : 'status-danger'
-                      }`}
-                    >
-                      {p.configured ? p.circuit.state : 'NOT CONFIGURED'}
-                    </span>
+                    <CircuitState state={p.circuit.state} configured={p.configured} />
                   </td>
                   <td className="num mono">{p.calls}</td>
                   <td className="num mono">{p.failures}</td>
