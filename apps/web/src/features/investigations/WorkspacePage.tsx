@@ -22,6 +22,23 @@ interface AisCoverage {
   assessment: string;
 }
 
+interface OriginResponse {
+  reason: string;
+  origin: {
+    status: 'OK' | 'DEGRADED' | 'UNAVAILABLE';
+    method: string;
+    degradationReason: string | null;
+    originField?: { support90?: { type: 'Polygon'; coordinates: number[][][] } };
+    releaseWindow?: {
+      earliest: string;
+      latest: string;
+      mostLikelyStart: string;
+      mostLikelyEnd: string;
+      status: 'OK' | 'WIDE';
+    };
+  } | null;
+}
+
 interface TracksResponse {
   items: Array<{
     mmsi: number;
@@ -82,6 +99,20 @@ export function WorkspacePage() {
     staleTime: 60_000,
   });
 
+  /**
+   * The origin estimate — M5's map half.
+   *
+   * The zone has been computed, stored and printed in the dossier since Phase 7, but was
+   * never drawn. `reason: 'NOT_RUN'` comes back when back-tracking has not been run, which
+   * is a normal state rather than an error.
+   */
+  const origin = useQuery({
+    queryKey: ['origin', id],
+    queryFn: () => api.get<OriginResponse>(`/investigations/${id}/origin`),
+    enabled: Boolean(id),
+    staleTime: 60_000,
+  });
+
   const tracks = useQuery({
     queryKey: ['ais-tracks', id],
     queryFn: () => api.get<TracksResponse>(`/investigations/${id}/ais/tracks?limit=60`),
@@ -128,6 +159,29 @@ export function WorkspacePage() {
       },
     });
   }, [scenes.data, addLayer]);
+
+  // The origin layer is registered only once an estimate exists, and its label carries the
+  // method. A FOOTPRINT_PROXIMITY zone and a back-tracked drift field are different kinds of
+  // claim, and the legend must not present them as the same thing.
+  useEffect(() => {
+    const o = origin.data?.origin;
+    if (!o?.originField?.support90) return;
+    addLayer({
+      id: 'origin-field',
+      label:
+        o.status === 'DEGRADED'
+          ? `Origin zone (${o.method === 'FOOTPRINT_PROXIMITY' ? 'proximity, degraded' : 'degraded'})`
+          : 'Origin zone (drift 90%)',
+      visible: true,
+      opacity: 1,
+      provenance: {
+        provider: 'VARUNA',
+        datasetId: `${o.method.toLowerCase()}-v1`,
+        externalId: id ?? '',
+        licence: 'internal',
+      },
+    });
+  }, [origin.data, addLayer, id]);
 
   useEffect(() => {
     const d = detections.data?.items[0];
@@ -184,7 +238,8 @@ export function WorkspacePage() {
     () =>
       buildLayers({
         aoi: inv?.aoi ?? null,
-        originZone: null,
+        originZone: origin.data?.origin?.originField?.support90 ?? null,
+        originDegraded: origin.data?.origin?.status === 'DEGRADED',
         detections: (detections.data?.items ?? []) as Detection[],
         tracks: tracks.data?.items ?? [],
         vesselPositions: [],
@@ -193,7 +248,7 @@ export function WorkspacePage() {
         visible: Object.fromEntries(Object.entries(layerVisible).map(([k, v]) => [k, v.visible])),
         opacity: Object.fromEntries(Object.entries(layerVisible).map(([k, v]) => [k, v.opacity])),
       }),
-    [inv, detections.data, tracks.data, highlightMmsi, hoveredMmsi, layerVisible],
+    [inv, detections.data, tracks.data, origin.data, highlightMmsi, hoveredMmsi, layerVisible],
   );
 
   if (isLoading) {
@@ -283,7 +338,7 @@ export function WorkspacePage() {
           <div className="ws-scrubber">
             <TimeScrubber
               sceneTimes={(scenes.data?.items ?? []).map((s) => s.acquiredAt)}
-              releaseWindow={null}
+              releaseWindow={origin.data?.origin?.releaseWindow ?? null}
             />
           </div>
         </MapRoot>

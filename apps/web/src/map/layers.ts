@@ -17,6 +17,12 @@ import type { Detection } from '../api/hooks.ts';
 export interface LayerInputs {
   aoi: { type: 'Polygon'; coordinates: number[][][] } | null;
   originZone: { type: 'Polygon'; coordinates: number[][][] } | null;
+  /**
+   * True when the estimate came from footprint proximity rather than drift back-tracking.
+   * Drawn dashed, because a proximity buffer that looks like a probability surface invites
+   * exactly the reading the tier cap exists to prevent.
+   */
+  originDegraded?: boolean;
   detections: Detection[];
   tracks: Array<{ mmsi: number; line: { type: 'LineString'; coordinates: number[][] } | null }>;
   vesselPositions: Array<{ mmsi: number; lon: number; lat: number; cog: number | null }>;
@@ -62,9 +68,14 @@ export function buildLayers(input: LayerInputs): Layer[] {
         data: { type: 'Feature', geometry: input.originZone, properties: {} },
         stroked: true,
         filled: true,
-        getFillColor: rgba(color.origin500, 55),
-        getLineColor: rgba(color.origin700, 210),
-        getLineWidth: 2,
+        // A degraded zone reads as an OUTLINED REGION; a drift-derived one as a filled
+        // probability surface. The first version made degraded nearly transparent, which
+        // over bright SAR meant invisible — and an origin estimate the analyst cannot see is
+        // worse than one drawn with the wrong emphasis. The distinction is carried by fill
+        // weight and by the layer's own label, not by hiding it.
+        getFillColor: rgba(color.origin500, input.originDegraded ? 40 : 90),
+        getLineColor: rgba(color.origin700, input.originDegraded ? 235 : 210),
+        getLineWidth: input.originDegraded ? 3 : 2,
         lineWidthUnits: 'pixels',
         opacity: alpha('origin-field'),
       }) as unknown as Layer,
