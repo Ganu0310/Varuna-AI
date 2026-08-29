@@ -17,5 +17,15 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: true,
+    rollupOptions: {
+      output: {
+        // Split the two map libraries out so their cost is legible rather than buried in
+        // one 1.8 MB workspace chunk, and so a code change does not invalidate them.
+        manualChunks: {
+          maplibre: ['maplibre-gl'],
+          deckgl: ['@deck.gl/core', '@deck.gl/layers', '@deck.gl/mapbox'],
+        },
+      },
+    },
   },
 });
