@@ -15,31 +15,39 @@ const REAL_PROVENANCE = {
   licence: 'Copernicus Sentinel Data',
 };
 
+const INV = 'inv-1';
+
 describe('layer store refuses layers without provenance', () => {
   beforeEach(() => {
     useLayerStore.setState({ layers: {}, order: [...LAYER_ORDER], rejectedForNoProvenance: [] });
   });
 
   it('accepts a layer that names its source', () => {
-    useLayerStore.getState().addLayer({
-      id: 'sar-raster',
-      label: 'SAR',
-      visible: true,
-      opacity: 1,
-      provenance: REAL_PROVENANCE,
-    });
+    useLayerStore.getState().addLayer(
+      {
+        id: 'sar-raster',
+        label: 'SAR',
+        visible: true,
+        opacity: 1,
+        provenance: REAL_PROVENANCE,
+      },
+      INV,
+    );
     expect(useLayerStore.getState().layers['sar-raster']).toBeTruthy();
     expect(useLayerStore.getState().rejectedForNoProvenance).toHaveLength(0);
   });
 
   it('REFUSES a layer with no provenance, and records the refusal', () => {
-    useLayerStore.getState().addLayer({
-      id: 'mystery-layer',
-      label: 'Unsourced',
-      visible: true,
-      opacity: 1,
-      provenance: null,
-    });
+    useLayerStore.getState().addLayer(
+      {
+        id: 'mystery-layer',
+        label: 'Unsourced',
+        visible: true,
+        opacity: 1,
+        provenance: null,
+      },
+      INV,
+    );
     // Not drawn...
     expect(useLayerStore.getState().layers['mystery-layer']).toBeUndefined();
     // ...and the refusal is visible, so the layer does not merely fail to appear.
@@ -48,20 +56,26 @@ describe('layer store refuses layers without provenance', () => {
 
   it('keeps the fixed draw order regardless of the order layers are added', () => {
     const store = useLayerStore.getState();
-    store.addLayer({
-      id: 'ais-tracks',
-      label: 'AIS',
-      visible: true,
-      opacity: 1,
-      provenance: REAL_PROVENANCE,
-    });
-    store.addLayer({
-      id: 'sar-raster',
-      label: 'SAR',
-      visible: true,
-      opacity: 1,
-      provenance: REAL_PROVENANCE,
-    });
+    store.addLayer(
+      {
+        id: 'ais-tracks',
+        label: 'AIS',
+        visible: true,
+        opacity: 1,
+        provenance: REAL_PROVENANCE,
+      },
+      INV,
+    );
+    store.addLayer(
+      {
+        id: 'sar-raster',
+        label: 'SAR',
+        visible: true,
+        opacity: 1,
+        provenance: REAL_PROVENANCE,
+      },
+      INV,
+    );
     // SAR must draw beneath tracks whatever order they arrived in (04_UIUX §4.7.1).
     const order = useLayerStore.getState().order;
     expect(order.indexOf('sar-raster')).toBeLessThan(order.indexOf('ais-tracks'));
@@ -69,20 +83,26 @@ describe('layer store refuses layers without provenance', () => {
 
   it('toggling and opacity affect only the named layer', () => {
     const store = useLayerStore.getState();
-    store.addLayer({
-      id: 'aoi',
-      label: 'AOI',
-      visible: true,
-      opacity: 1,
-      provenance: REAL_PROVENANCE,
-    });
-    store.addLayer({
-      id: 'ais-tracks',
-      label: 'AIS',
-      visible: true,
-      opacity: 1,
-      provenance: REAL_PROVENANCE,
-    });
+    store.addLayer(
+      {
+        id: 'aoi',
+        label: 'AOI',
+        visible: true,
+        opacity: 1,
+        provenance: REAL_PROVENANCE,
+      },
+      INV,
+    );
+    store.addLayer(
+      {
+        id: 'ais-tracks',
+        label: 'AIS',
+        visible: true,
+        opacity: 1,
+        provenance: REAL_PROVENANCE,
+      },
+      INV,
+    );
     store.toggle('aoi');
     store.setOpacity('aoi', 0.4);
     const layers = useLayerStore.getState().layers;
@@ -138,5 +158,71 @@ describe('selection store links panels to the map', () => {
     store.hover({ kind: 'vessel', mmsi: 2 });
     expect(useSelectionStore.getState().selected.kind).toBe('candidate');
     expect(useSelectionStore.getState().hovered.kind).toBe('vessel');
+  });
+});
+
+describe('layers are scoped to one investigation', () => {
+  const prov = {
+    provider: 'VARUNA',
+    datasetId: 'x',
+    externalId: 'y',
+    licence: 'internal',
+  };
+
+  it('drops the previous investigation’s layers when a new one registers', () => {
+    // The bug this pins, seen in the running app: opening an investigation with no origin
+    // estimate and no detections still listed "Origin zone (proximity, degraded)" and
+    // "Detections" in the layer panel, carried over from the previously-viewed one. A
+    // control offering to toggle data that does not exist here is the same class of problem
+    // as rendering an unsourced value.
+    const s = useLayerStore.getState();
+    s.addLayer(
+      { id: 'origin-field', label: 'Origin zone', visible: true, opacity: 1, provenance: prov },
+      'inv-A',
+    );
+    s.addLayer(
+      { id: 'slick-polygons', label: 'Detections', visible: true, opacity: 1, provenance: prov },
+      'inv-A',
+    );
+    expect(Object.keys(useLayerStore.getState().layers).sort()).toEqual([
+      'origin-field',
+      'slick-polygons',
+    ]);
+
+    // Navigate: the new investigation has only an AOI.
+    useLayerStore
+      .getState()
+      .addLayer(
+        { id: 'aoi', label: 'Area of interest', visible: true, opacity: 1, provenance: prov },
+        'inv-B',
+      );
+
+    expect(Object.keys(useLayerStore.getState().layers)).toEqual(['aoi']);
+    expect(useLayerStore.getState().ownerId).toBe('inv-B');
+  });
+
+  it('keeps accumulating layers within the SAME investigation', () => {
+    const s = useLayerStore.getState();
+    s.addLayer({ id: 'aoi', label: 'AOI', visible: true, opacity: 1, provenance: prov }, 'inv-C');
+    useLayerStore
+      .getState()
+      .addLayer(
+        { id: 'ais-tracks', label: 'AIS', visible: true, opacity: 1, provenance: prov },
+        'inv-C',
+      );
+    expect(Object.keys(useLayerStore.getState().layers).sort()).toEqual(['ais-tracks', 'aoi']);
+  });
+
+  it('clears a stale provenance refusal too', () => {
+    // A refusal recorded against the old investigation would otherwise keep warning about a
+    // layer the current one never tried to add.
+    const s = useLayerStore.getState();
+    s.addLayer({ id: 'bad', label: 'no provenance', visible: true, opacity: 1 } as never, 'inv-D');
+    expect(useLayerStore.getState().rejectedForNoProvenance).toContain('bad');
+
+    useLayerStore
+      .getState()
+      .addLayer({ id: 'aoi', label: 'AOI', visible: true, opacity: 1, provenance: prov }, 'inv-E');
+    expect(useLayerStore.getState().rejectedForNoProvenance).toEqual([]);
   });
 });

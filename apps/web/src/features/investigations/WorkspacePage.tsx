@@ -133,36 +133,42 @@ export function WorkspacePage() {
   // refused by the store rather than drawn (13_REAL_DATA_POLICY §13.4 L4).
   useEffect(() => {
     if (!inv) return;
-    addLayer({
-      id: 'aoi',
-      label: 'Area of interest',
-      visible: true,
-      opacity: 1,
-      provenance: {
-        provider: 'Analyst',
-        datasetId: 'investigation-aoi',
-        externalId: inv._id,
-        licence: 'internal',
+    addLayer(
+      {
+        id: 'aoi',
+        label: 'Area of interest',
+        visible: true,
+        opacity: 1,
+        provenance: {
+          provider: 'Analyst',
+          datasetId: 'investigation-aoi',
+          externalId: inv._id,
+          licence: 'internal',
+        },
       },
-    });
-  }, [inv, addLayer]);
+      id!,
+    );
+  }, [inv, addLayer, id]);
 
   useEffect(() => {
     const scene = scenes.data?.items[0];
     if (!scene) return;
-    addLayer({
-      id: 'sar-raster',
-      label: `SAR ${scene.platform} ${scene.polarisations[0] ?? ''}`,
-      visible: true,
-      opacity: 0.9,
-      provenance: {
-        provider: scene.provenance.provider,
-        datasetId: scene.provenance.datasetId,
-        externalId: scene.provenance.externalId,
-        licence: scene.provenance.licence,
+    addLayer(
+      {
+        id: 'sar-raster',
+        label: `SAR ${scene.platform} ${scene.polarisations[0] ?? ''}`,
+        visible: true,
+        opacity: 0.9,
+        provenance: {
+          provider: scene.provenance.provider,
+          datasetId: scene.provenance.datasetId,
+          externalId: scene.provenance.externalId,
+          licence: scene.provenance.licence,
+        },
       },
-    });
-  }, [scenes.data, addLayer]);
+      id!,
+    );
+  }, [scenes.data, addLayer, id]);
 
   // The origin layer is registered only once an estimate exists, and its label carries the
   // method. A FOOTPRINT_PROXIMITY zone and a back-tracked drift field are different kinds of
@@ -170,71 +176,83 @@ export function WorkspacePage() {
   useEffect(() => {
     const o = origin.data?.origin;
     if (!o?.originField?.support90) return;
-    addLayer({
-      id: 'origin-field',
-      label:
-        o.status === 'DEGRADED'
-          ? `Origin zone (${o.method === 'FOOTPRINT_PROXIMITY' ? 'proximity, degraded' : 'degraded'})`
-          : 'Origin zone (drift 90%)',
-      visible: true,
-      opacity: 1,
-      provenance: {
-        provider: 'VARUNA',
-        datasetId: `${o.method.toLowerCase()}-v1`,
-        externalId: id ?? '',
-        licence: 'internal',
+    addLayer(
+      {
+        id: 'origin-field',
+        label:
+          o.status === 'DEGRADED'
+            ? `Origin zone (${o.method === 'FOOTPRINT_PROXIMITY' ? 'proximity, degraded' : 'degraded'})`
+            : 'Origin zone (drift 90%)',
+        visible: true,
+        opacity: 1,
+        provenance: {
+          provider: 'VARUNA',
+          datasetId: `${o.method.toLowerCase()}-v1`,
+          externalId: id ?? '',
+          licence: 'internal',
+        },
       },
-    });
+      id!,
+    );
   }, [origin.data, addLayer, id]);
 
   useEffect(() => {
     if (!(tracks.data?.items ?? []).some((t) => t.times?.length)) return;
-    addLayer({
-      id: 'vessel-positions',
-      label: 'Vessels at cursor',
-      visible: true,
-      opacity: 1,
-      provenance: {
-        provider: 'NOAA Marine Cadastre',
-        datasetId: 'AIS Vessel Traffic Data',
-        externalId: id ?? '',
-        licence: 'US Government work — public domain',
+    addLayer(
+      {
+        id: 'vessel-positions',
+        label: 'Vessels at cursor',
+        visible: true,
+        opacity: 1,
+        provenance: {
+          provider: 'NOAA Marine Cadastre',
+          datasetId: 'AIS Vessel Traffic Data',
+          externalId: id ?? '',
+          licence: 'US Government work — public domain',
+        },
       },
-    });
+      id!,
+    );
   }, [tracks.data, addLayer, id]);
 
   useEffect(() => {
     const d = detections.data?.items[0];
     if (!d) return;
-    addLayer({
-      id: 'slick-polygons',
-      label: 'Detections',
-      visible: true,
-      opacity: 1,
-      provenance: {
-        provider: d.provenance.provider,
-        datasetId: d.provenance.datasetId,
-        externalId: d.provenance.externalId,
-        licence: 'internal',
+    addLayer(
+      {
+        id: 'slick-polygons',
+        label: 'Detections',
+        visible: true,
+        opacity: 1,
+        provenance: {
+          provider: d.provenance.provider,
+          datasetId: d.provenance.datasetId,
+          externalId: d.provenance.externalId,
+          licence: 'internal',
+        },
       },
-    });
-  }, [detections.data, addLayer]);
+      id!,
+    );
+  }, [detections.data, addLayer, id]);
 
   useEffect(() => {
     if (!tracks.data || tracks.data.items.length === 0) return;
-    addLayer({
-      id: 'ais-tracks',
-      label: 'AIS tracks',
-      visible: true,
-      opacity: 1,
-      provenance: {
-        provider: 'NOAA Marine Cadastre',
-        datasetId: 'AIS Vessel Traffic Data',
-        externalId: 'ais_positions time-series',
-        licence: 'U.S. Government work — public domain',
+    addLayer(
+      {
+        id: 'ais-tracks',
+        label: 'AIS tracks',
+        visible: true,
+        opacity: 1,
+        provenance: {
+          provider: 'NOAA Marine Cadastre',
+          datasetId: 'AIS Vessel Traffic Data',
+          externalId: 'ais_positions time-series',
+          licence: 'U.S. Government work — public domain',
+        },
       },
-    });
-  }, [tracks.data, addLayer]);
+      id!,
+    );
+  }, [tracks.data, addLayer, id]);
 
   // Frame the AOI once the map is ready.
   useEffect(() => {

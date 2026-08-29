@@ -99,7 +99,17 @@ export interface LayerState {
   layers: Record<string, LayerConfig>;
   /** Fixed draw order, bottom to top — 04_UIUX §4.7.1. */
   order: string[];
-  addLayer: (config: LayerConfig) => void;
+  /**
+   * Which investigation the current layers belong to.
+   *
+   * This store is a module singleton and nothing used to clear it, so layers registered in
+   * one investigation survived navigation to another. Opening an investigation with no
+   * origin estimate still listed "Origin zone (proximity, degraded)" in the panel, left over
+   * from the last one — a control claiming data that does not exist here, which is precisely
+   * the confusion the provenance rules elsewhere exist to prevent.
+   */
+  ownerId: string | null;
+  addLayer: (config: LayerConfig, ownerId: string) => void;
   toggle: (id: string) => void;
   setOpacity: (id: string, opacity: number) => void;
   rejectedForNoProvenance: string[];
@@ -119,15 +129,24 @@ export const LAYER_ORDER = [
 export const useLayerStore = create<LayerState>((set, get) => ({
   layers: {},
   order: [...LAYER_ORDER],
+  ownerId: null,
   rejectedForNoProvenance: [],
-  addLayer: (config) => {
+  addLayer: (config, ownerId) => {
+    // Ownership is checked on every add rather than cleared by a separate effect. A reset
+    // effect would have to be guaranteed to run before every registration, and React gives
+    // that only by declaration order — one effect added above it later and stale layers come
+    // back silently. Doing it here makes a mixed-investigation layer set unrepresentable.
+    const stale = get().ownerId !== ownerId;
+    const layers = stale ? {} : get().layers;
+    const rejected = stale ? [] : get().rejectedForNoProvenance;
+
     if (!config.provenance) {
       // Refused, and the refusal is recorded so it surfaces in the UI rather than the layer
       // simply never appearing.
-      set({ rejectedForNoProvenance: [...get().rejectedForNoProvenance, config.id] });
+      set({ ownerId, layers, rejectedForNoProvenance: [...rejected, config.id] });
       return;
     }
-    set({ layers: { ...get().layers, [config.id]: config } });
+    set({ ownerId, layers: { ...layers, [config.id]: config }, rejectedForNoProvenance: rejected });
   },
   toggle: (id) => {
     const l = get().layers[id];
