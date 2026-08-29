@@ -9,6 +9,7 @@ import { DARK_STYLE } from './style.ts';
 const SAR_SOURCE_ID = 'sar-scene';
 const SAR_LAYER_ID = 'sar-scene-raster';
 import { graticuleFor, chooseStep } from './graticule.ts';
+import { MapLabels } from './MapLabels.tsx';
 
 /**
  * The single MapLibre instance — 05_FRONTEND §5.4.1, 12 F-23.
@@ -228,7 +229,6 @@ export function MapRoot({
     try {
       apply();
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.warn('SAR overlay deferred:', err);
     }
   }, [sarTile, sarVisible, sarOpacity, styleReady]);
@@ -279,6 +279,7 @@ export function MapRoot({
   return (
     <div className="map-root">
       <div ref={container} className="map-canvas" />
+      <MapLabels map={map.current} ready={styleReady} />
       {children}
     </div>
   );

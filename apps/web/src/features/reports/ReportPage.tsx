@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import { api, ApiError, downloadFile } from '../../api/client.ts';
 import { EvidenceWaterfall, type FeatureContribution } from '../candidates/EvidenceWaterfall.tsx';
 import { formatUtc, formatAreaKm2 } from '../../lib/format.ts';
+import { InvestigationViews } from '../../components/Breadcrumbs.tsx';
 
 /**
  * `/investigations/:id/report` — the print-ready dossier (05_FRONTEND §5.5.10).
@@ -123,6 +124,8 @@ export function ReportPage() {
         dossier itself is only the dossier. The exports were reachable only by URL until now.
       */}
       <div className="rp-toolbar">
+        <InvestigationViews investigationId={id!} current="report" />
+        <span className="rp-toolbar-sep" aria-hidden="true" />
         <button onClick={() => window.print()}>Print / Save as PDF</button>
         <span className="rp-toolbar-sep" aria-hidden="true" />
         {(

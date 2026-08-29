@@ -95,7 +95,7 @@ test.describe('WebGL context budget', () => {
     await page.waitForTimeout(4_000);
 
     for (let i = 0; i < 3; i++) {
-      await page.click('.ws-views a:has-text("Space–time prism")');
+      await page.click('.view-switch a:has-text("Space–time prism")');
       await page.waitForSelector('.prism-canvas', { timeout: 60_000 });
       await page.goBack();
       // The assertion: the workspace still renders. When this regressed, React unmounted the

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { Breadcrumbs, InvestigationViews } from '../../components/Breadcrumbs.tsx';
 import { useQuery } from '@tanstack/react-query';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
@@ -187,10 +188,15 @@ export function ReliefPage() {
     <main className="relief-page">
       <header className="relief-head">
         <div>
-          <Link to={`/investigations/${id}`} className="mono">
-            ← {inv.data?.name ?? 'investigation'}
-          </Link>
+          <Breadcrumbs
+            items={[
+              { label: 'Investigations', to: '/investigations' },
+              { label: inv.data?.name ?? 'investigation', to: `/investigations/${id}` },
+              { label: 'Slick relief' },
+            ]}
+          />
           <h1>Slick relief</h1>
+          <InvestigationViews investigationId={id!} current="relief" />
         </div>
         <div className="relief-controls">
           <label htmlFor="exag">

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { Breadcrumbs, InvestigationViews } from '../../components/Breadcrumbs.tsx';
 import { useQuery } from '@tanstack/react-query';
 import { Deck, OrbitView, COORDINATE_SYSTEM } from '@deck.gl/core';
 import { PathLayer, PolygonLayer, ScatterplotLayer, LineLayer } from '@deck.gl/layers';
@@ -302,10 +303,15 @@ export function PrismPage() {
     <main className="prism-page">
       <header className="prism-head">
         <div>
-          <Link to={`/investigations/${id}`} className="mono">
-            ← {inv.data.name}
-          </Link>
+          <Breadcrumbs
+            items={[
+              { label: 'Investigations', to: '/investigations' },
+              { label: inv.data.name, to: `/investigations/${id}` },
+              { label: 'Space–time prism' },
+            ]}
+          />
           <h1>Space–time prism</h1>
+          <InvestigationViews investigationId={id!} current="prism" />
         </div>
         <nav className="prism-presets">
           {(Object.keys(PRESETS) as Array<keyof typeof PRESETS>).map((k) => (

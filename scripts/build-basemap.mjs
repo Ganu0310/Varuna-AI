@@ -146,14 +146,75 @@ function build(fc, { clipTo = null, decimals = 3 } = {}) {
   return { type: 'FeatureCollection', features };
 }
 
+/** Centroid of the largest ring, which is good enough to hang a label on. */
+function labelPoint(geometry) {
+  let best = null;
+  for (const poly of polygonsOf(geometry)) {
+    const ring = poly[0];
+    if (!ring || (best && ring.length <= best.length)) continue;
+    best = ring;
+  }
+  if (!best) return null;
+  const n = best.length;
+  const [sx, sy] = best.reduce(([ax, ay], [x, y]) => [ax + x, ay + y], [0, 0]);
+  return [Number((sx / n).toFixed(3)), Number((sy / n).toFixed(3))];
+}
+
 async function main() {
   mkdirSync(OUT, { recursive: true });
+  const boxes = REGIONS.map((r) => r.bbox);
+  const inRegion = (x, y) => boxes.some(([w, s, e, n]) => x >= w && x <= e && y >= s && y <= n);
 
   const world = build(await load('ne_50m_land'));
   writeFileSync(resolve(OUT, 'land-50m.json'), JSON.stringify(world));
 
-  const detail = build(await load('ne_10m_land'), { clipTo: REGIONS.map((r) => r.bbox) });
+  const detail = build(await load('ne_10m_land'), { clipTo: boxes });
   writeFileSync(resolve(OUT, 'land-10m.json'), JSON.stringify(detail));
+
+  // Inland water, clipped like the land. Without it a large lake reads as sea, which on a
+  // maritime map is exactly the wrong inference.
+  const lakes = build(await load('ne_50m_lakes'), { clipTo: boxes });
+  writeFileSync(resolve(OUT, 'lakes.json'), JSON.stringify(lakes));
+
+  /**
+   * Place and sea names, for orientation.
+   *
+   * Points and text only, no polygons — a label needs an anchor, not a shape. Restricted to
+   * the working regions and to places of at least 50,000 people, because a coastline with
+   * every hamlet on it is harder to read than one with none.
+   *
+   * These are rendered as HTML markers rather than a MapLibre `symbol` layer: symbols need a
+   * glyph endpoint, and the only ones available are third-party, which the client is not
+   * allowed to call (02_TRD TR-7).
+   */
+  const placesFc = await load('ne_10m_populated_places_simple');
+  const places = placesFc.features
+    .filter((f) => {
+      const [x, y] = f.geometry.coordinates;
+      if (!inRegion(x, y)) return false;
+      // 5,000, not 50,000. The higher bar left Guam with a single label — island ports are
+      // small, and it is the port that matters on a maritime map, not the metropolis. Clutter
+      // is handled by the viewport cap rather than by the threshold.
+      return (f.properties.pop_max ?? 0) >= 5_000 || f.properties.featurecla === 'Admin-0 capital';
+    })
+    .map((f) => ({
+      name: f.properties.name,
+      pop: f.properties.pop_max ?? 0,
+      capital: f.properties.featurecla === 'Admin-0 capital',
+      lon: Number(f.geometry.coordinates[0].toFixed(4)),
+      lat: Number(f.geometry.coordinates[1].toFixed(4)),
+    }))
+    .sort((a, b) => b.pop - a.pop);
+
+  const marineFc = await load('ne_50m_geography_marine_polys');
+  const seas = marineFc.features
+    .map((f) => {
+      const at = labelPoint(f.geometry);
+      return at ? { name: f.properties.name, lon: at[0], lat: at[1] } : null;
+    })
+    .filter((s) => s && s.name);
+
+  writeFileSync(resolve(OUT, 'labels.json'), JSON.stringify({ places, seas }));
 
   // Provenance travels with the data, as it must for anything this project renders
   // (13_REAL_DATA_POLICY §13.2).
@@ -163,7 +224,8 @@ async function main() {
       {
         sourceType: 'REFERENCE_DATA',
         provider: 'Natural Earth',
-        datasetId: 'ne_50m_land + ne_10m_land',
+        datasetId:
+          'ne_50m_land, ne_10m_land, ne_50m_lakes, ne_10m_populated_places_simple, ne_50m_geography_marine_polys',
         externalId: 'naturalearthdata.com / nvkelso/natural-earth-vector',
         licence: 'Public domain (Natural Earth terms of use)',
         accessUrl: 'https://www.naturalearthdata.com/about/terms-of-use/',

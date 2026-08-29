@@ -10,10 +10,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
  * never to an optimistic default.
  */
 
+type FsModule = typeof import('node:fs');
+
 const files = new Map<string, string>();
 
 vi.mock('node:fs', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('node:fs')>();
+  const actual = await importOriginal<FsModule>();
   return {
     ...actual,
     existsSync: (p: string) => files.has(String(p)),

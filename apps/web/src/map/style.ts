@@ -23,6 +23,7 @@ export const DARK_STYLE: StyleSpecification = {
      */
     'land-world': { type: 'geojson', data: '/basemap/land-50m.json' },
     'land-detail': { type: 'geojson', data: '/basemap/land-10m.json' },
+    lakes: { type: 'geojson', data: '/basemap/lakes.json' },
     // Populated by MapRoot on every camera move — see `graticule.ts` for why the spacing
     // cannot be fixed at build time.
     graticule: { type: 'geojson', data: EMPTY },
@@ -50,6 +51,15 @@ export const DARK_STYLE: StyleSpecification = {
       source: 'land-detail',
       minzoom: 7,
       paint: { 'fill-color': '#0e1a24' },
+    },
+    {
+      id: 'lakes',
+      type: 'fill',
+      source: 'lakes',
+      minzoom: 6,
+      // Painted as water, not land. A large lake rendered as land reads as coast, which on a
+      // maritime map is exactly the wrong inference.
+      paint: { 'fill-color': '#07131f', 'fill-outline-color': '#2b4257' },
     },
     {
       id: 'coastline',

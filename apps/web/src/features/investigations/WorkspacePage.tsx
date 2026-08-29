@@ -12,6 +12,7 @@ import { DetectionsPanel } from '../detections/DetectionsPanel.tsx';
 import { OriginPanel } from '../origin/OriginPanel.tsx';
 import { JobActivity } from '../jobs/JobActivity.tsx';
 import { PipelineProgress } from './PipelineProgress.tsx';
+import { InvestigationViews } from '../../components/Breadcrumbs.tsx';
 import { TeamPanel } from './TeamPanel.tsx';
 import { SensitivityPanel } from '../candidates/SensitivityPanel.tsx';
 import { CataloguePanel } from '../catalogue/CataloguePanel.tsx';
@@ -414,13 +415,9 @@ export function WorkspacePage() {
           }}
         />
 
-        {/* The 3D surfaces had no route into them from anywhere in the app — they existed
-            only if you knew the URL. */}
-        <nav className="ws-views">
-          <Link to={`/investigations/${id}/report`}>Dossier</Link>
-          <Link to={`/investigations/${id}/prism`}>Space–time prism</Link>
-          <Link to={`/investigations/${id}/relief`}>Slick relief</Link>
-        </nav>
+        {/* The same switcher every sibling view shows, so the set is learnable rather than
+            four different link rows. */}
+        <InvestigationViews investigationId={id!} current="workspace" />
 
         <LayerStackControl />
       </aside>

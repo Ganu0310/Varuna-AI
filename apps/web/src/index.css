@@ -1831,13 +1831,6 @@ input[type='range'] {
 .pl-links {
   margin-top: var(--space-2) !important;
 }
-.ws-views {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-  margin: var(--space-5) 0;
-  font-size: 12px;
-}
 
 /* ── guide ────────────────────────────────────────────────────────────────── */
 .guide .card {
@@ -1904,4 +1897,145 @@ input[type='range'] {
 }
 .guide-terms dd {
   margin-bottom: var(--space-3);
+}
+
+/* ── map labels ───────────────────────────────────────────────────────────
+   HTML rather than a MapLibre symbol layer: symbols need a glyph endpoint and
+   every available one is third-party, which the client may not call. */
+.map-labels {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+}
+.map-label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  white-space: nowrap;
+  font-family: var(--font-ui);
+  /* Offset so the text sits beside its point rather than on top of it. */
+  margin: -0.6em 0 0 8px;
+  /* A halo, so a name stays readable over both dark water and bright SAR land. */
+  text-shadow:
+    0 0 3px var(--surface-0),
+    0 0 6px var(--surface-0);
+}
+.map-label-place {
+  font-size: 11px;
+  color: var(--ink-secondary);
+}
+.map-label-sea {
+  font-size: 12px;
+  font-style: italic;
+  letter-spacing: 0.06em;
+  color: var(--accent-700);
+}
+
+/* ── navigation ───────────────────────────────────────────────────────────
+   The current page is marked. Without it the chrome answered "where am I" with
+   nothing, across seven routes. */
+.top-nav a {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--r-xs);
+  border-bottom: 2px solid transparent;
+  text-decoration: none;
+  color: var(--ink-secondary);
+}
+.top-nav a:hover {
+  color: var(--ink-primary);
+  background: var(--surface-2);
+}
+.top-nav a.active {
+  color: var(--accent-400);
+  border-bottom-color: var(--accent-500);
+}
+
+/* ── buttons ──────────────────────────────────────────────────────────────
+   `.btn-ghost` was fully transparent with no border, so it rendered as body text
+   and gave no sign it could be clicked. It stays quiet — it is the secondary
+   action — but it now looks like a control. */
+.btn-ghost {
+  border-color: var(--border-subtle);
+  padding: var(--space-2) var(--space-4);
+}
+.btn-ghost:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background: var(--surface-2);
+  color: var(--ink-primary);
+}
+
+/* A visible focus ring on every control. Keyboard users had to guess where they
+   were, which is the same problem the nav had and a WCAG 2.1 AA failure besides. */
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+[role='tab']:focus-visible,
+summary:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+  border-radius: var(--r-xs);
+}
+
+/* Comfortably clickable. Several controls were under 24px tall, which is fiddly
+   with a mouse and fails the WCAG target-size guidance outright. */
+button,
+.btn-primary,
+.top-nav a {
+  min-height: 32px;
+}
+
+/* ── breadcrumb ───────────────────────────────────────────────────────────── */
+.crumbs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: 12px;
+  color: var(--ink-tertiary);
+  padding: var(--space-3) var(--space-7);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--surface-1);
+}
+.crumbs a {
+  color: var(--ink-secondary);
+}
+.crumbs .crumb-current {
+  color: var(--ink-primary);
+}
+
+/* ── view switcher ────────────────────────────────────────────────────────
+   The same control on all four sibling views of an investigation, so moving
+   between them does not mean returning to the workspace first. */
+.view-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-4) 0;
+}
+.view-switch a {
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  text-decoration: none;
+  color: var(--ink-secondary);
+  background: var(--surface-2);
+}
+.view-switch a:hover {
+  border-color: var(--border-strong);
+  color: var(--ink-primary);
+}
+/* Marked, not removed. Dropping the current entry would shift the others and make
+   the set harder to learn. */
+.view-switch a.view-switch-on {
+  background: var(--accent-900);
+  border-color: var(--accent-700);
+  color: var(--accent-200);
+  cursor: default;
+}
+.rp-toolbar .view-switch {
+  margin: 0;
 }
