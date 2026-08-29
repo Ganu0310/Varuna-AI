@@ -1130,6 +1130,14 @@ button:disabled {
     size: A4;
     margin: 14mm;
   }
+  /* `.report` recolours itself for paper, but the BODY behind it is still the workspace's
+     near-black. With `printBackground` on — which the dossier needs, or its severity chips
+     and evidence bars vanish — that paints every page edge dark. Repaint the ground too. */
+  html,
+  body {
+    background: #fff;
+    color: #10161f;
+  }
   /* Controls are not part of the dossier. */
   .rp-toolbar,
   .rp-toolbar + .form-error {

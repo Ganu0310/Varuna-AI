@@ -9,6 +9,7 @@ import { logger } from './lib/logger.js';
 import { requestId } from './middleware/requestId.js';
 import { sanitizeMongo } from './middleware/sanitizeMongo.js';
 import { authenticate } from './middleware/authenticate.js';
+import { reportScopeGuard } from './middleware/reportScope.js';
 import { globalLimiter } from './middleware/rateLimits.js';
 import { provenanceGuard } from './middleware/provenanceGuard.js';
 import { errorHandler } from './middleware/errorHandler.js';
@@ -65,6 +66,9 @@ export function createApp(): Express {
 
   // Populates req.user; does NOT authorise. Authorisation is per-route via rbac().
   app.use('/api/v1', authenticate());
+  // Immediately after authenticate, so nothing downstream ever sees an unconfined request
+  // that was authenticated by a report token.
+  app.use('/api/v1', reportScopeGuard());
 
   // Patches res.json, so it must register before any route handler runs.
   app.use('/api/v1', provenanceGuard);

@@ -25,6 +25,7 @@ from shapely.geometry import shape
 
 from ..config import get_settings
 from ..detect.darkspot import detect, to_geojson
+from ..detect.landmask import CoastlineUnavailable, coastline_mask
 from ..geo.morphology import compute_morphology, morphology_to_dict
 from ..models.confidence import confidence_to_dict, detection_confidence
 from ..models.registry import get_model
@@ -69,6 +70,11 @@ class SegmentRequest(BaseModel):
     """10 m wind at acquisition, from the WIND provider chain. Omit when unavailable — the
     wind term then reports 0.5 (unknown) rather than assuming good conditions."""
     windMs: float | None = None
+    """Metres of coastal water sacrificed to absorb coastline-vs-SAR disagreement. See
+    `detect/landmask.py` for why this grows the land and never the sea. Zero disables the
+    buffer but keeps the geometric mask; the mask itself cannot be disabled here, because a
+    caller who could switch it off would eventually switch it off."""
+    coastBufferM: float = Field(default=500.0, ge=0.0, le=5000.0)
 
 
 @router.post("/segment")
@@ -81,12 +87,24 @@ async def segment_scene(req: SegmentRequest) -> dict:
             detail=f"could not read s3://{req.bucket}/{req.key}: {e}",
         ) from e
 
+    # The geometric coastline mask. If the vendored data is missing the request fails rather
+    # than quietly falling back to brightness alone: an operator who has not run the basemap
+    # build should find out here, not from a detection sitting on a runway.
+    try:
+        land = coastline_mask(arr.shape, transform, crs, buffer_m=req.coastBufferM)
+    except CoastlineUnavailable as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"coastline mask unavailable, refusing to detect on brightness alone: {e}",
+        ) from e
+
     spots = detect(
         arr,
         pixel_size_m=pixel_m,
         contrast_db=req.contrastDb,
         min_area_km2=req.minAreaKm2,
         wind_ms=req.windMs,
+        coastline=land.mask,
     )
     features = to_geojson(spots, transform, crs)
 
@@ -134,10 +152,24 @@ async def segment_scene(req: SegmentRequest) -> dict:
             "pixelSizeM": pixel_m,
             "windMs": req.windMs,
             "windKnown": req.windMs is not None,
+            "coastBufferM": land.buffer_m,
+        },
+        # Reported, not just applied. An analyst reading a null result on a coastal scene
+        # needs to know how much of the near-shore was never examined, and a scene that comes
+        # back 96% land was never going to find anything.
+        "landMask": {
+            "source": "Natural Earth (vendored, public domain)",
+            "resolution": land.resolution,
+            "bufferMetres": land.buffer_m,
+            "landFraction": round(land.land_fraction, 4),
+            "coastalWaterExcludedFraction": round(land.buffered_fraction, 4),
+            "provenance": land.provenance,
         },
         "scene": {"bucket": req.bucket, "key": req.key},
         "provenance": derived(
-            external_id=f"segment:{req.key}", parents=[], dataset_id=f"classical-darkspot@{sha[:12]}"
+            external_id=f"segment:{req.key}",
+            parents=[],
+            dataset_id=f"classical-darkspot@{sha[:12]}",
         ).model_dump(),
     }
 

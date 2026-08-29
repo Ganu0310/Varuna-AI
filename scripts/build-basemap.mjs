@@ -30,6 +30,9 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = resolve(ROOT, 'apps/web/public/basemap');
+// The ML service is a separate deployable and must not reach into the web app's public
+// directory, so the coastline it rasterises for the land mask is written to its own tree.
+const ML_OUT = resolve(ROOT, 'services/ml/varuna_ml/data/coastline');
 const SRC = 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson';
 
 /**
@@ -171,6 +174,14 @@ async function main() {
   const detail = build(await load('ne_10m_land'), { clipTo: boxes });
   writeFileSync(resolve(OUT, 'land-10m.json'), JSON.stringify(detail));
 
+  // Same polygons, second consumer: `services/ml/varuna_ml/detect/landmask.py` rasterises
+  // these onto the scene grid so dark land — wet asphalt, runways, calm inland water — is
+  // excluded before detection. The brightness test cannot do that job, because the failure
+  // there is that the land is genuinely dark.
+  mkdirSync(ML_OUT, { recursive: true });
+  writeFileSync(resolve(ML_OUT, 'land-10m.json'), JSON.stringify(detail));
+  writeFileSync(resolve(ML_OUT, 'land-50m.json'), JSON.stringify(world));
+
   // Inland water, clipped like the land. Without it a large lake reads as sea, which on a
   // maritime map is exactly the wrong inference.
   const lakes = build(await load('ne_50m_lakes'), { clipTo: boxes });
@@ -218,28 +229,27 @@ async function main() {
 
   // Provenance travels with the data, as it must for anything this project renders
   // (13_REAL_DATA_POLICY §13.2).
-  writeFileSync(
-    resolve(OUT, 'provenance.json'),
-    JSON.stringify(
-      {
-        sourceType: 'REFERENCE_DATA',
-        provider: 'Natural Earth',
-        datasetId:
-          'ne_50m_land, ne_10m_land, ne_50m_lakes, ne_10m_populated_places_simple, ne_50m_geography_marine_polys',
-        externalId: 'naturalearthdata.com / nvkelso/natural-earth-vector',
-        licence: 'Public domain (Natural Earth terms of use)',
-        accessUrl: 'https://www.naturalearthdata.com/about/terms-of-use/',
-        retrievedAt: new Date().toISOString(),
-        note:
-          'Vendored so the client needs no map-provider token and the map works offline. ' +
-          '10 m coastline is clipped to the regions this deployment works in; the rest of ' +
-          'the world is 50 m.',
-        regions: REGIONS.map((r) => r.id),
-      },
-      null,
-      2,
-    ),
+  const provenance = JSON.stringify(
+    {
+      sourceType: 'REFERENCE_DATA',
+      provider: 'Natural Earth',
+      datasetId:
+        'ne_50m_land, ne_10m_land, ne_50m_lakes, ne_10m_populated_places_simple, ne_50m_geography_marine_polys',
+      externalId: 'naturalearthdata.com / nvkelso/natural-earth-vector',
+      licence: 'Public domain (Natural Earth terms of use)',
+      accessUrl: 'https://www.naturalearthdata.com/about/terms-of-use/',
+      retrievedAt: new Date().toISOString(),
+      note:
+        'Vendored so the client needs no map-provider token and the map works offline. ' +
+        '10 m coastline is clipped to the regions this deployment works in; the rest of ' +
+        'the world is 50 m.',
+      regions: REGIONS.map((r) => r.id),
+    },
+    null,
+    2,
   );
+  writeFileSync(resolve(OUT, 'provenance.json'), provenance);
+  writeFileSync(resolve(ML_OUT, 'provenance.json'), provenance);
 
   const kb = (p) => (readFileSync(resolve(OUT, p)).length / 1024).toFixed(0);
   console.log(`\n  land-50m.json  ${world.features.length} features  ${kb('land-50m.json')} kB`);

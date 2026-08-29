@@ -208,6 +208,9 @@ importers:
       pino:
         specifier: ^9.6.0
         version: 9.14.0
+      playwright:
+        specifier: ^1.62.1
+        version: 1.62.1
     devDependencies:
       vitest:
         specifier: ^3.2.6

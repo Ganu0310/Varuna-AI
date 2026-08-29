@@ -111,7 +111,10 @@ def segment(
     if bg.shape != filled.shape:
         bg = np.pad(
             bg,
-            ((0, max(0, filled.shape[0] - bg.shape[0])), (0, max(0, filled.shape[1] - bg.shape[1]))),
+            (
+                (0, max(0, filled.shape[0] - bg.shape[0])),
+                (0, max(0, filled.shape[1] - bg.shape[1])),
+            ),
             mode="edge",
         )
 
@@ -134,9 +137,7 @@ def clean(dark: np.ndarray, min_px: int) -> np.ndarray:
     return out
 
 
-def look_alike_risk(
-    elongation: float, convexity: float, contrast: float, area_km2: float
-) -> float:
+def look_alike_risk(elongation: float, convexity: float, contrast: float, area_km2: float) -> float:
     """0 = strongly oil-like, 1 = strongly look-alike.
 
     Discriminators taken from the SAR oil-spill literature (07_AIML 7.2.2, 09_RESEARCH):
@@ -179,11 +180,28 @@ def detect(
     contrast_db: float = 3.0,
     min_area_km2: float = MIN_AREA_KM2,
     wind_ms: float | None = None,
+    coastline: np.ndarray | None = None,
 ) -> list[DarkSpot]:
-    """Run the detector over one Sigma0 VV array. Returns candidates, most confident first."""
+    """Run the detector over one Sigma0 VV array. Returns candidates, most confident first.
+
+    `coastline` is a geometric land mask from :mod:`landmask`, unioned with the backscatter
+    mask rather than replacing it. The two fail in opposite directions and neither is
+    sufficient alone: backscatter knows about ships and bright targets absent from any vector
+    coastline, and geometry knows about dark land — wet asphalt, runways, calm inland water —
+    that a brightness test hands straight to the detector as sea.
+
+    Passing `None` keeps the brightness-only behaviour. Callers that can supply the geometry
+    should, and `routers/segment.py` does; the parameter is optional so that the detector
+    stays usable on an array with no georeferencing, which is what the evaluation harness
+    feeds it.
+    """
     db = to_db(sigma0_vv)
     finite = np.isfinite(db)
     land = land_mask_from_backscatter(db)
+    if coastline is not None:
+        if coastline.shape != db.shape:
+            raise ValueError(f"coastline mask {coastline.shape} does not match scene {db.shape}")
+        land = land | coastline
     sea = finite & ~land
 
     if int(sea.sum()) < 1000:
@@ -226,9 +244,7 @@ def detect(
         shape_term = 1.0 - risk
         size_term = float(np.clip(area_km2 / 1.0, 0.2, 1.0))
         confidence = float(
-            np.clip(
-                0.40 * sep_term + 0.35 * shape_term + 0.15 * wind_term + 0.10 * size_term, 0, 1
-            )
+            np.clip(0.40 * sep_term + 0.35 * shape_term + 0.15 * wind_term + 0.10 * size_term, 0, 1)
         )
 
         spots.append(
@@ -279,9 +295,7 @@ def to_geojson(
     out: list[dict] = []
     for rank, spot in enumerate(spots):
         shapes = list(
-            rasterio.features.shapes(
-                spot.mask.astype("uint8"), mask=spot.mask, transform=transform
-            )
+            rasterio.features.shapes(spot.mask.astype("uint8"), mask=spot.mask, transform=transform)
         )
         if not shapes:
             continue

@@ -13,11 +13,12 @@
     "lint": "eslint src"
   },
   "dependencies": {
-    "@varuna/shared": "workspace:*",
-    "pino": "^9.6.0",
     "@varuna/api": "workspace:*",
+    "@varuna/shared": "workspace:*",
     "bullmq": "^5.34.10",
-    "ioredis": "^5.4.2"
+    "ioredis": "^5.4.2",
+    "pino": "^9.6.0",
+    "playwright": "^1.62.1"
   },
   "devDependencies": {
     "vitest": "^3.2.6"

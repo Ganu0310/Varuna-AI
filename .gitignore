@@ -60,3 +60,6 @@ DATASET DOW/
 *.tmp.npy
 *.tmp.pkl
 *.tmp
+
+# Rendered dossier PDFs — generated artefacts, reproducible from the investigation.
+data/reports/

@@ -43,6 +43,18 @@ export const EnvSchema = z.object({
     .transform((v) => v === 'true'),
 
   // ── auth ─────────────────────────────────────────────────────────
+  // Where rendered dossier PDFs are written. Local disk rather than object storage: the API
+  // has no S3 client, and a report is read back by the same deployment that wrote it.
+  //
+  // Resolved against the REPO ROOT, not the process CWD. The worker writes these files and
+  // the API serves them, and those are two processes started from two different directories
+  // — a relative path silently gives them two different folders, so the API returns 404 for
+  // a PDF that was written successfully. An absolute value in the environment is used as-is.
+  REPORTS_DIR: z
+    .string()
+    .default('data/reports')
+    .transform((v) => resolve(HERE, '../../../', v)),
+
   JWT_ACCESS_SECRET: z.string().min(32, 'must be at least 32 characters'),
   JWT_REFRESH_SECRET: z.string().min(32, 'must be at least 32 characters'),
   COOKIE_DOMAIN: z.string().default('localhost'),

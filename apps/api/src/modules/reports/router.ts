@@ -7,6 +7,12 @@ import { reqId } from '../../middleware/requestId.js';
 import { audit } from '../audit/service.js';
 import { ALL_SECTIONS, buildReportData, enforceMandatorySections } from './service.js';
 import { toCsv, toGeoJson, toManifest } from './exports.js';
+import { enqueue } from '../../queue/producer.js';
+import { env } from '../../env.js';
+import { NotFoundError } from '../../errors.js';
+import { createReadStream } from 'node:fs';
+import { stat, readdir } from 'node:fs/promises';
+import { join, basename } from 'node:path';
 
 /** Reports and exports — 06_BACKEND §6.4.9. */
 export const reportsRouter: Router = Router();
@@ -73,15 +79,24 @@ reportsRouter.post(
         requestId: reqId(req),
       });
 
-      res.status(200).json({
+      const { jobId, deduplicated } = await enqueue({
+        queue: 'report',
+        kind: 'REPORT',
+        jobKey: `report:${id}:${sections.join(',')}`,
+        payload: { investigationId: id, sections, userId: req.user!.id },
+        investigationId: id,
+        userId: req.user!.id,
+      });
+
+      res.status(deduplicated ? 200 : 202).json({
+        jobId,
+        deduplicated,
         sections,
         manifest: data.manifest,
-        // The print-ready route is the deliverable; a browser prints it to PDF. Headless
-        // rendering is wired here when Playwright is available in the deployment image.
+        // Still offered: the route the PDF is printed FROM. An analyst who wants to read the
+        // dossier rather than file it should not have to wait for a browser to boot.
         printUrl: `/investigations/${id}/report`,
-        note:
-          'Open printUrl and print to PDF (A4). The page renders the same components as the ' +
-          'workspace, in light theme, with UNCERTAINTY and PROVENANCE always present.',
+        pdfUrl: `/api/v1/investigations/${id}/report/pdf`,
       });
     } catch (err) {
       next(err);
@@ -139,6 +154,59 @@ reportsRouter.get(
       const data = await buildReportData(param(req, 'id'), [...ALL_SECTIONS]);
       res.setHeader('Content-Type', 'application/json');
       res.send(JSON.stringify(toManifest(data), null, 2));
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+/**
+ * The rendered PDF.
+ *
+ * Served from disk rather than redirecting to object storage, because there is no object
+ * storage in the API and a signed URL to a file the API is already authorised to read would
+ * be indirection for its own sake. `rbac('viewer')` plus `requireInvestigationAccess` is the
+ * same gate as every other read of this investigation.
+ *
+ * Returns the most recent render. Reports are not versioned here: the manifest inside the
+ * document records what it was built from, and the file's SHA-256 is in the job result, so a
+ * PDF someone is holding can always be matched back to the run that produced it.
+ */
+reportsRouter.get(
+  '/:id/report/pdf',
+  rbac('viewer'),
+  validate({ params: IdParam }),
+  requireInvestigationAccess('viewer'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = param(req, 'id');
+      let names: string[];
+      try {
+        names = await readdir(env.REPORTS_DIR);
+      } catch {
+        names = [];
+      }
+
+      // Filenames are `{investigationId}-{iso}.pdf`, so the newest sorts last.
+      const mine = names.filter((n) => n.startsWith(`${id}-`) && n.endsWith('.pdf')).sort();
+      const newest = mine[mine.length - 1];
+      if (!newest) {
+        throw new NotFoundError(
+          'No PDF has been rendered for this investigation yet. POST to ' +
+            `/investigations/${id}/report/generate first, then retry once the job completes.`,
+        );
+      }
+
+      // `basename` defends the join against a name that somehow contained a traversal. The
+      // ids are validated hex and the files are written by us, so this is belt-and-braces —
+      // but a path built from directory contents is exactly where that goes wrong.
+      const path = join(env.REPORTS_DIR, basename(newest));
+      const info = await stat(path);
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Length', info.size);
+      res.setHeader('Content-Disposition', `attachment; filename="${basename(newest)}"`);
+      createReadStream(path).pipe(res);
     } catch (err) {
       next(err);
     }

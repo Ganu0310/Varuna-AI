@@ -91,6 +91,9 @@ without one.
 - **Building the backend** → 03 (Architecture) then 06 (Backend Spec) then 02 (TRD).
 - **Building the model** → 07 (AI/ML) then 10 (Datasets) then 13 (Real Data Policy).
 - **Setting up the environment** → 11 (API Keys) then 03 (Architecture §3.9 Local Dev).
+- **Running it** → [`docs/RUNNING.md`](docs/RUNNING.md).
+- **Using it** → [`docs/FEATURE_GUIDE.md`](docs/FEATURE_GUIDE.md) — every feature, how to
+  drive it and how it works underneath. The in-product short version is `/guide`.
 
 ---
 

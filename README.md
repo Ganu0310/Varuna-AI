@@ -23,8 +23,14 @@ produces a ranked, fully explainable evidence dossier.
 | 01–13 | Product, technical, architecture, UI/UX, frontend, backend, AI/ML, app flow, research, datasets, API keys, feature rationale, real-data policy |
 | **14** | [**Implementation Plan**](IMPLEMENTATION_PLAN.md) — the build order |
 | **15** | [**Project Context**](CONTEXT.md) — living status, updated continuously |
+| — | [**Running VARUNA**](doc/docs/RUNNING.md) — clone to working system |
+| — | [**Feature Guide**](doc/docs/FEATURE_GUIDE.md) — how to use every feature, and how each works |
+| — | [Security Review](doc/docs/SECURITY_REVIEW.md) |
+| — | [Gap Register](doc/docs/GAP_REGISTER.md) — where the build and the plan differ, and why |
 
 New here? Read `00_INDEX.md`, then `IMPLEMENTATION_PLAN.md`, then check `CONTEXT.md`.
+Using the product rather than building it? Go straight to
+[`doc/docs/FEATURE_GUIDE.md`](doc/docs/FEATURE_GUIDE.md).
 
 ---
 
