@@ -1,0 +1,19 @@
+{
+  "sourceType": "REFERENCE_DATA",
+  "provider": "Natural Earth",
+  "datasetId": "ne_50m_land + ne_10m_land",
+  "externalId": "naturalearthdata.com / nvkelso/natural-earth-vector",
+  "licence": "Public domain (Natural Earth terms of use)",
+  "accessUrl": "https://www.naturalearthdata.com/about/terms-of-use/",
+  "retrievedAt": "2026-08-29T10:41:38.063Z",
+  "note": "Vendored so the client needs no map-provider token and the map works offline. 10 m coastline is clipped to the regions this deployment works in; the rest of the world is 50 m.",
+  "regions": [
+    "marianas",
+    "gulf-of-mexico",
+    "east-mediterranean",
+    "red-sea",
+    "persian-gulf",
+    "ligurian",
+    "makassar"
+  ]
+}

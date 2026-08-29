@@ -1,0 +1,4 @@
+# Upstream Natural Earth downloads, kept only to make rebuilds fast.
+# The built land-*.json ARE committed: the map must work offline and with no
+# provider token, so the basemap cannot be a build-time fetch.
+.cache-*.geojson

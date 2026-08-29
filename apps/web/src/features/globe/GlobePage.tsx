@@ -121,6 +121,17 @@ export function GlobePage() {
         paint: { 'fill-color': '#0d2033' },
       });
 
+      // The same vendored Natural Earth land the workspace map uses. Without continents the
+      // globe was a featureless ball and an incident marker had nothing to be located
+      // against — the one thing an orbital view is for.
+      m.addSource('land', { type: 'geojson', data: '/basemap/land-50m.json' });
+      m.addLayer({
+        id: 'land',
+        type: 'fill',
+        source: 'land',
+        paint: { 'fill-color': '#16242f', 'fill-outline-color': '#37506a' },
+      });
+
       m.addSource('graticule', {
         type: 'geojson',
         data: graticuleFor({ west: -180, south: -85, east: 180, north: 85 }, 15),
