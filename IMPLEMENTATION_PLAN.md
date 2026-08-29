@@ -28,7 +28,7 @@
 - `[FE]` frontend · `[BE]` backend · `[ML]` ML/geo service · `[DevOps]` infra/CI/data · `[All]` cross-cutting.
 - "Exit criteria" are binary and testable. A phase is not done until every box is checkable.
 - Spec references use the doc number and section, e.g. `06_BACKEND §6.6.2`.
-- Every phase inherits the **Real-Data Policy** ([13_REAL_DATA_POLICY.md](13_REAL_DATA_POLICY.md)) as a non-negotiable acceptance gate.
+- Every phase inherits the **Real-Data Policy** ([13_REAL_DATA_POLICY.md](doc/13_REAL_DATA_POLICY.md)) as a non-negotiable acceptance gate.
 
 ---
 

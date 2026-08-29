@@ -11,7 +11,7 @@ produces a ranked, fully explainable evidence dossier.
 
 > **The non-negotiable data rule:** zero mock/fake/synthetic/placeholder data anywhere —
 > product, demo, screenshots, metrics, or model training. Every data object carries a
-> provenance record. See [13_REAL_DATA_POLICY.md](13_REAL_DATA_POLICY.md).
+> provenance record. See [13_REAL_DATA_POLICY.md](doc/13_REAL_DATA_POLICY.md).
 
 ---
 
@@ -19,7 +19,7 @@ produces a ranked, fully explainable evidence dossier.
 
 | # | Doc |
 |---|---|
-| 00 | [Index](00_INDEX.md) |
+| 00 | [Index](doc/00_INDEX.md) |
 | 01–13 | Product, technical, architecture, UI/UX, frontend, backend, AI/ML, app flow, research, datasets, API keys, feature rationale, real-data policy |
 | **14** | [**Implementation Plan**](IMPLEMENTATION_PLAN.md) — the build order |
 | **15** | [**Project Context**](CONTEXT.md) — living status, updated continuously |
