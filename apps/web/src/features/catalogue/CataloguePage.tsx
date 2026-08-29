@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { CataloguePanel } from './CataloguePanel.tsx';
 import { ProviderHealthTable } from './ProviderHealthTable.tsx';
 import { parsePolygon } from '../../lib/geo.ts';
+import { AoiPicker, presetIdForBbox } from '../../components/AoiPicker.tsx';
 
 /**
  * `/catalogue` — a standalone live catalogue search, so an analyst can check coverage
@@ -24,6 +25,8 @@ export function CataloguePage() {
       </p>
 
       <section className="card">
+        <AoiPicker onPick={setAoiText} selectedId={presetIdForBbox(aoiText)} />
+
         <label htmlFor="aoi">
           Area of interest — a bounding box (<code>west,south,east,north</code>) or GeoJSON
         </label>

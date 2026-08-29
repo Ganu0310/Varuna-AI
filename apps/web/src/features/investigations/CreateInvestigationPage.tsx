@@ -5,6 +5,7 @@ import { ApiError } from '../../api/client.ts';
 import { formatAreaKm2 } from '../../lib/format.ts';
 import { approxPolygonAreaKm2, parsePolygon } from '../../lib/geo.ts';
 import { CataloguePanel } from '../catalogue/CataloguePanel.tsx';
+import { AoiPicker, presetIdForBbox } from '../../components/AoiPicker.tsx';
 
 /**
  * `/investigations/new` — 05_FRONTEND §5.5.4.
@@ -77,6 +78,8 @@ export function CreateInvestigationPage() {
 
         <section className="card">
           <h2>Area of interest</h2>
+          <AoiPicker onPick={setAoiText} selectedId={presetIdForBbox(aoiText)} />
+
           <label htmlFor="aoi">
             Area of interest — a bounding box, or GeoJSON. Coordinates are [longitude, latitude].
           </label>

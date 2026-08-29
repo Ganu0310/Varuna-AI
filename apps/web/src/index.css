@@ -1316,3 +1316,35 @@ input[type='range'] {
 .maplibregl-ctrl-attrib a {
   color: var(--ink-tertiary);
 }
+
+/* ── AOI presets ──────────────────────────────────────────────────────────
+   The coverage note is the point of the control, not decoration: it tells an
+   analyst before they commit whether attribution can work in the area they
+   just chose. */
+.aoi-picker {
+  margin-bottom: var(--space-5);
+}
+.aoi-preset-note {
+  margin-top: var(--space-3);
+  padding: var(--space-4);
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-2);
+}
+.aoi-preset-note p {
+  margin: var(--space-3) 0 0;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--ink-secondary);
+}
+.aoi-preset-note.coverage-staged {
+  border-left: 3px solid var(--status-ok);
+}
+.aoi-preset-note.coverage-obtainable {
+  border-left: 3px solid var(--status-info);
+}
+/* An area with no AIS is not an error — the imagery half works fine — but it is a
+   dead end for attribution, and it should look like a warning rather than a note. */
+.aoi-preset-note.coverage-none {
+  border-left: 3px solid var(--status-warn);
+}
