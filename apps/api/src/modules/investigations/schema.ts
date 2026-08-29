@@ -55,3 +55,32 @@ export const AddMemberBody = z.object({ userId: z.string().min(1), role: z.enum(
 export type AddMemberBody = z.infer<typeof AddMemberBody>;
 
 export const IdParam = z.object({ id: z.string().regex(/^[a-f\d]{24}$/i, 'invalid id') });
+
+// ── comments (06_BACKEND §6.4.2) ──────────────────────────────────────
+
+const ObjectIdString = z.string().regex(/^[a-f\d]{24}$/i);
+const SubjectType = z.enum(['DETECTION', 'CANDIDATE', 'ORIGIN', 'SCENE']);
+
+/**
+ * A note is about the whole investigation or about one named object — never half of each. A
+ * subject type with no id points at nothing; an id with no type cannot be resolved.
+ */
+export const CommentBody = z
+  .object({
+    body: z.string().trim().min(1, 'a comment cannot be empty').max(4000),
+    subjectType: SubjectType.optional(),
+    subjectId: ObjectIdString.optional(),
+  })
+  .strict()
+  .refine((v) => Boolean(v.subjectType) === Boolean(v.subjectId), {
+    message: 'subjectType and subjectId must be given together, or neither',
+  });
+
+export const CommentQuery = z
+  .object({ subjectType: SubjectType.optional(), subjectId: ObjectIdString.optional() })
+  .strict()
+  .refine((v) => Boolean(v.subjectType) === Boolean(v.subjectId), {
+    message: 'subjectType and subjectId must be given together, or neither',
+  });
+
+export const CommentParams = z.object({ id: ObjectIdString, commentId: ObjectIdString }).strict();

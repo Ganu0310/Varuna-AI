@@ -1,13 +1,14 @@
 import { Types } from 'mongoose';
 import type { Polygon } from 'geojson';
 import { MAX_AOI_KM2, type Role } from '@varuna/shared';
-import { HttpError, NotFoundError } from '../../errors.js';
+import { HttpError, NotFoundError, ForbiddenError } from '../../errors.js';
 import { geodesicPolygonAreaKm2 } from '../../geo/geodesy.js';
 import { rewindPolygon } from '../../geo/envelope.js';
 import { audit } from '../audit/service.js';
 import { SatelliteSceneModel } from '../scenes/model.js';
 import { SpillDetectionModel } from '../detections/model.js';
 import { InvestigationModel } from './model.js';
+import { CommentModel } from './comments.model.js';
 import type {
   CreateInvestigationBody,
   ListInvestigationsQuery,
@@ -242,4 +243,101 @@ export async function investigationSummary(id: string) {
       SCORING: 'PENDING',
     },
   };
+}
+
+// ── comments ──────────────────────────────────────────────────────────
+
+/**
+ * Post an analytical note — 06_BACKEND §6.4.2.
+ *
+ * The author's email is denormalised onto the row deliberately. A note is evidence of what
+ * someone believed at a point in time, and it has to keep reading correctly after the account
+ * is deactivated or renamed; joining to a live user record would let a later change rewrite
+ * the attribution on an old statement.
+ */
+export async function addComment(
+  id: string,
+  input: { body: string; subjectType?: string | null; subjectId?: string | null },
+  actor: { id: string; email: string },
+  requestId?: string,
+) {
+  await getInvestigation(id);
+
+  const doc = await CommentModel.create({
+    investigationId: new Types.ObjectId(id),
+    authorId: new Types.ObjectId(actor.id),
+    authorEmail: actor.email,
+    body: input.body,
+    subjectType: input.subjectType ?? null,
+    subjectId: input.subjectId ? new Types.ObjectId(input.subjectId) : null,
+  });
+
+  await audit({
+    actorId: actor.id,
+    action: 'INVESTIGATION_COMMENT_ADDED',
+    entityType: 'Investigation',
+    entityId: id,
+    // The body is NOT copied into the audit log. Duplicating it would mean a retraction has
+    // to reach two places to be honoured, and the one it missed would be the one someone
+    // eventually reads.
+    after: { commentId: String(doc._id), subjectType: doc.subjectType, length: input.body.length },
+    requestId,
+  });
+  return doc;
+}
+
+/** Newest last — a conversation reads forwards. */
+export async function listComments(id: string, subject?: { type: string; id: string }) {
+  await getInvestigation(id);
+  const filter: Record<string, unknown> = { investigationId: new Types.ObjectId(id) };
+  if (subject) {
+    filter.subjectType = subject.type;
+    filter.subjectId = new Types.ObjectId(subject.id);
+  }
+  return CommentModel.find(filter).sort({ createdAt: 1 }).lean();
+}
+
+/**
+ * Withdraw a note. Only its author may, and a lead may not do it for them.
+ *
+ * A comment is a record of what a particular person thought. Letting someone else remove it
+ * would make the record a record of what the team lead was willing to leave standing, which
+ * is a different and much less useful thing. A lead who disagrees can say so in a comment of
+ * their own — that is what the thread is for.
+ *
+ * The row survives; the body is cleared. Deleting outright would leave replies answering
+ * nothing, and would hide that a claim was made and withdrawn — itself part of the record.
+ */
+export async function retractComment(
+  id: string,
+  commentId: string,
+  actor: { id: string },
+  requestId?: string,
+) {
+  await getInvestigation(id);
+  const doc = await CommentModel.findOne({
+    _id: new Types.ObjectId(commentId),
+    investigationId: new Types.ObjectId(id),
+  });
+  if (!doc) throw new NotFoundError('No such comment on this investigation');
+
+  if (String(doc.authorId) !== actor.id) {
+    throw new ForbiddenError('A comment can only be retracted by the analyst who wrote it');
+  }
+  if (doc.retractedAt) return doc;
+
+  doc.body = '';
+  doc.retractedAt = new Date();
+  doc.retractedBy = new Types.ObjectId(actor.id);
+  await doc.save();
+
+  await audit({
+    actorId: actor.id,
+    action: 'INVESTIGATION_COMMENT_RETRACTED',
+    entityType: 'Investigation',
+    entityId: id,
+    after: { commentId },
+    requestId,
+  });
+  return doc;
 }

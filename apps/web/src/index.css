@@ -2047,3 +2047,70 @@ button,
 .rp-toolbar .view-switch {
   margin: 0;
 }
+
+/* ── analyst notes (Phase 2, 06_BACKEND §6.4.2) ───────────────────────
+   A conversation, not a data table: comfortable measure, clear authorship,
+   and a retracted note visibly present rather than removed. */
+.comments {
+  margin-top: var(--space-6, 24px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 12px);
+}
+.comment-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 8px);
+}
+.comment {
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 78ch;
+}
+/* A withdrawn note keeps its place in the thread but must not read as a live claim. */
+.comment-retracted {
+  border-style: dashed;
+  background: transparent;
+}
+.comment-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: baseline;
+  font-size: 12px;
+}
+.comment-body {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.55;
+}
+.comment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 78ch;
+}
+.comment-form textarea {
+  width: 100%;
+  resize: vertical;
+  font: inherit;
+  background: var(--surface-inset);
+  color: var(--ink-primary);
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  padding: 8px 10px;
+}
+.comment-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}

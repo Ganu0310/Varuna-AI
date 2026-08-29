@@ -11,6 +11,7 @@ import { CandidateRanking } from '../candidates/CandidateRanking.tsx';
 import { DetectionsPanel } from '../detections/DetectionsPanel.tsx';
 import { OriginPanel } from '../origin/OriginPanel.tsx';
 import { JobActivity } from '../jobs/JobActivity.tsx';
+import { CommentThread } from './CommentThread.tsx';
 import { PipelineProgress } from './PipelineProgress.tsx';
 import { InvestigationViews } from '../../components/Breadcrumbs.tsx';
 import { TeamPanel } from './TeamPanel.tsx';
@@ -509,7 +510,14 @@ export function WorkspacePage() {
           </div>
         ) : null}
 
-        {tab === 'team' ? <TeamPanel investigationId={id!} /> : null}
+        {tab === 'team' ? (
+          <>
+            <TeamPanel investigationId={id!} />
+            {/* Notes sit with the team, not in a tab of their own: they are read alongside
+                who did what, which is the question they answer. */}
+            <CommentThread investigationId={id!} />
+          </>
+        ) : null}
 
         {tab === 'activity' ? (
           <section className="card">

@@ -5,6 +5,9 @@ import { reqId } from '../../middleware/requestId.js';
 import { listAudit } from '../audit/service.js';
 import {
   AddMemberBody,
+  CommentBody,
+  CommentParams,
+  CommentQuery,
   CreateInvestigationBody,
   IdParam,
   ListInvestigationsQuery,
@@ -153,6 +156,66 @@ investigationsRouter.get(
     try {
       const items = await listAudit({ entityType: 'Investigation', entityId: param(req, 'id') });
       res.json({ items, nextCursor: null });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+/**
+ * Comments — 06_BACKEND §6.4.2.
+ *
+ * `analyst` to write, `viewer` to read: a viewer is someone shown the case, and the notes are
+ * a large part of what makes the case comprehensible. Membership is required for both, so an
+ * analyst on another team cannot read this team's reasoning.
+ */
+investigationsRouter.get(
+  '/:id/comments',
+  rbac('viewer'),
+  validate({ params: IdParam, query: CommentQuery }),
+  requireInvestigationAccess('viewer'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const q = validatedQuery<{ subjectType?: string; subjectId?: string }>(req);
+      const subject =
+        q.subjectType && q.subjectId ? { type: q.subjectType, id: q.subjectId } : undefined;
+      const items = await service.listComments(param(req, 'id'), subject);
+      res.json({ items, nextCursor: null });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+investigationsRouter.post(
+  '/:id/comments',
+  rbac('analyst'),
+  validate({ params: IdParam, body: CommentBody }),
+  requireInvestigationAccess('analyst'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const doc = await service.addComment(param(req, 'id'), req.body, req.user!, reqId(req));
+      res.status(201).json(doc);
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+investigationsRouter.delete(
+  '/:id/comments/:commentId',
+  rbac('analyst'),
+  validate({ params: CommentParams }),
+  requireInvestigationAccess('analyst'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const doc = await service.retractComment(
+        param(req, 'id'),
+        param(req, 'commentId'),
+        req.user!,
+        reqId(req),
+      );
+      res.json(doc);
     } catch (err) {
       next(err);
     }
