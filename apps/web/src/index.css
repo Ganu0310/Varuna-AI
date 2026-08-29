@@ -1579,3 +1579,34 @@ input[type='range'] {
   gap: var(--space-3);
   flex-wrap: wrap;
 }
+
+/* ── detection version history ────────────────────────────────────────────
+   Version 0 is marked because it is the only one the detector produced. Every
+   later entry is a human addition, and the two must not read alike. */
+.version-list {
+  list-style: none;
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.version {
+  border-left: 2px solid var(--border-default);
+  padding: 0 0 0 var(--space-4);
+}
+.version-origin {
+  border-left-color: var(--accent-600);
+}
+.version-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  font-size: 12px;
+}
+.version-meta {
+  margin: var(--space-2) 0 0;
+  font-size: 11px;
+  color: var(--ink-secondary);
+}

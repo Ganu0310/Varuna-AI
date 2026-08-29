@@ -11,13 +11,14 @@ import { CandidateRanking } from '../candidates/CandidateRanking.tsx';
 import { DetectionsPanel } from '../detections/DetectionsPanel.tsx';
 import { OriginPanel } from '../origin/OriginPanel.tsx';
 import { JobActivity } from '../jobs/JobActivity.tsx';
+import { TeamPanel } from './TeamPanel.tsx';
 import { SensitivityPanel } from '../candidates/SensitivityPanel.tsx';
 import { CataloguePanel } from '../catalogue/CataloguePanel.tsx';
 import { useLayerStore, useSelectionStore, useTimeStore, useMapStore } from '../../state/stores.ts';
 import { vesselsAt } from '../../map/vesselAt.ts';
 import { formatUtc, formatAreaKm2 } from '../../lib/format.ts';
 
-type Tab = 'catalogue' | 'scenes' | 'origin' | 'ais' | 'candidates' | 'activity';
+type Tab = 'catalogue' | 'scenes' | 'origin' | 'ais' | 'candidates' | 'activity' | 'team';
 
 interface AisCoverage {
   recordCount: number;
@@ -374,6 +375,7 @@ export function WorkspacePage() {
               ['ais', 'AIS', coverage.data?.distinctVessels ?? null],
               ['candidates', 'Candidates', null],
               ['activity', 'Activity', null],
+              ['team', 'Team & trail', null],
             ] as const
           ).map(([key, label, count]) => (
             <button
@@ -478,6 +480,8 @@ export function WorkspacePage() {
             </section>
           </div>
         ) : null}
+
+        {tab === 'team' ? <TeamPanel investigationId={id!} /> : null}
 
         {tab === 'activity' ? (
           <section className="card">

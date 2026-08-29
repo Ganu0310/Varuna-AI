@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useDetections, useScenes, useIngestScene, type Detection } from '../../api/hooks.ts';
 import { formatUtc, formatAreaKm2 } from '../../lib/format.ts';
 import { DetectionReview } from './DetectionReview.tsx';
+import { DetectionVersions } from './DetectionVersions.tsx';
 
 /**
  * Detections panel — 05_FRONTEND §5.5.5.
@@ -131,11 +132,16 @@ export function DetectionsPanel({ investigationId }: { investigationId: string }
       </section>
 
       {selected ? (
-        <DetectionReview
-          detectionId={selected}
-          investigationId={investigationId}
-          onClose={() => setSelected(null)}
-        />
+        <>
+          <DetectionReview
+            detectionId={selected}
+            investigationId={investigationId}
+            onClose={() => setSelected(null)}
+          />
+          <section className="card">
+            <DetectionVersions detectionId={selected} />
+          </section>
+        </>
       ) : null}
     </div>
   );
