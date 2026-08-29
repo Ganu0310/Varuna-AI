@@ -5,6 +5,7 @@ import { SocketProvider } from './providers/SocketProvider.tsx';
 import { setUnauthorisedHandler } from '../api/client.ts';
 import { useMe } from '../api/hooks.ts';
 import { LoginPage } from '../features/auth/LoginPage.tsx';
+import { LandingPage } from '../features/landing/LandingPage.tsx';
 import { RegisterPage } from '../features/auth/RegisterPage.tsx';
 import { InvestigationListPage } from '../features/investigations/InvestigationListPage.tsx';
 import { CreateInvestigationPage } from '../features/investigations/CreateInvestigationPage.tsx';
@@ -178,7 +179,9 @@ export function App() {
                 </RequireAuth>
               }
             />
-            <Route path="/" element={<Navigate to="/investigations" replace />} />
+            {/* The public front door. Unauthenticated: an evaluator should meet the
+                system before meeting its login form. */}
+            <Route path="/" element={<LandingPage />} />
             <Route
               path="*"
               element={

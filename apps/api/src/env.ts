@@ -50,6 +50,13 @@ export const EnvSchema = z.object({
   // the API serves them, and those are two processes started from two different directories
   // — a relative path silently gives them two different folders, so the API returns 404 for
   // a PDF that was written successfully. An absolute value in the environment is used as-is.
+  // The one investigation the public landing page reconstructs. Named explicitly rather than
+  // "the most recent", which would publish whatever an analyst last happened to open.
+  DEMO_INVESTIGATION_ID: z
+    .string()
+    .regex(/^[a-f\d]{24}$/i)
+    .optional(),
+
   REPORTS_DIR: z
     .string()
     .default('data/reports')
