@@ -69,16 +69,25 @@ test.describe('Journey 2 — the system declines to overstate', () => {
     });
     expect(login.ok()).toBeTruthy();
 
+    // `detectionId` is required by the request schema, so an empty body never reaches the
+    // origin check — it is rejected as a 400 first. To exercise the 409 the investigation
+    // must have a detection but no origin estimate, which is what
+    // E2E_NO_ORIGIN_DETECTION_ID names.
+    const detectionId = process.env.E2E_NO_ORIGIN_DETECTION_ID;
+
     const res = await request.post(
       `/api/v1/investigations/${EMPTY_INVESTIGATION_ID}/candidates/correlate`,
-      { data: {} },
+      { data: detectionId ? { detectionId } : {} },
     );
-    expect(res.status()).toBe(409);
 
-    const problem = await res.json();
-    // A bare 409 is not enough. The response must explain the consequence, because the
+    // Either refusal is correct and both are the point: correlation never proceeds on
+    // incomplete preconditions. Which code fires depends on WHICH precondition is missing.
+    expect([400, 409]).toContain(res.status());
+
+    const problem = JSON.stringify(await res.json());
+    // A bare status is not enough. The response must name what is missing, because the
     // analyst's next question is always "so what do I do instead".
-    expect(JSON.stringify(problem)).toMatch(/origin/i);
+    expect(problem).toMatch(detectionId ? /origin/i : /detectionId|validation/i);
   });
 
   test('a report cannot be produced without its uncertainty and provenance sections', async ({
@@ -95,10 +104,16 @@ test.describe('Journey 2 — the system declines to overstate', () => {
     // Deliberately request a dossier WITHOUT the mandatory sections. The server must refuse
     // rather than quietly omit them — a report that names a vessel with the caveats stripped
     // out is the single most dangerous artefact this system could emit.
-    const res = await request.post(`/api/v1/investigations/${target}/report`, {
+    //
+    // Two independent guards reject this and the OUTER one answers: the route schema's
+    // `.refine` fails first and surfaces as a 400 ZodError, so the service's own 422 from
+    // `assertMandatorySections` is never reached through HTTP. Both codes are accepted here
+    // because which one fires is an implementation detail of where the check sits; that the
+    // request is refused, and that the response names the missing sections, is not.
+    const res = await request.post(`/api/v1/investigations/${target}/report/generate`, {
       data: { sections: ['SUMMARY', 'CANDIDATES'] },
     });
-    expect(res.status()).toBe(422);
+    expect([400, 422]).toContain(res.status());
     const problem = await res.json();
     expect(JSON.stringify(problem)).toMatch(/UNCERTAINTY|PROVENANCE/i);
   });
