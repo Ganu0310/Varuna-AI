@@ -19,6 +19,9 @@ const ReportPage = lazy(() =>
 const PrismPage = lazy(() =>
   import('../features/prism/PrismPage.tsx').then((m) => ({ default: m.PrismPage })),
 );
+const GlobePage = lazy(() =>
+  import('../features/globe/GlobePage.tsx').then((m) => ({ default: m.GlobePage })),
+);
 const ReliefPage = lazy(() =>
   import('../features/relief/ReliefPage.tsx').then((m) => ({ default: m.ReliefPage })),
 );
@@ -119,6 +122,16 @@ export function App() {
                       <WorkspacePage />
                     </Suspense>
                   </AppChrome>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/globe"
+              element={
+                <RequireAuth>
+                  <Suspense fallback={<main className="page">Loading globe…</main>}>
+                    <GlobePage />
+                  </Suspense>
                 </RequireAuth>
               }
             />

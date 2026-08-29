@@ -298,5 +298,11 @@ export async function importAisCsv(opts: AisImportOptions): Promise<AisImportRes
 
   await flush();
   res.distinctMmsi = mmsis.size;
+
+  // New positions invalidate every reconstructed track. Without this the read path would
+  // serve pre-import tracks for up to a minute — and the coverage figures the report derives
+  // from them would describe the archive as it was before the import.
+  clearTrackCache();
+
   return res;
 }

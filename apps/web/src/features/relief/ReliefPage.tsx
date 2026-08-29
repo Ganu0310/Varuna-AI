@@ -155,7 +155,6 @@ export function ReliefPage() {
     // `exaggeration` and `pitch` are deliberately NOT dependencies. They are applied by the
     // two effects below, and including them here tore the whole map down and rebuilt it on
     // every tick of a slider — destroying and recreating a WebGL context per frame of a drag.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tiles.data, inv.data, detections.data]);
 
   useEffect(() => {

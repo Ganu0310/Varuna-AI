@@ -1713,3 +1713,45 @@ input[type='range'] {
   border-left: 3px solid var(--oil-500);
   padding-left: var(--space-4);
 }
+
+/* ── orbital globe ────────────────────────────────────────────────────────── */
+.globe-page {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100vh;
+  background: var(--surface-0);
+}
+.globe-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding: var(--space-5) var(--space-7);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+}
+.globe-head h1 {
+  margin: var(--space-2) 0 0;
+  font-size: 20px;
+}
+.globe-canvas {
+  position: relative;
+  min-height: 0;
+}
+.globe-legend {
+  padding: var(--space-5) var(--space-7);
+  border-top: 1px solid var(--border-subtle);
+  background: var(--surface-1);
+  font-size: 12px;
+}
+.globe-legend p {
+  margin: 0 0 var(--space-2);
+  line-height: 1.55;
+}
+/* States that the terminator is computed, not decorative — the distinction between a
+   real solar position and a plausible-looking tilted circle. */
+.globe-caption {
+  color: var(--ink-primary);
+  border-left: 3px solid var(--accent-600);
+  padding-left: var(--space-4);
+}
