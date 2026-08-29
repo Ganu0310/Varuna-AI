@@ -1526,3 +1526,56 @@ input[type='range'] {
   gap: var(--space-3);
   flex-wrap: wrap;
 }
+
+/* ── evidence drill-down ──────────────────────────────────────────────────── */
+.evidence-detail {
+  margin-top: var(--space-5);
+  padding: var(--space-5);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--accent-700);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+}
+.evidence-detail h4 {
+  margin: 0 0 var(--space-4);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.evidence-detail h5 {
+  margin: var(--space-5) 0 var(--space-2);
+  font-size: 12px;
+  color: var(--ink-secondary);
+}
+.evidence-refs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 11px;
+  color: var(--ink-tertiary);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* ── vessel detail ────────────────────────────────────────────────────────
+   The empty fields are the message. A bulk AIS export carries no static
+   messages, so name, IMO and ship type are genuinely absent — which is why
+   several attribution features report MISSING for this vessel. */
+.vessel-detail {
+  margin-top: var(--space-5);
+  padding: var(--space-5);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+}
+.vessel-detail h4 {
+  margin: 0 0 var(--space-4);
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}

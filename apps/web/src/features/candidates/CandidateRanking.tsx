@@ -3,6 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client.ts';
 import { useSelectionStore } from '../../state/stores.ts';
 import { EvidenceWaterfall, type FeatureContribution } from './EvidenceWaterfall.tsx';
+import { EvidenceDetail } from './EvidenceDetail.tsx';
+import { VesselDetail } from './VesselDetail.tsx';
 
 /**
  * Candidate ranking — 05_FRONTEND §5.5.7.
@@ -46,6 +48,7 @@ const TIER_TEXT: Record<string, string> = {
 
 export function CandidateRanking({ investigationId }: { investigationId: string }) {
   const [openId, setOpenId] = useState<string | null>(null);
+  const [openFeature, setOpenFeature] = useState<string | null>(null);
   const select = useSelectionStore((s) => s.select);
   const hover = useSelectionStore((s) => s.hover);
 
@@ -182,7 +185,17 @@ export function CandidateRanking({ investigationId }: { investigationId: string 
                   measuredCount={c.measuredFeatureCount}
                   score={c.score}
                   scoreCI={c.scoreCI}
+                  onFeatureClick={(key) => setOpenFeature(key === openFeature ? null : key)}
                 />
+                <VesselDetail mmsi={c.mmsi} />
+                {openFeature ? (
+                  <EvidenceDetail candidateId={c._id} featureKey={openFeature} />
+                ) : (
+                  <p className="field-hint">
+                    Select a feature above to see what was measured, in what unit, and from which
+                    observations.
+                  </p>
+                )}
                 {c.weightProfileId !== 'DEFAULT_V1' ? (
                   <p className="field-hint">
                     Ranked under weight profile <span className="mono">{c.weightProfileId}</span>,
