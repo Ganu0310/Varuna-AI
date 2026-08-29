@@ -156,8 +156,23 @@ scenesRouter.get(
           ] as [number, number, number, number])
         : null;
 
+      /**
+       * A second template, Terrain-RGB encoded, for the relief surface (04_UIUX §4.6.2).
+       *
+       * MapLibre reads elevation from packed RGB, so the SAME Sigma0 raster can drive a 3D
+       * surface. What that surface shows is BACKSCATTER, not height — oil appears as a
+       * depression because it damps capillary waves and returns less energy, not because the
+       * sea is lower there. The view carries a caption saying so, and it cannot be dismissed.
+       */
+      const terrainParams = new URLSearchParams({
+        url: `s3://${scene.storage?.bucket ?? env.S3_BUCKET}/${key}`,
+        algorithm: 'terrainrgb',
+        rescale: '0,0.3',
+      });
+
       res.json({
         tileUrlTemplate: `${env.TITILER_URL}/cog/tiles/WebMercatorQuad/{z}/{x}/{y}.png?${params}`,
+        terrainUrlTemplate: `${env.TITILER_URL}/cog/tiles/WebMercatorQuad/{z}/{x}/{y}.png?${terrainParams}`,
         bounds,
         minZoom: 6,
         maxZoom: 16,

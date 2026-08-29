@@ -1661,3 +1661,55 @@ input[type='range'] {
   border-left: 3px solid var(--accent-600);
   padding-left: var(--space-4);
 }
+
+/* ── slick relief ─────────────────────────────────────────────────────────── */
+.relief-page {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100vh;
+  background: var(--surface-0);
+}
+.relief-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding: var(--space-5) var(--space-7);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+}
+.relief-head h1 {
+  margin: var(--space-2) 0 0;
+  font-size: 20px;
+}
+.relief-controls {
+  display: grid;
+  grid-template-columns: auto 12rem;
+  align-items: center;
+  gap: var(--space-3) var(--space-4);
+  font-size: 12px;
+}
+.relief-controls label {
+  margin: 0;
+  color: var(--ink-secondary);
+  font-size: 12px;
+}
+.relief-canvas {
+  position: relative;
+  min-height: 0;
+}
+.relief-legend {
+  padding: var(--space-5) var(--space-7);
+  border-top: 1px solid var(--border-subtle);
+  background: var(--surface-1);
+}
+/* The physics caption is not dismissible. Reading the basin as a depression in the
+   sea surface is a false belief about what the image shows, not a preference. */
+.relief-caption {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ink-primary);
+  border-left: 3px solid var(--oil-500);
+  padding-left: var(--space-4);
+}

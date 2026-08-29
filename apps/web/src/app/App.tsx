@@ -19,6 +19,9 @@ const ReportPage = lazy(() =>
 const PrismPage = lazy(() =>
   import('../features/prism/PrismPage.tsx').then((m) => ({ default: m.PrismPage })),
 );
+const ReliefPage = lazy(() =>
+  import('../features/relief/ReliefPage.tsx').then((m) => ({ default: m.ReliefPage })),
+);
 const WorkspacePage = lazy(() =>
   import('../features/investigations/WorkspacePage.tsx').then((m) => ({
     default: m.WorkspacePage,
@@ -116,6 +119,16 @@ export function App() {
                       <WorkspacePage />
                     </Suspense>
                   </AppChrome>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/investigations/:id/relief"
+              element={
+                <RequireAuth>
+                  <Suspense fallback={<main className="page">Loading relief…</main>}>
+                    <ReliefPage />
+                  </Suspense>
                 </RequireAuth>
               }
             />
