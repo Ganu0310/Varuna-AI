@@ -20,6 +20,7 @@ export function AppChrome({ children }: { children: ReactNode }) {
           <Link to="/investigations">Investigations</Link>
           <Link to="/catalogue">Catalogue</Link>
           <Link to="/globe">Globe</Link>
+          <Link to="/guide">Guide</Link>
           {/* Shown only to admins. The route is guarded server-side regardless — this just
               avoids offering a link that leads to a 403. */}
           {data?.permissions.role === 'admin' ? <Link to="/admin">Administration</Link> : null}

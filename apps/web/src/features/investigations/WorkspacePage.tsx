@@ -11,6 +11,7 @@ import { CandidateRanking } from '../candidates/CandidateRanking.tsx';
 import { DetectionsPanel } from '../detections/DetectionsPanel.tsx';
 import { OriginPanel } from '../origin/OriginPanel.tsx';
 import { JobActivity } from '../jobs/JobActivity.tsx';
+import { PipelineProgress } from './PipelineProgress.tsx';
 import { TeamPanel } from './TeamPanel.tsx';
 import { SensitivityPanel } from '../candidates/SensitivityPanel.tsx';
 import { CataloguePanel } from '../catalogue/CataloguePanel.tsx';
@@ -97,6 +98,13 @@ export function WorkspacePage() {
       }>(`/investigations/${id}/scenes/${readyScene!._id}/tiles`),
     enabled: Boolean(id && readyScene?._id),
     staleTime: 5 * 60_000,
+  });
+
+  const candidates = useQuery({
+    queryKey: ['candidates', id],
+    queryFn: () => api.get<{ items: unknown[] }>(`/investigations/${id}/candidates`),
+    enabled: Boolean(id),
+    staleTime: 30_000,
   });
 
   const coverage = useQuery({
@@ -389,6 +397,29 @@ export function WorkspacePage() {
               {count != null ? <span className="badge">{count}</span> : null}
             </button>
           ))}
+        </nav>
+
+        <PipelineProgress
+          investigationId={id!}
+          onGoToTab={(t) => setTab(t as Tab)}
+          state={{
+            scenes: scenes.data?.items.length ?? 0,
+            detections: detections.data?.items.length ?? 0,
+            reviewed: (detections.data?.items ?? []).filter((d) => d.reviewStatus !== 'UNREVIEWED')
+              .length,
+            hasOrigin: Boolean(origin.data?.origin),
+            originDegraded: origin.data?.origin?.status === 'DEGRADED',
+            candidates: candidates.data?.items.length ?? 0,
+            aisVessels: coverage.data?.distinctVessels ?? 0,
+          }}
+        />
+
+        {/* The 3D surfaces had no route into them from anywhere in the app — they existed
+            only if you knew the URL. */}
+        <nav className="ws-views">
+          <Link to={`/investigations/${id}/report`}>Dossier</Link>
+          <Link to={`/investigations/${id}/prism`}>Space–time prism</Link>
+          <Link to={`/investigations/${id}/relief`}>Slick relief</Link>
         </nav>
 
         <LayerStackControl />

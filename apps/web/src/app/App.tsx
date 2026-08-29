@@ -9,6 +9,7 @@ import { RegisterPage } from '../features/auth/RegisterPage.tsx';
 import { InvestigationListPage } from '../features/investigations/InvestigationListPage.tsx';
 import { CreateInvestigationPage } from '../features/investigations/CreateInvestigationPage.tsx';
 import { CataloguePage } from '../features/catalogue/CataloguePage.tsx';
+import { GuidePage } from '../features/guide/GuidePage.tsx';
 import { AdminPage } from '../features/admin/AdminPage.tsx';
 // MapLibre and deck.gl are ~1 MB of the bundle and are only needed inside a workspace.
 // Splitting them out keeps the login and list routes small (05_FRONTEND §5.9 budgets).
@@ -121,6 +122,16 @@ export function App() {
                     >
                       <WorkspacePage />
                     </Suspense>
+                  </AppChrome>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/guide"
+              element={
+                <RequireAuth>
+                  <AppChrome>
+                    <GuidePage />
                   </AppChrome>
                 </RequireAuth>
               }
