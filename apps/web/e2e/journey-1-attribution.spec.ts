@@ -103,8 +103,13 @@ test.describe('Journey 1 — attribution on the real Guam incident', () => {
     // lost.
     await login(page);
     await page.goto(`/investigations/${INVESTIGATION_ID}/report`);
-    await expect(page.getByText(/not a determination of responsibility/i)).toBeVisible({
-      timeout: 60_000,
-    });
+
+    // Asserted on the containing element, not with `getByText`. The disclaimer emphasises the
+    // word "not" in its own <strong>, which splits the sentence across text nodes — a regex
+    // over a single node never matches it. The first version of this test failed for exactly
+    // that reason while the dossier was word-for-word correct.
+    const disclaimer = page.locator('.rp-disclaimer');
+    await expect(disclaimer).toBeVisible({ timeout: 60_000 });
+    await expect(disclaimer).toContainText(/not\s+a determination of responsibility/i);
   });
 });

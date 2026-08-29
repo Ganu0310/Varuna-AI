@@ -327,17 +327,54 @@ ioredis then queues commands forever instead of rejecting.
 
 ---
 
-## 10. Not yet runnable here
+## 10. Verification suites
 
-Stated so nobody loses time looking for a way to run them:
+**Playwright E2E** — both journeys, against the real stack:
 
-- **Playwright E2E** (`apps/web/e2e/`) — both journeys are written and Chromium is installed,
-  but they have never been executed. They need the API, ML service, web server and a seeded
-  account up together, plus `E2E_EMAIL`, `E2E_PASSWORD`, `E2E_INVESTIGATION_ID`. They are built
-  with **no fixture fallback**, so they fail rather than skip when the stack is absent.
-- **k6 load profile** (`tests/load/envelope.js`) — written; k6 is not installed on the
-  development machine. NFR-6 was measured directly at the datastore instead
-  (`pnpm bench:envelope`); **NFR-7 (50 concurrent investigations) remains unmeasured**.
-- **Manual keyboard / screen-reader passes** — not done. axe-core covers every route that
-  renders in jsdom, but the workspace needs a WebGL context and is therefore **not covered**, so
-  the screen an analyst actually works in has no accessibility sign-off.
+```bash
+cd apps/web
+E2E_BASE_URL=http://localhost:5173 E2E_EMAIL=<account> E2E_PASSWORD=<password> E2E_INVESTIGATION_ID=<one with a scene, origin and candidates> E2E_EMPTY_INVESTIGATION_ID=<one with none of those> npx playwright test
+```
+
+5 tests, all passing. They are built with **no fixture fallback** — they fail rather than
+skip when the stack is absent, because a silently-skipped E2E suite reads as a passing one.
+
+**k6 load profile** (`winget install GrafanaLabs.k6`):
+
+```bash
+BASE_URL=http://localhost:4000 EMAIL=<account> PASSWORD=<password> INVESTIGATION_ID=<id> k6 run tests/load/envelope.js
+```
+
+Run it against an API started with `NODE_ENV=test`. The global limiter is **100 req/min per
+IP** in production, so 50 VUs from one host are throttled by design — `NODE_ENV=test` raises
+the limits 1000× while keeping the middleware running and counting. Without that the run
+measures the rate limiter, and reports a flattering p95 for requests that were rejected.
+
+Last measured, 50 VUs, 0 failures:
+
+| | Measured | Target |
+| --- | --- | --- |
+| NFR-6 envelope query p95 | 29 ms | < 400 ms |
+| NFR-7 non-job read p95 | 6 ms | < 250 ms |
+| responses carrying provenance | 100% | > 99% |
+
+The envelope figure depends on the 60-second track cache: a **cold** request still pays the
+full ~300–420 ms of track reconstruction, which is visible as the `max` in a k6 run. Quote
+both if the number matters.
+
+**Datastore benchmark** — `pnpm bench:envelope` measures the same query beneath the API, at
+whatever scale the database actually holds.
+
+---
+
+## 11. Still not done
+
+- **Manual keyboard and screen-reader passes** — not performed. axe-core covers every route
+  that renders in jsdom, but the workspace needs a WebGL context and is therefore **not
+  covered**, so the screen an analyst works in has no accessibility sign-off.
+- **Phase 11 (3D surfaces)** — globe, slick relief, space-time prism. Skipped by choice.
+- **Server-side PDF** — the dossier is printed from the browser; there is no headless
+  renderer.
+- **Bundle budget** — the workspace route is ~508 kB gzip against a 220 kB target. maplibre-gl
+  alone is 285 kB, so the budget is unreachable with the mandated renderer rather than merely
+  missed. See the commit for the two options.

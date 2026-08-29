@@ -27,8 +27,8 @@ export const MAX_INTERPOLATION_GAP_SEC = 15 * 60;
 export interface TrackForAnimation {
   mmsi: number;
   line: { type: 'LineString'; coordinates: number[][] } | null;
-  /** Observation time per vertex, same order and length as `line.coordinates`. */
-  times?: string[];
+  /** Observation time per vertex as epoch ms, same order and length as `line.coordinates`. */
+  times?: number[];
 }
 
 export interface VesselAtTime {
@@ -72,7 +72,9 @@ export function vesselAt(track: TrackForAnimation, atMs: number): VesselAtTime |
   const times = track.times;
   if (!coords || !times || coords.length === 0 || times.length !== coords.length) return null;
 
-  const ts = times.map((t) => Date.parse(t));
+  // Already epoch ms from the API. `Date.parse` on a number would yield NaN and silently
+  // place every vessel nowhere, so the type change is load-bearing.
+  const ts = times;
 
   // Rule 1: no extrapolation outside the observed window.
   if (atMs < ts[0]! || atMs > ts[ts.length - 1]!) return null;

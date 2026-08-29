@@ -48,7 +48,7 @@ interface TracksResponse {
   items: Array<{
     mmsi: number;
     line: { type: 'LineString'; coordinates: number[][] } | null;
-    times?: string[];
+    times?: number[];
     fixCount: number;
     removedOutlierCount: number;
     gapCount: number;

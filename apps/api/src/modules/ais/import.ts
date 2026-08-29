@@ -4,6 +4,7 @@ import { createHash } from 'node:crypto';
 import mongoose from 'mongoose';
 import { AIS_SENTINELS } from '@varuna/shared';
 import { logger } from '../../lib/logger.js';
+import { clearTrackCache } from './trackCache.js';
 import { recordProvenance } from '../provenance/service.js';
 
 /**

@@ -20,7 +20,7 @@ const SIMPLE = {
       [144.7, 13.4],
     ],
   },
-  times: ['2025-09-21T10:00:00Z', '2025-09-21T10:01:00Z'],
+  times: [T('2025-09-21T10:00:00Z'), T('2025-09-21T10:01:00Z')],
 };
 
 describe('placing a vessel at a moment in time', () => {
@@ -69,7 +69,7 @@ describe('refusing to invent positions', () => {
         ],
       },
       // Four hours of silence. The vessel could be anywhere in between.
-      times: ['2025-09-21T10:00:00Z', '2025-09-21T14:00:00Z'],
+      times: [T('2025-09-21T10:00:00Z'), T('2025-09-21T14:00:00Z')],
     };
     expect(vesselAt(dark, T('2025-09-21T12:00:00Z'))).toBeNull();
 
@@ -88,10 +88,7 @@ describe('refusing to invent positions', () => {
           [144.7, 13.4],
         ],
       },
-      times: [
-        '2025-09-21T10:00:00Z',
-        new Date(T('2025-09-21T10:00:00Z') + gapSec * 1000).toISOString(),
-      ],
+      times: [T('2025-09-21T10:00:00Z'), T('2025-09-21T10:00:00Z') + gapSec * 1000],
     });
     const mid = (gapSec: number) => T('2025-09-21T10:00:00Z') + (gapSec / 2) * 1000;
 
@@ -117,7 +114,7 @@ describe('malformed input is dropped, not guessed at', () => {
           [144.7, 13.4],
         ],
       },
-      times: ['2025-09-21T10:00:00Z'],
+      times: [T('2025-09-21T10:00:00Z')],
     };
     expect(vesselAt(bad, T('2025-09-21T10:00:00Z'))).toBeNull();
   });
@@ -143,7 +140,7 @@ describe('vesselsAt', () => {
           [145.1, 13.4],
         ],
       },
-      times: ['2025-09-21T20:00:00Z', '2025-09-21T20:01:00Z'],
+      times: [T('2025-09-21T20:00:00Z'), T('2025-09-21T20:01:00Z')],
     };
     const at = T('2025-09-21T10:00:30Z');
     const out = vesselsAt([SIMPLE, other], at);
@@ -160,7 +157,7 @@ describe('vesselsAt', () => {
         type: 'LineString' as const,
         coordinates: Array.from({ length: n }, (_, i) => [144.0 + i * 0.001, 13.0]),
       },
-      times: Array.from({ length: n }, (_, i) => new Date(start + i * 60_000).toISOString()),
+      times: Array.from({ length: n }, (_, i) => start + i * 60_000),
     };
     const v = vesselAt(long, start + 250 * 60_000);
     expect(v!.lon).toBeCloseTo(144.0 + 250 * 0.001, 6);

@@ -8,7 +8,8 @@ import { NotFoundError } from '../../errors.js';
 import { getInvestigation } from '../investigations/service.js';
 import { OriginEstimateModel } from '../origin/model.js';
 import { VesselTrackModel } from './model.js';
-import { coverage, darkPeriods, reconstructTracks, chooseHint } from './service.js';
+import { coverage, darkPeriods, chooseHint } from './service.js';
+import { cachedTracks } from './trackCache.js';
 
 /** AIS — 06_BACKEND §6.4.7. */
 export const aisRouter: Router = Router();
@@ -70,7 +71,7 @@ aisRouter.get(
       const to = inv.windowEnd.toISOString();
 
       const hint = chooseHint(bbox, from, to);
-      const tracks = await reconstructTracks(from, to, bbox);
+      const tracks = await cachedTracks(from, to, bbox as [number, number, number, number]);
       const q = validatedQuery<z.infer<typeof TracksQuery>>(req);
 
       // The origin zone, when one exists, lets each gap be reported with whether it
@@ -95,16 +96,23 @@ aisRouter.get(
           fixCount: t.fixes.length,
           line: t.line,
           /**
-           * The observation TIME of each vertex in `line`, same order and length.
+           * The observation TIME of each vertex in `line`, same order and length, as epoch
+           * MILLISECONDS.
            *
            * Without these a client can only assume the fixes are evenly spaced, and AIS
            * reporting is nothing like even — intervals swing from seconds to hours and
            * `gaps` exists precisely because of it. Animating a vessel on that assumption
            * would place it where it was never reported, which is fabricated positional data
-           * whatever the intent (13_REAL_DATA_POLICY §13.3). Sending the real times is what
-           * lets a client interpolate honestly, and know when it is interpolating.
+           * whatever the intent (13_REAL_DATA_POLICY §13.3).
+           *
+           * Numbers rather than ISO strings, because this array is long. A dense track
+           * carries ~1,200 fixes and the endpoint returns up to 60 of them; as
+           * "2025-09-21T00:00:04.000Z" that is 24 bytes each against 13 for the epoch value.
+           * Measured with k6, the ISO form pushed the response to ~690 kB and the envelope
+           * query p95 to 435 ms against a 400 ms budget — the payload, not the database
+           * (84 ms), was the cost.
            */
-          times: t.fixes.map((f) => f.t),
+          times: t.fixes.map((f) => Date.parse(f.t)),
           medianIntervalSec: t.medianIntervalSec,
           // Surfaced per vessel: a track that had points removed is not the raw record.
           removedOutlierCount: t.removedOutlierCount,

@@ -1,5 +1,5 @@
 import http from 'k6/http';
-import { check, group } from 'k6';
+import { check, group, sleep } from 'k6';
 import { Trend, Rate } from 'k6/metrics';
 
 /**
@@ -86,15 +86,26 @@ export function setup() {
     { headers: { 'Content-Type': 'application/json' } },
   );
   check(res, { 'login succeeded': (r) => r.status === 200 });
-  return { cookies: res.cookies };
+  if (res.status !== 200) {
+    throw new Error(`login failed with ${res.status}: ${String(res.body).slice(0, 200)}`);
+  }
+
+  // Returned as a raw Cookie header rather than as a jar.
+  //
+  // `setup()` runs in its own context with its own cookie jar, and VUs do not inherit it —
+  // the first version of this file returned `res.cookies` and every VU then ran
+  // unauthenticated, producing 99.99% failures and a flattering 2.76ms p95 that was
+  // measuring the cost of being rejected. Latency figures from an unauthenticated run are
+  // worse than no figures, because they look like success.
+  const header = Object.entries(res.cookies)
+    .map(([name, vals]) => `${name}=${vals[0].value}`)
+    .join('; ');
+  if (!header) throw new Error('login returned no cookies — cannot authenticate the VUs');
+  return { cookieHeader: header };
 }
 
 function authed(data) {
-  const jar = http.cookieJar();
-  for (const [name, values] of Object.entries(data.cookies || {})) {
-    for (const v of values) jar.set(BASE, name, v.value);
-  }
-  return { headers: { 'Content-Type': 'application/json' } };
+  return { headers: { 'Content-Type': 'application/json', Cookie: data.cookieHeader } };
 }
 
 export function envelopeQuery(data) {
@@ -109,7 +120,10 @@ export function envelopeQuery(data) {
     const url = `${BASE}/api/v1/investigations/${INVESTIGATION_ID}/ais/tracks?limit=${limit}&persist=false`;
 
     const res = http.get(url, { ...params, tags: { nfr: 'NFR-6' } });
-    envelopeLatency.add(res.timings.duration, { nfr: 'NFR-6' });
+
+    // Only successful responses contribute to the latency metric. Timing failures and
+    // reporting the result as p95 is how an unauthenticated run reads as a fast one.
+    if (res.status === 200) envelopeLatency.add(res.timings.duration, { nfr: 'NFR-6' });
 
     check(res, {
       'envelope 200': (r) => r.status === 200,
@@ -135,6 +149,12 @@ export function envelopeQuery(data) {
     }
     provenanceComplete.add(ok);
   });
+
+  // Think time. Without it a VU loops as fast as the network allows and 10 VUs generate
+  // ~3,500 req/s, which is not "10 analysts" — it is a flood, and it measures the rate
+  // limiter rather than the query. NFR-7 is about 50 concurrent INVESTIGATIONS, and an
+  // analyst reading a result issues a request every few seconds.
+  sleep(1 + Math.random());
 }
 
 export function investigationRead(data) {
@@ -148,8 +168,9 @@ export function investigationRead(data) {
     ]) {
       if (!path) continue;
       const res = http.get(`${BASE}${path}`, { ...params, tags: { nfr: 'NFR-7' } });
-      readLatency.add(res.timings.duration, { nfr: 'NFR-7' });
+      if (res.status === 200) readLatency.add(res.timings.duration, { nfr: 'NFR-7' });
       check(res, { [`${path} ok`]: (r) => r.status === 200 });
     }
   });
+  sleep(2 + Math.random() * 2);
 }
