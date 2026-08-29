@@ -1,0 +1,23 @@
+{
+  "datasetId": "trujillo-acatitla-s1-oil-spill-part3-test",
+  "citation": "Trujillo-Acatitla, R., Tuxpan-Vargas, J., Ovando-Vazquez, C., & Monterrubio-Martinez, E. (2024). Sentinel-1 SAR Oil spill image dataset for train, validate, and test deep learning models. Part III. Zenodo.",
+  "licence": "CC-BY-4.0",
+  "measuredAt": "2026-08-29T05:26:23Z",
+  "detectorVersion": "darkspot-v1",
+  "scenes": {
+    "oil": 150,
+    "lookalike": 150,
+    "noOil": 150
+  },
+  "oil": {
+    "meanIou": 0.4648,
+    "medianIou": 0.4829,
+    "detectionRate": 1.0,
+    "missedEntirely": 0
+  },
+  "falsePositives": {
+    "lookalikeSceneRate": 0.76,
+    "noOilSceneRate": 0.3667,
+    "lookalikeMeanRiskFlagged": 0.2611
+  }
+}

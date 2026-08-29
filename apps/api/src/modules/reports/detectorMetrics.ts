@@ -98,6 +98,19 @@ export function detectorLimitationText(): string {
   const pct = (v: number) => `${(100 * v).toFixed(0)}%`;
   const total = m.scenes.oil + m.scenes.lookalike + m.scenes.noOil;
 
+  // The risk score is the detector's own warning channel: a high value tells the analyst
+  // "this may not be oil". If it stays LOW on scenes where the detector is provably wrong,
+  // the warning is not merely weak — it points the wrong way, and saying so is the single
+  // most useful sentence in this paragraph.
+  const risk = m.falsePositives.lookalikeMeanRiskFlagged;
+  const riskSentence =
+    risk !== null && risk < 0.5
+      ? ` On those look-alike scenes it assigned a mean look-alike risk of only ${risk.toFixed(2)}, ` +
+        'so it was not merely wrong but unwarned: its own risk score did not flag the very ' +
+        'cases it exists to flag. Do not read a low look-alike risk as evidence that a ' +
+        'detection is oil.'
+      : '';
+
   return (
     `${preamble}. Measured on ${total} held-out real Sentinel-1 scenes it has never been ` +
     `fitted to (${m.citation.split('(')[0]?.trim() ?? m.datasetId}, ${m.licence}): mean ` +
@@ -106,8 +119,8 @@ export function detectorLimitationText(): string {
     `and missing ${m.oil.missedEntirely} entirely. It reported at least one detection on ` +
     `${pct(m.falsePositives.lookalikeSceneRate)} of ${m.scenes.lookalike} look-alike scenes ` +
     `and ${pct(m.falsePositives.noOilSceneRate)} of ${m.scenes.noOil} oil-free scenes, where ` +
-    'the correct answer was nothing at all. Treat a single detection as a lead to verify, ' +
-    'not as evidence of oil.'
+    `the correct answer was nothing at all.${riskSentence} Treat a single detection as a ` +
+    'lead to verify, not as evidence of oil.'
   );
 }
 

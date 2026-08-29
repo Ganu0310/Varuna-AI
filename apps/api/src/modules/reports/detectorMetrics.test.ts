@@ -126,4 +126,29 @@ describe('detector metrics — present and valid', () => {
     const { detectorLimitationText } = await load(JSON.stringify(VALID));
     expect(detectorLimitationText()).toMatch(/never been fitted to/i);
   });
+
+  it('warns when the risk score FAILED to flag its own false positives', async () => {
+    // The measured value is 0.26: on scenes where the detector was provably wrong it still
+    // reported low look-alike risk. That is the warning channel pointing the wrong way, and
+    // it is more actionable than the raw error rate.
+    const { detectorLimitationText } = await load(JSON.stringify(VALID));
+    const text = detectorLimitationText();
+
+    expect(text).toMatch(/not merely wrong but unwarned/i);
+    expect(text).toMatch(/do not read a low look-alike risk as evidence/i);
+  });
+
+  it('omits that warning when the risk score DID flag them', async () => {
+    // A detector that fires wrongly but marks the result high-risk has behaved acceptably;
+    // asserting the caveat unconditionally would make it meaningless.
+    const good = {
+      ...VALID,
+      falsePositives: { ...VALID.falsePositives, lookalikeMeanRiskFlagged: 0.82 },
+    };
+    const { detectorLimitationText } = await load(JSON.stringify(good));
+    const text = detectorLimitationText();
+
+    expect(text).not.toMatch(/unwarned/i);
+    expect(text).toMatch(/34%/); // the rate is still reported
+  });
 });

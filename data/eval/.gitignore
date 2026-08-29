@@ -1,0 +1,5 @@
+# The 450-scene per-scene results are ~1 MB of derived detail regenerable with
+#   python -m varuna_ml.eval.detector_eval --root <part III> --out data/eval/detector-partIII.json
+# The SUMMARY is committed: the report reads it, so it must travel with the code.
+detector-partIII.json
+detector-eval.log
