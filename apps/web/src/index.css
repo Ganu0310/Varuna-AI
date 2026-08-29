@@ -1130,6 +1130,11 @@ button:disabled {
     size: A4;
     margin: 14mm;
   }
+  /* Controls are not part of the dossier. */
+  .rp-toolbar,
+  .rp-toolbar + .form-error {
+    display: none !important;
+  }
   .report {
     padding: 0;
     max-width: none;
@@ -1347,4 +1352,22 @@ input[type='range'] {
    dead end for attribution, and it should look like a warning rather than a note. */
 .aoi-preset-note.coverage-none {
   border-left: 3px solid var(--status-warn);
+}
+
+/* ── report toolbar ───────────────────────────────────────────────────────
+   Screen-only. The dossier is a printed artefact; controls must not appear in
+   it, or a PDF handed to someone else shows buttons they cannot press. */
+.rp-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-7);
+  padding-bottom: var(--space-5);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+}
+.rp-toolbar-sep {
+  width: 1px;
+  align-self: stretch;
+  background: var(--border-default);
 }

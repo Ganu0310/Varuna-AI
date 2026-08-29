@@ -1,6 +1,7 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
-import { api } from '../../api/client.ts';
+import { api, ApiError, downloadFile } from '../../api/client.ts';
 import { EvidenceWaterfall, type FeatureContribution } from '../candidates/EvidenceWaterfall.tsx';
 import { formatUtc, formatAreaKm2 } from '../../lib/format.ts';
 
@@ -90,6 +91,8 @@ interface ReportData {
 }
 
 export function ReportPage() {
+  const [busy, setBusy] = useState<string | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
   const { id } = useParams<{ id: string }>();
   const { data, isLoading, isError } = useQuery({
     queryKey: ['report', id],
@@ -115,6 +118,48 @@ export function ReportPage() {
   return (
     // data-report-ready is what a headless renderer waits on before capturing the PDF.
     <main className="report" data-report-ready="true">
+      {/*
+        Hidden when printing (`.rp-toolbar` is display:none in the print stylesheet) so the
+        dossier itself is only the dossier. The exports were reachable only by URL until now.
+      */}
+      <div className="rp-toolbar">
+        <button onClick={() => window.print()}>Print / Save as PDF</button>
+        <span className="rp-toolbar-sep" aria-hidden="true" />
+        {(
+          [
+            ['geojson', 'GeoJSON', 'geojson'],
+            ['csv', 'CSV', 'csv'],
+            ['manifest', 'Run manifest', 'json'],
+          ] as const
+        ).map(([kind, label, ext]) => (
+          <button
+            key={kind}
+            className="btn-ghost"
+            disabled={busy !== null}
+            onClick={() => {
+              setBusy(kind);
+              setExportError(null);
+              downloadFile(`/api/v1/investigations/${id}/exports/${kind}`, `varuna-${id}.${ext}`)
+                .catch((e) =>
+                  setExportError(
+                    e instanceof ApiError
+                      ? (e.problem?.detail ?? e.problem?.title ?? e.message)
+                      : 'Download failed.',
+                  ),
+                )
+                .finally(() => setBusy(null));
+            }}
+          >
+            {busy === kind ? 'Preparing…' : label}
+          </button>
+        ))}
+      </div>
+      {exportError ? (
+        <p className="form-error" role="alert">
+          {exportError}
+        </p>
+      ) : null}
+
       <header className="rp-cover">
         <p className="rp-kicker">VARUNA · Vessel attribution dossier</p>
         <h1>{inv.name}</h1>

@@ -79,6 +79,40 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   return data as T;
 }
 
+/**
+ * Download an export as a file.
+ *
+ * Fetched as a blob rather than linked with `<a href download>`. The API can sit on another
+ * origin (`VITE_API_URL`), where a plain navigation would not reliably carry the session
+ * cookie — and when it failed the browser would simply navigate to a JSON error page,
+ * losing the current view and telling the analyst nothing useful. Going through fetch keeps
+ * the failure in the app, where it can be shown.
+ */
+export async function downloadFile(path: string, filename: string): Promise<void> {
+  const res = await fetch(`${BASE}${path}`, { credentials: 'include' });
+  if (!res.ok) {
+    let problem: ProblemDetails | null = null;
+    try {
+      problem = (await res.json()) as ProblemDetails;
+    } catch {
+      /* a non-JSON error body is still an error */
+    }
+    throw new ApiError(res.status, problem, problem?.title ?? `Export failed (${res.status})`);
+  }
+
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  // Released on the next tick: revoking synchronously can cancel the download in some
+  // browsers before it has read the blob.
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
 export const api = {
   get: <T>(path: string) => apiFetch<T>(path),
   post: <T>(path: string, body?: unknown) =>
