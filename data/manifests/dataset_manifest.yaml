@@ -1,29 +1,57 @@
-# VARUNA training dataset manifest — 07_AIML §7.4.5.
+# VARUNA training/evaluation dataset manifest — 07_AIML §7.4.5.
 #
 # The training pipeline runs `validate_manifest()` and REFUSES TO START if any entry is
 # incomplete or declares non-real content (13_REAL_DATA_POLICY §13.6 check 5).
-#
-# This is a SKELETON. Fill in `sha256` and `retrieved_at` once the MKLab/CERTH dataset
-# request is approved and the archive is downloaded (CONTEXT.md §15.5, Phase 5).
 
 dataset_manifest:
-  version: '2026.08.28-draft'
+  version: '2026.08.29'
   entries:
-    - id: mklab-certh-oil-spill-v1
-      provider: 'MKLab, CERTH'
+    # ── HELD OUT TEST SPLIT — downloaded, verified, and in use ──────────────
+    # This is the split the classical detector is measured against
+    # (`varuna_ml.eval.detector_eval`). The detector is analytic and was never fitted to any
+    # of it, so there is no leakage to reason about — but it is still recorded as a test
+    # split so that a future learned model cannot quietly train on it.
+    - id: trujillo-acatitla-s1-oil-spill-part3-test
+      provider: 'IPICYT (Instituto Potosino de Investigación Científica y Tecnológica)'
       citation: >
-        Krestenitis, M., Orfanidis, G., Ioannidis, K., Avgerinakis, K., Vrochidis, S.,
-        Kompatsiaris, I. (2019). Oil Spill Identification from Satellite Images Using Deep
-        Neural Networks. Remote Sensing, 11(15), 1762.
-      licence: 'Research use, attribution required'
-      access_url: 'https://mklab.iti.gr/results/oil-spill-detection-dataset/'
-      retrieved_at: 'PENDING_DOWNLOAD'
-      sha256: 'PENDING_DOWNLOAD'
+        Trujillo-Acatitla, R., Tuxpan-Vargas, J., Ovando-Vázquez, C., &
+        Monterrubio-Martínez, E. (2024). Sentinel-1 SAR Oil spill image dataset for train,
+        validate, and test deep learning models. Part III. Zenodo.
+        https://doi.org/10.5281/zenodo.13761290 — accompanying: Marine oil spill detection
+        and segmentation in SAR data with two steps Deep Learning framework, Marine
+        Pollution Bulletin (2024).
+      licence: 'CC-BY-4.0'
+      access_url: 'https://zenodo.org/records/13761290'
+      retrieved_at: '2026-08-29'
+      # Digest over the file inventory (relative path + byte length) of all 900 files, not
+      # over 15.8 GiB of pixels. It pins WHICH files are present and their sizes, which is
+      # what detects a partial or swapped extraction; it is not a content hash and does not
+      # claim to be.
+      sha256: '8dbefda3c291e4c2c982286b5e2798cc544507faa583d00e6b40fc148435354b'
+      sha256_scope: 'file-inventory (900 paths + sizes), not pixel content'
       real_data: true
       synthetic_content: none
-      tiles: 1112
-      split: { train: 0.70, val: 0.15, test: 0.15 }
-      split_strategy: 'by scene and geography, never by random tile'
+      tiles: 450
+      split: { train: 0.0, val: 0.0, test: 1.0 }
+      split_strategy: 'publisher-defined held-out test split; never used for fitting'
+      composition:
+        oil_spill: 150
+        lookalike: 150
+        no_oil: 150
+      format:
+        image: '2048x2048x2 float32 GeoTIFF, Sigma0 in dB, EPSG:4326, ~10 m/px'
+        mask: '2048x2048 uint8, 1 = oil, 0 = background; no CRS, pixel-aligned to the image'
+        # Recorded because both are load-bearing and both contradict a reasonable assumption.
+        # See varuna_ml/eval/detector_eval.py for what each one breaks if mishandled.
+        band_order: >
+          (VH, VV) — band 2 is VV. The Zenodo description states "(VV, VH)"; measured over
+          sea pixels across 58 scenes band 2 exceeds band 1 by +6.42 dB and is stronger in
+          97% of them, which is the co-pol/cross-pol separation.
+        units_note: >
+          Already in decibels. `darkspot.detect()` expects LINEAR Sigma0 — feeding dB in
+          directly leaves almost no valid pixels and returns zero detections everywhere,
+          which reads as a perfect false-positive rate.
+      regions: 'eastern Mediterranean, Red Sea, Ligurian Sea'
 
   augmentation:
     permitted:
@@ -39,3 +67,28 @@ dataset_manifest:
       - pasted_slicks
       - simulated_ais
   assertion: 'no_synthetic_samples'
+
+# ── Deliberately NOT acquired ────────────────────────────────────────────────
+#
+# A sibling key, not a `dataset_manifest.entries` member. An entry in that list is a dataset
+# a run MAY use, and its split fractions must partition it — declaring one with zero tiles
+# made the validator fail, correctly. What follows is a different category: real datasets we
+# chose not to fetch. It is recorded rather than dropped so the decision stays legible, and
+# so nobody mistakes 2,570 orphaned masks on disk for a usable training set.
+not_acquired:
+  - id: trujillo-acatitla-s1-oil-spill-part1-2-trainval
+    provider: 'IPICYT (Instituto Potosino de Investigación Científica y Tecnológica)'
+    citation: >
+      Trujillo-Acatitla, R., Tuxpan-Vargas, J., Ovando-Vázquez, C., &
+      Monterrubio-Martínez, E. (2023). Sentinel-1 SAR Oil spill image dataset for train,
+      validate, and test deep learning models. Parts I and II. Zenodo.
+      https://doi.org/10.5281/zenodo.8346860 and https://doi.org/10.5281/zenodo.8253899
+    licence: 'CC-BY-4.0'
+    on_disk: 'ground-truth masks only — 1200 oil, 685 lookalike, 685 no-oil'
+    missing: 'imagery: 40.7 GB (Part I) + 45.9 GB (Part II)'
+    decision_date: '2026-08-29'
+    reason: >
+      Masks without their imagery cannot train anything. The 86.6 GB of imagery was not
+      fetched: the host has under 1 GB free, and the shipped detector is classical and needs
+      no training data. Revisit only alongside a learned segmentation model, and only with
+      the disk to hold it.

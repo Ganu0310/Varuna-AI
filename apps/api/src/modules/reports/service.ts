@@ -8,6 +8,7 @@ import { CandidateVesselModel } from '../candidates/model.js';
 import { OriginEstimateModel } from '../origin/model.js';
 import { ProvenanceRecordModel } from '../provenance/model.js';
 import { coverage } from '../ais/service.js';
+import { detectorLimitationText } from './detectorMetrics.js';
 
 /**
  * Report assembly — 06_BACKEND §6.4.9, 01_PRD FR-1 F1.
@@ -187,11 +188,9 @@ function buildUncertainty(
   s.push({
     topic: 'Detector',
     severity: 'LIMITATION',
-    text:
-      'Detection used a classical adaptive-threshold algorithm, not a trained segmentation ' +
-      'model. It locates dark features and scores how oil-like their shape and context are; it ' +
-      'cannot classify oil versus look-alike from texture, and has no measured oil-IoU or ' +
-      'false-positive rate on a held-out test split.',
+    // Stays a LIMITATION even once measured. Knowing the false-positive rate does not remove
+    // it; the number IS the caveat.
+    text: detectorLimitationText(),
   });
 
   const atBoundary = candidates.filter((c) => c.scoreCiBoundaryEffect);

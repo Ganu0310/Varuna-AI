@@ -11,6 +11,7 @@ import json
 from pathlib import Path
 
 import pytest
+import yaml
 from shapely.geometry import Polygon
 
 from varuna_ml.geo.morphology import compute_morphology
@@ -99,12 +100,28 @@ def test_rejects_split_that_does_not_sum_to_one(tmp_path):
     assert not r.ok
 
 
-def test_repo_manifest_is_holdable_but_not_trainable():
-    """The shipped manifest names a dataset we have not downloaded — that is a valid state
-    to hold, and an invalid state to train from."""
+def test_repo_manifest_is_downloaded_and_holds_no_training_data():
+    """The shipped manifest now declares a real, downloaded dataset, so it validates under
+    `require_downloaded=True` — the state it could not reach while the entry read
+    PENDING_DOWNLOAD.
+
+    The property that replaced that one matters more. The single dataset we hold is the
+    publisher's HELD-OUT TEST split, and every entry therefore declares `train: 0.0`. If a
+    future change gives any entry a non-zero train fraction, a training run would fit on the
+    only split available to it — the one every reported metric is measured against — and the
+    resulting numbers would be meaningless while looking entirely normal.
+    """
     p = REPO / "data" / "manifests" / "dataset_manifest.yaml"
-    assert validate_manifest(p, require_downloaded=False).ok
-    assert not validate_manifest(p, require_downloaded=True).ok
+    assert validate_manifest(p, require_downloaded=True).ok
+
+    doc = yaml.safe_load(p.read_text(encoding="utf-8"))
+    entries = doc["dataset_manifest"]["entries"]
+    assert entries, "manifest must declare at least one dataset"
+    for e in entries:
+        assert e["split"]["train"] == 0.0, (
+            f"{e['id']} declares train={e['split']['train']}. The only data on disk is the "
+            "held-out test split; fitting on it would invalidate every reported metric."
+        )
 
 
 # ── morphology ────────────────────────────────────────────────────────
