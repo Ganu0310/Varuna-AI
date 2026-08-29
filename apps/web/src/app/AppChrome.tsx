@@ -19,6 +19,9 @@ export function AppChrome({ children }: { children: ReactNode }) {
         <nav className="top-nav">
           <Link to="/investigations">Investigations</Link>
           <Link to="/catalogue">Catalogue</Link>
+          {/* Shown only to admins. The route is guarded server-side regardless — this just
+              avoids offering a link that leads to a 403. */}
+          {data?.permissions.role === 'admin' ? <Link to="/admin">Administration</Link> : null}
         </nav>
         <div className="top-right">
           {/* A dropped socket is surfaced, not hidden — the view may be behind (08 §8.7). */}

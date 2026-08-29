@@ -8,6 +8,8 @@ import { NotFoundError } from '../../errors.js';
 import { audit, listAudit } from '../audit/service.js';
 import { UserModel } from '../auth/model.js';
 import { toPublicUser } from '../auth/service.js';
+import { quotaTracker } from '../../providers/quota.js';
+import { ALL_SATELLITE_PROVIDERS } from '../../providers/chain.js';
 
 /** Admin — 06_BACKEND §6.4.10. Every route is admin-only. */
 export const adminRouter: Router = Router();
@@ -79,22 +81,40 @@ adminRouter.get(
 );
 
 /**
- * Provider health and quota. Real per-provider circuit-breaker state and quota counters
- * land with the ProviderClient in Phase 3 (06_BACKEND §6.5); until then this reports the
- * honest truth — that no providers are wired yet — rather than inventing green ticks.
+ * Provider health and quota consumption — 06_BACKEND §6.5.
+ *
+ * These were stubs returning `NOT_CONFIGURED` with "Provider clients are introduced in
+ * Phase 3". That was honest when written and became false when Phase 3 shipped: the chain
+ * has been contacting real providers for some time, and an admin screen reporting "no
+ * provider has been contacted yet" while the catalogue is actively querying three of them
+ * is worse than no screen at all.
  */
-adminRouter.get('/providers', (_req: Request, res: Response) => {
-  res.json({
-    items: [],
-    status: 'NOT_CONFIGURED',
-    detail: 'Provider clients are introduced in Phase 3. No provider has been contacted yet.',
-  });
+adminRouter.get('/providers', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const quotas = await quotaTracker.snapshotAll();
+    res.json({
+      items: ALL_SATELLITE_PROVIDERS.map((p) => {
+        const health = p.health();
+        return { ...health, quotas: quotas.filter((q) => q.quotaKey.startsWith(`${p.name}:`)) };
+      }),
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
-adminRouter.get('/quotas', (_req: Request, res: Response) => {
-  res.json({
-    items: [],
-    status: 'NOT_CONFIGURED',
-    detail: 'Quota accounting is introduced with the provider clients in Phase 3.',
-  });
+adminRouter.get('/quotas', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    const items = await quotaTracker.snapshotAll();
+    res.json({
+      items,
+      // `used: null` means the counter could not be read, which is NOT the same as zero
+      // consumption — the admin screen must be able to tell those apart.
+      note:
+        'Soft limits, set below each provider’s real fair-use ceiling. A null `used` means ' +
+        'the counter was unreachable, not that nothing has been consumed.',
+    });
+  } catch (err) {
+    next(err);
+  }
 });

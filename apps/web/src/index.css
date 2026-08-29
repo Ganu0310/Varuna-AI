@@ -1371,3 +1371,25 @@ input[type='range'] {
   align-self: stretch;
   background: var(--border-default);
 }
+
+/* A download is an action with a consequence — a file lands on disk — so it gets a
+   real button rather than the ghost style, which reads as body text and gave no
+   sign it could be clicked. */
+.btn-download {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--surface-3);
+  border: 1px solid var(--border-default);
+  color: var(--ink-primary);
+  font-size: 13px;
+}
+.btn-download:hover:not(:disabled) {
+  border-color: var(--accent-600);
+  background: var(--surface-4);
+}
+.btn-download-icon {
+  font-size: 14px;
+  line-height: 1;
+  color: var(--accent-400);
+}

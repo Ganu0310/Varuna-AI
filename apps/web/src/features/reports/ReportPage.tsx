@@ -127,14 +127,15 @@ export function ReportPage() {
         <span className="rp-toolbar-sep" aria-hidden="true" />
         {(
           [
-            ['geojson', 'GeoJSON', 'geojson'],
-            ['csv', 'CSV', 'csv'],
-            ['manifest', 'Run manifest', 'json'],
+            ['geojson', 'GeoJSON', 'geojson', 'Slick, AOI and origin geometry — opens in QGIS'],
+            ['csv', 'CSV', 'csv', 'Every candidate and its twelve evidence features'],
+            ['manifest', 'Run manifest', 'json', 'Scene IDs, detector hash and weight profile'],
           ] as const
-        ).map(([kind, label, ext]) => (
+        ).map(([kind, label, ext, title]) => (
           <button
             key={kind}
-            className="btn-ghost"
+            className="btn-download"
+            title={title}
             disabled={busy !== null}
             onClick={() => {
               setBusy(kind);
@@ -150,6 +151,9 @@ export function ReportPage() {
                 .finally(() => setBusy(null));
             }}
           >
+            <span className="btn-download-icon" aria-hidden="true">
+              ↓
+            </span>
             {busy === kind ? 'Preparing…' : label}
           </button>
         ))}
