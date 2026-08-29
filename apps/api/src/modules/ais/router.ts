@@ -94,6 +94,17 @@ aisRouter.get(
           mmsi: t.mmsi,
           fixCount: t.fixes.length,
           line: t.line,
+          /**
+           * The observation TIME of each vertex in `line`, same order and length.
+           *
+           * Without these a client can only assume the fixes are evenly spaced, and AIS
+           * reporting is nothing like even — intervals swing from seconds to hours and
+           * `gaps` exists precisely because of it. Animating a vessel on that assumption
+           * would place it where it was never reported, which is fabricated positional data
+           * whatever the intent (13_REAL_DATA_POLICY §13.3). Sending the real times is what
+           * lets a client interpolate honestly, and know when it is interpolating.
+           */
+          times: t.fixes.map((f) => f.t),
           medianIntervalSec: t.medianIntervalSec,
           // Surfaced per vessel: a track that had points removed is not the raw record.
           removedOutlierCount: t.removedOutlierCount,

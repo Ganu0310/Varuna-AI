@@ -11,6 +11,7 @@ import { CandidateRanking } from '../candidates/CandidateRanking.tsx';
 import { DetectionsPanel } from '../detections/DetectionsPanel.tsx';
 import { CataloguePanel } from '../catalogue/CataloguePanel.tsx';
 import { useLayerStore, useSelectionStore, useTimeStore, useMapStore } from '../../state/stores.ts';
+import { vesselsAt } from '../../map/vesselAt.ts';
 import { formatUtc, formatAreaKm2 } from '../../lib/format.ts';
 
 type Tab = 'catalogue' | 'scenes' | 'ais' | 'candidates';
@@ -43,6 +44,7 @@ interface TracksResponse {
   items: Array<{
     mmsi: number;
     line: { type: 'LineString'; coordinates: number[][] } | null;
+    times?: string[];
     fixCount: number;
     removedOutlierCount: number;
     gapCount: number;
@@ -66,6 +68,7 @@ export function WorkspacePage() {
   const addLayer = useLayerStore((s) => s.addLayer);
   const layerVisible = useLayerStore((s) => s.layers);
   const setWindow = useTimeStore((s) => s.setWindow);
+  const cursor = useTimeStore((s) => s.cursor);
   const fitBounds = useMapStore((s) => s.fitBounds);
   const hovered = useSelectionStore((s) => s.hovered);
   const selected = useSelectionStore((s) => s.selected);
@@ -184,6 +187,22 @@ export function WorkspacePage() {
   }, [origin.data, addLayer, id]);
 
   useEffect(() => {
+    if (!(tracks.data?.items ?? []).some((t) => t.times?.length)) return;
+    addLayer({
+      id: 'vessel-positions',
+      label: 'Vessels at cursor',
+      visible: true,
+      opacity: 1,
+      provenance: {
+        provider: 'NOAA Marine Cadastre',
+        datasetId: 'AIS Vessel Traffic Data',
+        externalId: id ?? '',
+        licence: 'US Government work — public domain',
+      },
+    });
+  }, [tracks.data, addLayer, id]);
+
+  useEffect(() => {
     const d = detections.data?.items[0];
     if (!d) return;
     addLayer({
@@ -234,6 +253,19 @@ export function WorkspacePage() {
   const hoveredMmsi =
     hovered.kind === 'candidate' || hovered.kind === 'vessel' ? hovered.mmsi : null;
 
+  /**
+   * Vessel positions at the time cursor — M9.
+   *
+   * `cursor` from the store updates at 4 Hz rather than every frame: the markers move
+   * smoothly enough at that rate, and rebuilding the deck.gl layer stack 60 times a second
+   * would re-render every panel around the map for no visible gain.
+   *
+   * `vesselsAt` omits any vessel it cannot place honestly — outside its observed window, or
+   * mid dark period — so the count here rises and falls as vessels come in and out of AIS
+   * coverage. That is the data, not a bug.
+   */
+  const vessels = useMemo(() => vesselsAt(tracks.data?.items ?? [], cursor), [tracks.data, cursor]);
+
   const layers = useMemo(
     () =>
       buildLayers({
@@ -242,13 +274,22 @@ export function WorkspacePage() {
         originDegraded: origin.data?.origin?.status === 'DEGRADED',
         detections: (detections.data?.items ?? []) as Detection[],
         tracks: tracks.data?.items ?? [],
-        vesselPositions: [],
+        vesselPositions: vessels,
         highlightMmsi,
         hoveredMmsi,
         visible: Object.fromEntries(Object.entries(layerVisible).map(([k, v]) => [k, v.visible])),
         opacity: Object.fromEntries(Object.entries(layerVisible).map(([k, v]) => [k, v.opacity])),
       }),
-    [inv, detections.data, tracks.data, origin.data, highlightMmsi, hoveredMmsi, layerVisible],
+    [
+      inv,
+      detections.data,
+      tracks.data,
+      origin.data,
+      vessels,
+      highlightMmsi,
+      hoveredMmsi,
+      layerVisible,
+    ],
   );
 
   if (isLoading) {

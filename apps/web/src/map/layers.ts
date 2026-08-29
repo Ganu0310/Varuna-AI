@@ -25,7 +25,14 @@ export interface LayerInputs {
   originDegraded?: boolean;
   detections: Detection[];
   tracks: Array<{ mmsi: number; line: { type: 'LineString'; coordinates: number[][] } | null }>;
-  vesselPositions: Array<{ mmsi: number; lon: number; lat: number; cog: number | null }>;
+  vesselPositions: Array<{
+    mmsi: number;
+    lon: number;
+    lat: number;
+    cog: number | null;
+    /** True when the point was computed between two fixes rather than reported. */
+    interpolated?: boolean;
+  }>;
   highlightMmsi: number | null;
   hoveredMmsi: number | null;
   visible: Record<string, boolean>;
@@ -143,15 +150,33 @@ export function buildLayers(input: LayerInputs): Layer[] {
         id: 'vessel-positions',
         data: input.vesselPositions,
         getPosition: (v: LayerInputs['vesselPositions'][number]) => [v.lon, v.lat],
-        getFillColor: (v: LayerInputs['vesselPositions'][number]) =>
+        getFillColor: (v: LayerInputs['vesselPositions'][number]) => {
+          if (v.interpolated) return rgba(color.surface0, 40); // near-hollow
+          return v.mmsi === input.highlightMmsi
+            ? rgba(color.accent400, 255)
+            : rgba(color.inkSecondary, 220);
+        },
+        // An interpolated position is drawn hollow and smaller than a reported one: the
+        // marker itself says whether a vessel WAS there or is merely calculated to have
+        // been. Same reason a MISSING evidence feature is rendered hatched rather than
+        // omitted — the viewer must be able to tell measurement from inference.
+        getLineColor: (v: LayerInputs['vesselPositions'][number]) =>
           v.mmsi === input.highlightMmsi
             ? rgba(color.accent400, 255)
-            : rgba(color.inkSecondary, 200),
-        getRadius: 4,
+            : rgba(color.inkSecondary, 220),
+        getLineWidth: 1,
+        lineWidthUnits: 'pixels',
+        stroked: true,
+        filled: true,
+        getRadius: (v: LayerInputs['vesselPositions'][number]) => (v.interpolated ? 3 : 5),
         radiusUnits: 'pixels',
         pickable: true,
         opacity: alpha('vessel-positions'),
-        updateTriggers: { getFillColor: [input.highlightMmsi] },
+        updateTriggers: {
+          getFillColor: [input.highlightMmsi],
+          getLineColor: [input.highlightMmsi],
+          getRadius: [],
+        },
       }) as unknown as Layer,
     );
   }
