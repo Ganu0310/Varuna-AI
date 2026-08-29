@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import maplibregl from 'maplibre-gl';
 import { MapboxOverlay } from '@deck.gl/mapbox';
 import type { Layer } from '@deck.gl/core';
@@ -60,7 +60,16 @@ export function MapRoot({
   const currentTemplate = useRef<string | null>(null);
 
   const setReady = useMapStore((s) => s.setReady);
-  const ready = useMapStore((s) => s.ready);
+  /**
+   * Readiness of THIS map instance.
+   *
+   * The store's `ready` cannot be used for this. It is a module singleton, so after the map
+   * is torn down and rebuilt — StrictMode's double mount, or navigating to the prism and
+   * back — it is still true from the PREVIOUS instance. The effect below then ran against a
+   * brand-new map whose style had not loaded and MapLibre threw "Style is not done loading",
+   * which unmounted the whole workspace.
+   */
+  const [styleReady, setStyleReady] = useState(false);
   const registerCamera = useMapStore((s) => s.registerCamera);
 
   useEffect(() => {
@@ -109,6 +118,7 @@ export function MapRoot({
 
     m.on('load', () => {
       redrawGraticule();
+      setStyleReady(true);
       setReady(true);
     });
     m.on('move', redrawGraticule);
@@ -144,6 +154,11 @@ export function MapRoot({
     return () => {
       // Only on real teardown (app unmount), never on navigation.
       if (raf.current) cancelAnimationFrame(raf.current);
+      // Readiness belongs to the map being destroyed. Leaving either flag true lets the next
+      // instance's effects fire before its style has loaded — the bug this replaced.
+      setStyleReady(false);
+      setReady(false);
+      currentTemplate.current = null;
       m.remove();
       map.current = null;
       overlay.current = null;
@@ -202,14 +217,21 @@ export function MapRoot({
       m.setPaintProperty(SAR_LAYER_ID, 'raster-opacity', sarOpacity);
     };
 
-    // Gated on the store's `ready` flag, set from the map's own `load` event, rather than on
-    // `isStyleLoaded()`. That method kept returning false here even long after the map was
-    // interactive — with deck.gl interleaved there is always something in flight — so a
-    // `once('load'/'styledata')` fallback registered afterwards never fired and the raster
-    // silently never appeared. `ready` is in the dependency list, so this re-runs the moment
-    // the map is usable.
-    if (ready) apply();
-  }, [sarTile, sarVisible, sarOpacity, ready]);
+    // Gated on THIS instance's readiness, which is in the dependency list, so the effect
+    // re-runs the moment the map is usable.
+    //
+    // The try/catch is not superstition. MapLibre throws from `addSource`/`addLayer` if the
+    // style is not settled, and an uncaught throw inside a passive effect unmounts the entire
+    // workspace — the analyst loses the whole screen because a raster overlay was early. A
+    // missing overlay is recoverable; a blank page is not.
+    if (!styleReady) return;
+    try {
+      apply();
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn('SAR overlay deferred:', err);
+    }
+  }, [sarTile, sarVisible, sarOpacity, styleReady]);
 
   // Layers are pushed straight to the overlay. `setProps` is deliberately outside React's
   // render cycle so a moving time cursor does not re-render the panels around the map.

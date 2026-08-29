@@ -24,8 +24,11 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: 0,
   reporter: process.env.CI ? [['github'], ['list']] : [['list']],
+  // Signs in once; every test starts already authenticated. See e2e/global-setup.ts for why.
+  globalSetup: './e2e/global-setup.ts',
   use: {
     baseURL: BASE_URL,
+    storageState: 'e2e/.auth/state.json',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',

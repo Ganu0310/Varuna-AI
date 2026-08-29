@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 /**
  * Journey 1 — the demo path, M1–M10 (08_APP_FLOW §8.2).
@@ -29,21 +29,12 @@ test.beforeAll(() => {
   }
 });
 
-async function login(page: Page) {
-  await page.goto('/login');
-  await page.getByLabel('Email').fill(EMAIL);
-  await page.getByLabel('Password').fill(PASSWORD);
-  await page.getByRole('button', { name: /sign in/i }).click();
-  await expect(page).toHaveURL(/\/investigations/, { timeout: 30_000 });
-}
-
 test.describe('Journey 1 — attribution on the real Guam incident', () => {
   test('an analyst reaches a ranked, caveated candidate list and a complete dossier', async ({
     page,
   }) => {
-    await login(page);
-
     // ── M1: the investigation exists and is listed ──────────────────────────
+    await page.goto('/investigations');
     await expect(page.getByRole('heading', { name: 'Investigations' })).toBeVisible();
 
     await page.goto(`/investigations/${INVESTIGATION_ID}`);
@@ -101,7 +92,6 @@ test.describe('Journey 1 — attribution on the real Guam incident', () => {
     // This sentence is the difference between an investigative lead and an accusation. It is
     // asserted separately so that removing it fails a test whose name says exactly what was
     // lost.
-    await login(page);
     await page.goto(`/investigations/${INVESTIGATION_ID}/report`);
 
     // Asserted on the containing element, not with `getByText`. The disclaimer emphasises the

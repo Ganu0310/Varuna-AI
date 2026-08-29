@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
 /**
  * Journey 2 — the honest null result (08_APP_FLOW §8.3).
@@ -17,23 +17,7 @@ import { test, expect, type Page } from '@playwright/test';
  * reads as "nothing happened here".
  */
 
-const EMAIL = process.env.E2E_EMAIL ?? '';
-const PASSWORD = process.env.E2E_PASSWORD ?? '';
 const EMPTY_INVESTIGATION_ID = process.env.E2E_EMPTY_INVESTIGATION_ID ?? '';
-
-test.beforeAll(() => {
-  if (!EMAIL || !PASSWORD) {
-    throw new Error('Set E2E_EMAIL and E2E_PASSWORD to a real account.');
-  }
-});
-
-async function login(page: Page) {
-  await page.goto('/login');
-  await page.getByLabel('Email').fill(EMAIL);
-  await page.getByLabel('Password').fill(PASSWORD);
-  await page.getByRole('button', { name: /sign in/i }).click();
-  await expect(page).toHaveURL(/\/investigations/, { timeout: 30_000 });
-}
 
 test.describe('Journey 2 — the system declines to overstate', () => {
   test('an investigation with no work done says so, and offers no ranking', async ({ page }) => {
@@ -41,7 +25,6 @@ test.describe('Journey 2 — the system declines to overstate', () => {
       !EMPTY_INVESTIGATION_ID,
       'Set E2E_EMPTY_INVESTIGATION_ID to a real investigation with no scenes ingested.',
     );
-    await login(page);
     await page.goto(`/investigations/${EMPTY_INVESTIGATION_ID}`);
     await expect(page.getByRole('tablist')).toBeVisible({ timeout: 60_000 });
 
@@ -64,11 +47,9 @@ test.describe('Journey 2 — the system declines to overstate', () => {
     // UI could be rebuilt tomorrow and this must still hold. Correlating against a bare
     // detection footprint would yield the weakest possible attribution while looking
     // indistinguishable from a real result.
-    const login = await request.post('/api/v1/auth/login', {
-      data: { email: EMAIL, password: PASSWORD },
-    });
-    expect(login.ok()).toBeTruthy();
-
+    // No explicit login: the `request` fixture inherits the shared storageState. Signing in
+    // here as well would be redundant traffic against a 10-per-minute auth limiter.
+    //
     // `detectionId` is required by the request schema, so an empty body never reaches the
     // origin check — it is rejected as a 400 first. To exercise the 409 the investigation
     // must have a detection but no origin estimate, which is what
@@ -93,11 +74,6 @@ test.describe('Journey 2 — the system declines to overstate', () => {
   test('a report cannot be produced without its uncertainty and provenance sections', async ({
     request,
   }) => {
-    const login = await request.post('/api/v1/auth/login', {
-      data: { email: EMAIL, password: PASSWORD },
-    });
-    expect(login.ok()).toBeTruthy();
-
     const target = EMPTY_INVESTIGATION_ID || process.env.E2E_INVESTIGATION_ID;
     test.skip(!target, 'Set E2E_INVESTIGATION_ID or E2E_EMPTY_INVESTIGATION_ID.');
 
