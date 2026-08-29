@@ -112,11 +112,41 @@ function boundsToPolygon([w, s, e, n]: [number, number, number, number]): Polygo
   });
 }
 
+/**
+ * Where the pixels come from.
+ *
+ * The two sources differ only in how the raster is obtained; everything after that — the
+ * scene record, the provenance chain, detection, the geodesic area recomputation — is
+ * identical, and must stay identical. An upload that took a shortcut past any of it would be
+ * a second, weaker pipeline whose outputs are indistinguishable from the first's.
+ *
+ * The ML service returns the same shape from `/ingest` and `/adopt` for exactly this reason.
+ */
+export type SceneSource =
+  | { kind: 'CATALOGUE'; collection?: string }
+  | {
+      kind: 'UPLOAD';
+      bucket: string;
+      key: string;
+      /**
+       * Supplied by the uploader, never read from the file. `TIFFTAG_DATETIME` is when the
+       * file was WRITTEN — for a re-exported product, the day someone opened it in a GIS.
+       * Every AIS query is a window around this instant, so taking it from the file would
+       * search the wrong day and rank vessels that were nowhere near the spill.
+       */
+      acquiredAt: string;
+      uploadedBy?: string;
+      originalName?: string;
+      checksum?: string;
+    };
+
 export interface IngestSceneInput {
   investigationId: string;
   productId: string;
   aoi: [number, number, number, number];
   collection?: string;
+  /** Defaults to CATALOGUE, so existing callers are unchanged. */
+  source?: SceneSource;
   onProgress?: (pct: number, stage: string, message?: string) => void | Promise<void>;
 }
 
@@ -132,15 +162,33 @@ export async function ingestAndDetect(input: IngestSceneInput): Promise<IngestSc
   const started = Date.now();
   const progress = input.onProgress ?? (() => {});
 
-  await progress(5, 'CATALOGUE', `Resolving ${input.productId}`);
+  const source: SceneSource = input.source ?? { kind: 'CATALOGUE', collection: input.collection };
 
-  // ── 1 · fetch + COG the AOI window ────────────────────────────────
-  await progress(15, 'DOWNLOAD', 'Reading the AOI window from the provider');
-  const ing = await callMl<MlIngestResponse>('/ingest', {
-    productId: input.productId,
-    aoi: input.aoi,
-    collection: input.collection ?? 'sentinel-1-rtc',
-  });
+  // ── 1 · obtain the raster ─────────────────────────────────────────
+  let ing: MlIngestResponse;
+  if (source.kind === 'UPLOAD') {
+    await progress(15, 'ADOPT', 'Reading the uploaded scene');
+    // `/adopt` resolves the CRS properly, which the API's header check could not. A GeoTIFF
+    // can name a coordinate system that pyproj cannot construct, and this is the last point
+    // before detections would be produced in pixel space and written out as positions.
+    ing = await callMl<MlIngestResponse>('/adopt', {
+      bucket: source.bucket,
+      key: source.key,
+      productId: input.productId,
+      acquiredAt: source.acquiredAt,
+      uploadedBy: source.uploadedBy,
+      originalName: source.originalName,
+      checksum: source.checksum,
+    });
+  } else {
+    await progress(5, 'CATALOGUE', `Resolving ${input.productId}`);
+    await progress(15, 'DOWNLOAD', 'Reading the AOI window from the provider');
+    ing = await callMl<MlIngestResponse>('/ingest', {
+      productId: input.productId,
+      aoi: input.aoi,
+      collection: source.collection ?? 'sentinel-1-rtc',
+    });
+  }
 
   await progress(55, 'PERSIST', 'Recording the scene');
 

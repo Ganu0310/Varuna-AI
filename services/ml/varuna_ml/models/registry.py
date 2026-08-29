@@ -21,8 +21,8 @@ from __future__ import annotations
 import hashlib
 import json
 import subprocess
-from dataclasses import dataclass, asdict, field
-from datetime import datetime, timezone
+from dataclasses import asdict, dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 
 
@@ -129,7 +129,7 @@ def register_model(
         metrics_absent_reason=metrics_absent_reason,
         dataset_manifest_sha256=dataset_manifest_sha256,
         git_sha=current_git_sha(),
-        registered_at=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        registered_at=datetime.now(UTC).isoformat().replace("+00:00", "Z"),
         input_bands=input_bands,
         classes=classes,
         real_data_only=True,
@@ -140,7 +140,9 @@ def register_model(
     registry = load_registry(registry_path)
     registry[sha256] = asdict(entry)
     registry_path.parent.mkdir(parents=True, exist_ok=True)
-    registry_path.write_text(json.dumps(registry, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    registry_path.write_text(
+        json.dumps(registry, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     return entry
 
 

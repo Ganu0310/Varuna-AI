@@ -14,8 +14,7 @@ import { SatelliteSceneModel } from './model.js';
 import { inspectGeoTiff } from './geotiff.js';
 import multer from 'multer';
 import { createHash } from 'node:crypto';
-import { mkdir, writeFile, stat } from 'node:fs/promises';
-import { join } from 'node:path';
+import { putScene, sceneExists, uploadKey } from '../../lib/objectStore.js';
 import { SpillDetectionModel } from '../detections/model.js';
 
 /** Scenes and ingest — 06_BACKEND §6.4.4. */
@@ -269,6 +268,29 @@ scenesRouter.post(
         );
       }
 
+      /**
+       * Required, and this is the one field there is no sensible default for.
+       *
+       * Finding the vessel means querying AIS in a window around the observation. With the
+       * wrong instant the query returns real positions of real ships that were simply
+       * somewhere else at the time — a confident ranking of vessels that could not have done
+       * it. Refusing is the only safe behaviour.
+       */
+      const acquiredAt = String(
+        (req.body as { acquiredAt?: string } | undefined)?.acquiredAt ?? '',
+      );
+      if (!acquiredAt || Number.isNaN(Date.parse(acquiredAt))) {
+        throw new HttpError(
+          400,
+          'Acquisition time required',
+          'Send `acquiredAt` as an ISO 8601 UTC instant alongside the file. It cannot be read ' +
+            'from the GeoTIFF: TIFFTAG_DATETIME records when the file was written, not when the ' +
+            'radar observed the scene. AIS is searched in a window around this time, so a wrong ' +
+            'value ranks vessels that were nowhere near the spill.',
+          'https://varuna.dev/problems/acquisition-time-required',
+        );
+      }
+
       const check = inspectGeoTiff(file.buffer);
       if (!check.ok) {
         // 422, not 400: the request was well-formed, the CONTENT is unusable. The reason is
@@ -284,35 +306,25 @@ scenesRouter.post(
       const checksum = createHash('sha256').update(file.buffer).digest('hex');
       const productId = `UPLOAD-${checksum.slice(0, 16)}`;
 
-      await mkdir(env.UPLOADS_DIR, { recursive: true });
-      const storedAt = join(env.UPLOADS_DIR, `${productId}.tif`);
-
       /**
-       * Idempotent on CONTENT, not on filename: the same bytes uploaded twice are one scene,
-       * and two different files sharing a name are two.
+       * Object storage, not local disk.
        *
-       * The check is against the stored FILE rather than a `SatelliteScene` document, because
-       * at this point no such document exists — the scene record is written by preprocess,
-       * once the CRS has actually been resolved. A first version of this route looked for the
-       * document, which meant the branch could never fire and every re-upload silently
-       * rewrote the file.
+       * The ML service owns raster IO and reads from S3; when the two run in separate
+       * containers it cannot see the API's filesystem at all. Writing the bytes where the ML
+       * service already knows how to look is what makes an uploaded scene take the SAME path
+       * as a catalogue one, rather than needing a second, weaker pipeline.
        */
-      const alreadyHeld = await stat(storedAt).then(
-        () => true,
-        () => false,
-      );
-      if (alreadyHeld) {
-        res.status(200).json({
-          productId,
-          checksum,
-          deduplicated: true,
-          storedAt,
-          note: 'These exact bytes were already uploaded to this investigation.',
-        });
-        return;
-      }
+      const key = uploadKey(checksum);
 
-      await writeFile(storedAt, file.buffer);
+      // Idempotent on CONTENT, not on filename: the same bytes uploaded twice are one scene,
+      // two different files sharing a name are two. Checked against the stored OBJECT rather
+      // than a `SatelliteScene` document, because no such document exists until `/adopt` has
+      // resolved the CRS — an earlier version looked for the document, so the branch could
+      // never fire and every re-upload silently rewrote the file.
+      const alreadyHeld = await sceneExists(key);
+      if (!alreadyHeld) {
+        await putScene(key, file.buffer);
+      }
 
       await audit({
         actorId: req.user!.id,
@@ -329,19 +341,45 @@ scenesRouter.post(
         requestId: reqId(req),
       });
 
-      res.status(202).json({
+      // The AOI is the investigation's, and it is only used to record what was asked for —
+      // an uploaded scene defines its own extent from its transform, so nothing is windowed.
+      const { jobId, deduplicated } = await enqueue({
+        queue: 'ingest',
+        kind: 'INGEST',
+        jobKey: `adopt:${investigationId}:${checksum}`,
+        payload: {
+          investigationId,
+          productId,
+          aoi: [0, 0, 0, 0],
+          source: {
+            kind: 'UPLOAD',
+            bucket: env.S3_BUCKET,
+            key,
+            acquiredAt,
+            uploadedBy: req.user!.id,
+            originalName: file.originalname,
+            checksum,
+          },
+        },
+        investigationId,
+        userId: req.user!.id,
+      });
+
+      res.status(deduplicated ? 200 : 202).json({
+        jobId,
+        deduplicated,
         productId,
         checksum,
         bytes: file.size,
-        storedAt,
+        alreadyStored: alreadyHeld,
+        acquiredAt,
         // Said in the response, not only in the database. Whoever uploaded this should learn
-        // here that the resulting scene will be labelled unverified everywhere it appears.
+        // here that the resulting scene is labelled unverified everywhere it appears.
         provenanceNotice:
           'Recorded as OPERATOR_SUPPLIED. VARUNA did not retrieve this from a published ' +
-          'archive and cannot vouch for its origin; every detection derived from it carries ' +
-          'that label into the dossier and exports.',
-        nextStep:
-          'Georeferencing is confirmed at preprocess time, where the CRS is resolved properly.',
+          'archive and cannot vouch for its origin, its processing history, or the ' +
+          'acquisition time you supplied — and every AIS correlation depends on that time ' +
+          'being right.',
       });
     } catch (err) {
       next(err);

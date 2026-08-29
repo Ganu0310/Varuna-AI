@@ -27,8 +27,8 @@ import json
 import os
 import time
 import urllib.request
-from dataclasses import dataclass, asdict
-from datetime import datetime, timezone
+from dataclasses import asdict, dataclass
+from datetime import UTC, datetime
 
 import boto3
 import numpy as np
@@ -222,7 +222,7 @@ def ingest_scene(
         "provider": "Microsoft Planetary Computer",
         "datasetId": collection,
         "externalId": product_id,
-        "retrievedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "retrievedAt": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
         "licence": "Copernicus Sentinel Data - free, full and open",
         "accessUrl": f"https://planetarycomputer.microsoft.com/api/stac/v1/collections/{collection}/items/{product_id}",
         "derivedFrom": [],

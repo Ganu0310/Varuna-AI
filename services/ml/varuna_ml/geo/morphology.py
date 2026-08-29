@@ -111,8 +111,10 @@ def morphology_to_dict(m: Morphology) -> dict:
         "orientationDeg": round(m.orientation_deg, 1),
         "convexity": round(m.convexity, 3),
         "compactness": round(m.compactness, 3),
-        "centroid": {"type": "Point", "coordinates": [round(m.centroid_lonlat[0], 6),
-                                                      round(m.centroid_lonlat[1], 6)]},
+        "centroid": {
+            "type": "Point",
+            "coordinates": [round(m.centroid_lonlat[0], 6), round(m.centroid_lonlat[1], 6)],
+        },
         "areaKm2": round(m.area_km2, 4),
         "perimeterKm": round(m.perimeter_km, 4),
     }

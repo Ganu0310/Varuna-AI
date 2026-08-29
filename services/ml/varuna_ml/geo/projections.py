@@ -15,8 +15,7 @@ from shapely.ops import transform as shp_transform
 def local_azimuthal_equal_area_crs(lon: float, lat: float) -> CRS:
     """A Lambert Azimuthal Equal-Area CRS centred on the given point."""
     return CRS.from_proj4(
-        f"+proj=laea +lat_0={lat} +lon_0={lon} +x_0=0 +y_0=0 "
-        f"+datum=WGS84 +units=m +no_defs"
+        f"+proj=laea +lat_0={lat} +lon_0={lon} +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs"
     )
 
 

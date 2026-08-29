@@ -107,7 +107,9 @@ def validate_manifest(path: Path, *, require_downloaded: bool = True) -> Manifes
 
         citation = str(entry.get("citation", "")).strip()
         if len(citation) < 20:
-            report.errors.append(f"{label}: `citation` is missing or too short to identify a source")
+            report.errors.append(
+                f"{label}: `citation` is missing or too short to identify a source"
+            )
 
         licence = str(entry.get("licence", "")).strip()
         if not licence:

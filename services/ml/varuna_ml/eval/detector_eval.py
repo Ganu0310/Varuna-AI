@@ -130,9 +130,7 @@ def evaluate_from_split(root: Path, split_file: Path, which: str = "test") -> di
     split = _json.loads(split_file.read_text(encoding="utf-8"))
     results: list[SceneResult] = []
     for item in split["items"][which]:
-        results.append(
-            evaluate_scene(root / item["image"], root / item["mask"], item["cls"])
-        )
+        results.append(evaluate_scene(root / item["image"], root / item["mask"], item["cls"]))
     return summarise(results)
 
 

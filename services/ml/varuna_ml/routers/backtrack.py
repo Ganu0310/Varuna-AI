@@ -71,7 +71,9 @@ async def run_backtrack(req: BacktrackRequest) -> dict:
 
     try:
         currents = fetch_currents(
-            bbox, start, observed_at,
+            bbox,
+            start,
+            observed_at,
             cmems_username=settings.cmems_username,
             cmems_password=settings.cmems_password,
         )
@@ -92,7 +94,9 @@ async def run_backtrack(req: BacktrackRequest) -> dict:
             "support90": _ring(buffered),
             "centroid": [float(geom.centroid.x), float(geom.centroid.y)],
             "releaseWindow": estimate_release_window(
-                observed_at, morph.major_axis_km, 0.0,
+                observed_at,
+                morph.major_axis_km,
+                0.0,
                 _parse_prior(req.priorClearSceneAt),
             ),
             "forcing": {"currents": None, "winds": None},
@@ -100,10 +104,11 @@ async def run_backtrack(req: BacktrackRequest) -> dict:
                 "method": "FOOTPRINT_PROXIMITY",
                 "bufferKm": 40,
                 "note": "Not a drift result. The origin zone is the observed slick buffered "
-                        "by a fixed radius, which cannot distinguish upstream from downstream.",
+                "by a fixed radius, which cannot distinguish upstream from downstream.",
             },
             "provenance": derived(
-                external_id=f"origin:{observed_at:%Y%m%dT%H%M}", parents=[],
+                external_id=f"origin:{observed_at:%Y%m%dT%H%M}",
+                parents=[],
                 dataset_id="footprint-proximity",
             ).model_dump(),
         }
@@ -116,7 +121,10 @@ async def run_backtrack(req: BacktrackRequest) -> dict:
         wind_reason = e.consequence
 
     result = backtrack(
-        ring, observed_at, currents, winds,
+        ring,
+        observed_at,
+        currents,
+        winds,
         particle_count=req.particleCount,
         horizon_hours=req.horizonHours,
         wind_drift_range=tuple(req.windDriftRange),
@@ -128,13 +136,19 @@ async def run_backtrack(req: BacktrackRequest) -> dict:
     frames_out = []
     fields = [origin_field(f) for f in result.frames]
     for f in fields:
-        frames_out.append({
-            "atTime": f.at_time,
-            "bounds": [float(f.lons.min()), float(f.lats.min()),
-                       float(f.lons.max()), float(f.lats.max())],
-            "cellSizeDeg": 0.01,
-            "centroid": [f.centroid[0], f.centroid[1]],
-        })
+        frames_out.append(
+            {
+                "atTime": f.at_time,
+                "bounds": [
+                    float(f.lons.min()),
+                    float(f.lats.min()),
+                    float(f.lons.max()),
+                    float(f.lats.max()),
+                ],
+                "cellSizeDeg": 0.01,
+                "centroid": [f.centroid[0], f.centroid[1]],
+            }
+        )
 
     final = fields[-1]
 
@@ -153,7 +167,9 @@ async def run_backtrack(req: BacktrackRequest) -> dict:
             "lat": [round(float(y), 5) for y in result.frames[-1]["lat"]],
         },
         "releaseWindow": estimate_release_window(
-            observed_at, morph.major_axis_km, result.median_drift_speed_ms,
+            observed_at,
+            morph.major_axis_km,
+            result.median_drift_speed_ms,
             _parse_prior(req.priorClearSceneAt),
         ),
         "medianDriftSpeedMs": round(result.median_drift_speed_ms, 4),
@@ -163,7 +179,8 @@ async def run_backtrack(req: BacktrackRequest) -> dict:
         },
         "params": result.params,
         "provenance": derived(
-            external_id=f"origin:{observed_at:%Y%m%dT%H%M}", parents=[],
+            external_id=f"origin:{observed_at:%Y%m%dT%H%M}",
+            parents=[],
             dataset_id="lagrangian-backtrack-v1",
         ).model_dump(),
     }
@@ -174,8 +191,10 @@ def _polygon(ring: list[list[float]] | None) -> dict | None:
 
 
 def _ring(geom) -> dict:
-    return {"type": "Polygon", "coordinates": [[[float(x), float(y)]
-                                                for x, y in geom.exterior.coords]]}
+    return {
+        "type": "Polygon",
+        "coordinates": [[[float(x), float(y)] for x, y in geom.exterior.coords]],
+    }
 
 
 def _parse_prior(value: str | None) -> datetime | None:

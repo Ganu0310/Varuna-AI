@@ -289,7 +289,7 @@ def to_geojson(
     """
     import rasterio.features
     from rasterio.warp import transform_geom
-    from shapely.geometry import shape, mapping
+    from shapely.geometry import mapping, shape
     from shapely.ops import orient
 
     out: list[dict] = []

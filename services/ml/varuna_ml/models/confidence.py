@@ -14,7 +14,7 @@ UI and the PDF so a reviewer can see which one is dragging the score.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 
 
 @dataclass
@@ -76,7 +76,9 @@ def detection_confidence(
 
     # Model: a learned detector supplies a calibrated probability. The classical detector
     # does not, so it defers to separation instead of inventing a number.
-    model_term = _clamp(mean_oil_probability) if mean_oil_probability is not None else separation_term
+    model_term = (
+        _clamp(mean_oil_probability) if mean_oil_probability is not None else separation_term
+    )
 
     wind_term = wind_suitability(wind_ms)
     shape_term = _clamp(1.0 - (look_alike_risk if look_alike_risk is not None else 0.5))

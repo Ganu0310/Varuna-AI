@@ -53,13 +53,15 @@ def _open_cog(bucket: str, key: str):
         aws_secret_access_key=s.s3_secret_access_key,
         region_name=s.s3_region,
     )
-    with rasterio.Env(
-        AWSSession(session, endpoint_url=s.s3_endpoint.replace("http://", "")),
-        AWS_HTTPS="NO",
-        AWS_VIRTUAL_HOSTING="FALSE",
+    with (
+        rasterio.Env(
+            AWSSession(session, endpoint_url=s.s3_endpoint.replace("http://", "")),
+            AWS_HTTPS="NO",
+            AWS_VIRTUAL_HOSTING="FALSE",
+        ),
+        rasterio.open(f"s3://{bucket}/{key}") as ds,
     ):
-        with rasterio.open(f"s3://{bucket}/{key}") as ds:
-            return ds.read(1), ds.transform, ds.crs, float(abs(ds.transform.a))
+        return ds.read(1), ds.transform, ds.crs, float(abs(ds.transform.a))
 
 
 class SegmentRequest(BaseModel):
@@ -112,7 +114,10 @@ async def segment_scene(req: SegmentRequest) -> dict:
     entry = get_model(REGISTRY_PATH, sha)
 
     detections = []
-    for feat, spot in zip(features, spots):
+    # strict=True: `to_geojson` emits one feature per spot, so a length mismatch would mean a
+    # feature was silently dropped and every later pairing would describe the WRONG slick —
+    # metrics attached to a polygon they did not come from.
+    for feat, spot in zip(features, spots, strict=True):
         # Morphology is recomputed on a local equal-area projection rather than reused from
         # pixel space: measuring shape in degrees distorts the axis ratio by ~cos(latitude),
         # and elongation is a primary oil-versus-look-alike discriminator (07_AIML 7.2.10).

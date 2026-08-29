@@ -1,5 +1,5 @@
 import type { Job } from 'bullmq';
-import { ingestAndDetect } from '@varuna/api/src/modules/scenes/ingest.js';
+import { ingestAndDetect, type SceneSource } from '@varuna/api/src/modules/scenes/ingest.js';
 
 /**
  * `ingest` queue processor — 03_ARCHITECTURE §3.6.
@@ -17,6 +17,8 @@ export interface IngestJobData {
   productId: string;
   aoi: [number, number, number, number];
   collection?: string;
+  /** Absent for a catalogue ingest; present when the analyst uploaded the scene. */
+  source?: SceneSource;
   __cancelled?: boolean;
 }
 
@@ -35,6 +37,7 @@ export async function processIngest(job: Job<IngestJobData>) {
     productId: job.data.productId,
     aoi: job.data.aoi,
     collection: job.data.collection,
+    source: job.data.source,
     onProgress: async (pct, stage, message) => {
       await job.updateProgress({ pct, stage, message });
     },

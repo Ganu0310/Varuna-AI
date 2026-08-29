@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter
 
@@ -14,5 +14,5 @@ async def health() -> dict:
         "gpu": False,  # TODO(phase-5): torch.cuda.is_available()
         "modelLoaded": False,  # TODO(phase-5): registry.current() is not None
         "forcingCacheAge": None,  # TODO(phase-7): age of the newest cached CMEMS/ERA5 subset
-        "now": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "now": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
     }

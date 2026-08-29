@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Literal
 
 from pydantic import BaseModel, Field
@@ -41,7 +41,7 @@ def derived(external_id: str, parents: list[str], dataset_id: str = "varuna-ml")
         provider="VARUNA",
         datasetId=dataset_id,
         externalId=external_id,
-        retrievedAt=datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        retrievedAt=datetime.now(UTC).isoformat().replace("+00:00", "Z"),
         licence="internal",
         derivedFrom=parents,
     )

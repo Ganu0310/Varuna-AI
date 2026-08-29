@@ -61,6 +61,8 @@ def geodesic_area_perimeter(geom: BaseGeometry) -> tuple[float, float]:
 def geodesic_line_length_km(coords_lonlat: list[tuple[float, float]]) -> float:
     """Geodesic length of a polyline given as (lon, lat) vertices, in km."""
     total = 0.0
-    for prev, cur in zip(coords_lonlat, coords_lonlat[1:]):
+    # Deliberately NOT strict: pairing a list with its own tail is one shorter by design,
+    # which is what walks consecutive vertices.
+    for prev, cur in zip(coords_lonlat, coords_lonlat[1:], strict=False):
         total += geodesic_distance_m(prev, cur)
     return total / 1000.0

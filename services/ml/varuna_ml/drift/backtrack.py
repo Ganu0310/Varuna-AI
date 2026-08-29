@@ -90,7 +90,8 @@ def seed_particles(
         batch = max(n - len(lons), 64)
         xs = rng.uniform(minx, maxx, batch)
         ys = rng.uniform(miny, maxy, batch)
-        for x, y in zip(xs, ys):
+        # Same-length by construction — both drawn with size=batch.
+        for x, y in zip(xs, ys, strict=True):
             attempts += 1
             if poly.contains(Point(x, y)):
                 lons.append(float(x))
@@ -149,8 +150,9 @@ def backtrack(
     times: list[datetime] = []
 
     t = observed_at
-    frames.append({"atTime": t.isoformat().replace("+00:00", "Z"),
-                   "lon": lon.copy(), "lat": lat.copy()})
+    frames.append(
+        {"atTime": t.isoformat().replace("+00:00", "Z"), "lon": lon.copy(), "lat": lat.copy()}
+    )
     times.append(t)
 
     for step in range(1, steps + 1):
@@ -186,8 +188,13 @@ def backtrack(
         t = t - timedelta(seconds=dt)
 
         if step % frame_stride == 0 or step == steps:
-            frames.append({"atTime": t.isoformat().replace("+00:00", "Z"),
-                           "lon": lon.copy(), "lat": lat.copy()})
+            frames.append(
+                {
+                    "atTime": t.isoformat().replace("+00:00", "Z"),
+                    "lon": lon.copy(),
+                    "lat": lat.copy(),
+                }
+            )
             times.append(t)
 
     return BacktrackResult(

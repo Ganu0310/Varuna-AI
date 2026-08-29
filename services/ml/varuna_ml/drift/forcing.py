@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import numpy as np
 
@@ -60,7 +60,9 @@ class ForcingField:
     temporal_resolution_h: float
     provenance: dict = field(default_factory=dict)
 
-    def sample(self, t: datetime, lat: np.ndarray, lon: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    def sample(
+        self, t: datetime, lat: np.ndarray, lon: np.ndarray
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Trilinear sample at (t, lat, lon). Out-of-grid particles return 0 rather than
         wrapping to the far side of the domain."""
         ti = self._time_index(t)
@@ -81,8 +83,9 @@ class ForcingField:
         return float(np.median(np.hypot(self.u[finite], self.v[finite])))
 
 
-def _bilinear(grid: np.ndarray, lats: np.ndarray, lons: np.ndarray,
-              lat: np.ndarray, lon: np.ndarray) -> np.ndarray:
+def _bilinear(
+    grid: np.ndarray, lats: np.ndarray, lons: np.ndarray, lat: np.ndarray, lon: np.ndarray
+) -> np.ndarray:
     """Bilinear interpolation with NaN-safe fill; points outside the grid yield 0."""
     out = np.zeros_like(lat, dtype=float)
 
@@ -105,12 +108,7 @@ def _bilinear(grid: np.ndarray, lats: np.ndarray, lons: np.ndarray,
     q01 = grid[li_i, ci_i + 1]
     q10 = grid[li_i + 1, ci_i]
     q11 = grid[li_i + 1, ci_i + 1]
-    vals = (
-        q00 * (1 - wx) * (1 - wy)
-        + q01 * wx * (1 - wy)
-        + q10 * (1 - wx) * wy
-        + q11 * wx * wy
-    )
+    vals = q00 * (1 - wx) * (1 - wy) + q01 * wx * (1 - wy) + q10 * (1 - wx) * wy + q11 * wx * wy
     # A masked/NaN cell means "no water here" (land, or outside the model domain), which is
     # zero velocity, not an unknown to be guessed at.
     out[inside] = np.nan_to_num(np.asarray(vals, dtype=float), nan=0.0)
@@ -126,8 +124,8 @@ def coverage(source_url: str) -> tuple[datetime, datetime] | None:
         ds = nc.Dataset(source_url)
         t = ds.variables["time"]
         d = cftime.num2date(t[:], t.units)
-        first = datetime(d[0].year, d[0].month, d[0].day, d[0].hour, tzinfo=timezone.utc)
-        last = datetime(d[-1].year, d[-1].month, d[-1].day, d[-1].hour, tzinfo=timezone.utc)
+        first = datetime(d[0].year, d[0].month, d[0].day, d[0].hour, tzinfo=UTC)
+        last = datetime(d[-1].year, d[-1].month, d[-1].day, d[-1].hour, tzinfo=UTC)
         ds.close()
         return first, last
     except Exception as e:  # noqa: BLE001 - any transport failure is "cannot determine"
@@ -187,7 +185,7 @@ def fetch_hycom_currents(
                 i
                 for i, tt in enumerate(tvals)
                 if start - timedelta(hours=3)
-                <= datetime(tt.year, tt.month, tt.day, tt.hour, tzinfo=timezone.utc)
+                <= datetime(tt.year, tt.month, tt.day, tt.hour, tzinfo=UTC)
                 <= end + timedelta(hours=3)
             ]
             if not keep:
@@ -214,8 +212,7 @@ def fetch_hycom_currents(
             v = np.where(np.abs(v) > 10.0, np.nan, v)
 
             times = [
-                datetime(tvals[i].year, tvals[i].month, tvals[i].day, tvals[i].hour,
-                         tzinfo=timezone.utc)
+                datetime(tvals[i].year, tvals[i].month, tvals[i].day, tvals[i].hour, tzinfo=UTC)
                 for i in keep
             ]
 
@@ -239,9 +236,7 @@ def fetch_hycom_currents(
                     "provider": "HYCOM / Naval Research Laboratory",
                     "datasetId": name,
                     "externalId": f"{url} [{start:%Y-%m-%dT%H}Z..{end:%Y-%m-%dT%H}Z]",
-                    "retrievedAt": datetime.now(timezone.utc)
-                    .isoformat()
-                    .replace("+00:00", "Z"),
+                    "retrievedAt": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
                     "licence": "Public domain (US Navy / NRL)",
                     "accessUrl": url,
                     "derivedFrom": [],
@@ -300,7 +295,7 @@ def _fetch_cmems(bbox, start, end, username, password) -> ForcingField:
     if u.ndim == 2:
         u, v = u[None, ...], v[None, ...]
     times = [
-        datetime.fromtimestamp(int(t) / 1e9, tz=timezone.utc)
+        datetime.fromtimestamp(int(t) / 1e9, tz=UTC)
         for t in np.asarray(result["time"].values).astype("datetime64[ns]").astype("int64")
     ]
     return ForcingField(
@@ -318,8 +313,10 @@ def _fetch_cmems(bbox, start, end, username, password) -> ForcingField:
             "sourceType": "OCEAN_MODEL",
             "provider": "Copernicus Marine Service",
             "datasetId": "GLOBAL_ANALYSISFORECAST_PHY_001_024",
-            "externalId": f"cmems_mod_glo_phy_anfc_0.083deg_PT1H-m [{start:%Y-%m-%dT%H}Z..{end:%Y-%m-%dT%H}Z]",
-            "retrievedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "externalId": (
+                f"cmems_mod_glo_phy_anfc_0.083deg_PT1H-m [{start:%Y-%m-%dT%H}Z..{end:%Y-%m-%dT%H}Z]"
+            ),
+            "retrievedAt": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
             "licence": "Copernicus Marine Service — free, with attribution",
             "accessUrl": "https://data.marine.copernicus.eu/product/GLOBAL_ANALYSISFORECAST_PHY_001_024",
             "derivedFrom": [],
@@ -383,9 +380,7 @@ def _fetch_era5(bbox, start, end, cds_key) -> ForcingField:
 
         tvar = ds.variables["time"] if "time" in ds.variables else ds.variables["valid_time"]
         tvals = cftime.num2date(tvar[:], tvar.units)
-        times = [
-            datetime(t.year, t.month, t.day, t.hour, tzinfo=timezone.utc) for t in tvals
-        ]
+        times = [datetime(t.year, t.month, t.day, t.hour, tzinfo=UTC) for t in tvals]
         lats = np.asarray(ds.variables["latitude"][:])
         lons = np.asarray(ds.variables["longitude"][:])
         u = np.asarray(ds.variables["u10"][:])
@@ -411,7 +406,7 @@ def _fetch_era5(bbox, start, end, cds_key) -> ForcingField:
                 "provider": "ECMWF / Copernicus Climate Data Store",
                 "datasetId": "reanalysis-era5-single-levels",
                 "externalId": f"ERA5 10m u/v [{start:%Y-%m-%dT%H}Z..{end:%Y-%m-%dT%H}Z]",
-                "retrievedAt": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+                "retrievedAt": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
                 "licence": "Copernicus Climate Change Service (C3S) licence",
                 "accessUrl": "https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels",
                 "derivedFrom": [],
