@@ -1,0 +1,555 @@
+{
+  "split": "test",
+  "threshold": 0.5,
+  "counts": {
+    "oil": 22,
+    "lookalike": 22,
+    "no_oil": 22
+  },
+  "oil": {
+    "mean_iou": 0.6373743241772775,
+    "median_iou": 0.696212670777415,
+    "detection_rate": 1.0,
+    "scenes_with_no_detection": 0
+  },
+  "pixel_pooled": {
+    "precision": 0.6900388291517324,
+    "recall": 0.7932983274433777,
+    "f1": 0.738074478352025,
+    "dice": 0.738074478352025
+  },
+  "false_positives": {
+    "lookalike_scene_fp_rate": 0.8181818181818182,
+    "no_oil_scene_fp_rate": 0.0
+  },
+  "per_scene": [
+    {
+      "cls": "oil",
+      "iou": 0.6388888888888888,
+      "pred_px": 163,
+      "gt_px": 191,
+      "intersection": 138,
+      "fired": true
+    },
+    {
+      "cls": "oil",
+      "iou": 0.6055555555555555,
+      "pred_px": 304,
+      "gt_px": 274,
+      "intersection": 218,
+      "fired": true
+    },
+    {
+      "cls": "oil",
+      "iou": 0.7778874629812438,
+      "pred_px": 835,
+      "gt_px": 966,
+      "intersection": 788,
+      "fired": true
+    },
+    {
+      "cls": "oil",
+      "iou": 0.9349415204678363,
+      "pred_px": 1362,
+      "gt_px": 1285,
+      "intersection": 1279,
+      "fired": true
+    },
+    {
+      "cls": "no_oil",
+      "iou": null,
+      "pred_px": 0,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": false
+    },
+    {
+      "cls": "no_oil",
+      "iou": null,
+      "pred_px": 0,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": false
+    },
+    {
+      "cls": "no_oil",
+      "iou": null,
+      "pred_px": 0,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": false
+    },
+    {
+      "cls": "no_oil",
+      "iou": null,
+      "pred_px": 0,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": false
+    },
+    {
+      "cls": "no_oil",
+      "iou": null,
+      "pred_px": 0,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": false
+    },
+    {
+      "cls": "oil",
+      "iou": 0.8870536798639787,
+      "pred_px": 4018,
+      "gt_px": 3751,
+      "intersection": 3652,
+      "fired": true
+    },
+    {
+      "cls": "oil",
+      "iou": 0.890381212803603,
+      "pred_px": 11298,
+      "gt_px": 12207,
+      "intersection": 11071,
+      "fired": true
+    },
+    {
+      "cls": "oil",
+      "iou": 0.8866971373586722,
+      "pred_px": 4049,
+      "gt_px": 3794,
+      "intersection": 3686,
+      "fired": true
+    },
+    {
+      "cls": "oil",
+      "iou": 0.7970189701897019,
+      "pred_px": 3497,
+      "gt_px": 3134,
+      "intersection": 2941,
+      "fired": true
+    },
+    {
+      "cls": "no_oil",
+      "iou": null,
+      "pred_px": 0,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": false
+    },
+    {
+      "cls": "no_oil",
+      "iou": null,
+      "pred_px": 0,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": false
+    },
+    {
+      "cls": "no_oil",
+      "iou": null,
+      "pred_px": 0,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": false
+    },
+    {
+      "cls": "no_oil",
+      "iou": null,
+      "pred_px": 0,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": false
+    },
+    {
+      "cls": "lookalike",
+      "iou": 0.0,
+      "pred_px": 88,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": true
+    },
+    {
+      "cls": "lookalike",
+      "iou": 0.0,
+      "pred_px": 149,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": true
+    },
+    {
+      "cls": "lookalike",
+      "iou": 0.0,
+      "pred_px": 85,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": true
+    },
+    {
+      "cls": "lookalike",
+      "iou": 0.0,
+      "pred_px": 229,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": true
+    },
+    {
+      "cls": "lookalike",
+      "iou": 0.0,
+      "pred_px": 287,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": true
+    },
+    {
+      "cls": "lookalike",
+      "iou": 0.0,
+      "pred_px": 135,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": true
+    },
+    {
+      "cls": "lookalike",
+      "iou": 0.0,
+      "pred_px": 2429,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": true
+    },
+    {
+      "cls": "lookalike",
+      "iou": 0.0,
+      "pred_px": 746,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": true
+    },
+    {
+      "cls": "no_oil",
+      "iou": null,
+      "pred_px": 0,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": false
+    },
+    {
+      "cls": "no_oil",
+      "iou": null,
+      "pred_px": 0,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": false
+    },
+    {
+      "cls": "no_oil",
+      "iou": null,
+      "pred_px": 0,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": false
+    },
+    {
+      "cls": "no_oil",
+      "iou": null,
+      "pred_px": 0,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": false
+    },
+    {
+      "cls": "no_oil",
+      "iou": null,
+      "pred_px": 0,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": false
+    },
+    {
+      "cls": "oil",
+      "iou": 0.5981835264641403,
+      "pred_px": 3178,
+      "gt_px": 1925,
+      "intersection": 1910,
+      "fired": true
+    },
+    {
+      "cls": "lookalike",
+      "iou": null,
+      "pred_px": 0,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": false
+    },
+    {
+      "cls": "lookalike",
+      "iou": null,
+      "pred_px": 0,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": false
+    },
+    {
+      "cls": "lookalike",
+      "iou": null,
+      "pred_px": 0,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": false
+    },
+    {
+      "cls": "lookalike",
+      "iou": null,
+      "pred_px": 0,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": false
+    },
+    {
+      "cls": "oil",
+      "iou": 0.8307984790874525,
+      "pred_px": 1333,
+      "gt_px": 1556,
+      "intersection": 1311,
+      "fired": true
+    },
+    {
+      "cls": "oil",
+      "iou": 0.5691609977324263,
+      "pred_px": 513,
+      "gt_px": 871,
+      "intersection": 502,
+      "fired": true
+    },
+    {
+      "cls": "lookalike",
+      "iou": 0.0,
+      "pred_px": 4902,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": true
+    },
+    {
+      "cls": "lookalike",
+      "iou": 0.0,
+      "pred_px": 6146,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": true
+    },
+    {
+      "cls": "lookalike",
+      "iou": 0.0,
+      "pred_px": 1419,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": true
+    },
+    {
+      "cls": "no_oil",
+      "iou": null,
+      "pred_px": 0,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": false
+    },
+    {
+      "cls": "no_oil",
+      "iou": null,
+      "pred_px": 0,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": false
+    },
+    {
+      "cls": "no_oil",
+      "iou": null,
+      "pred_px": 0,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": false
+    },
+    {
+      "cls": "lookalike",
+      "iou": 0.0,
+      "pred_px": 79,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": true
+    },
+    {
+      "cls": "lookalike",
+      "iou": 0.0,
+      "pred_px": 140,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": true
+    },
+    {
+      "cls": "lookalike",
+      "iou": 0.0,
+      "pred_px": 5,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": true
+    },
+    {
+      "cls": "oil",
+      "iou": 0.8374536464771323,
+      "pred_px": 4683,
+      "gt_px": 4236,
+      "intersection": 4065,
+      "fired": true
+    },
+    {
+      "cls": "no_oil",
+      "iou": null,
+      "pred_px": 0,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": false
+    },
+    {
+      "cls": "no_oil",
+      "iou": null,
+      "pred_px": 0,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": false
+    },
+    {
+      "cls": "oil",
+      "iou": 0.5478971962616822,
+      "pred_px": 4224,
+      "gt_px": 7701,
+      "intersection": 4221,
+      "fired": true
+    },
+    {
+      "cls": "oil",
+      "iou": 0.45110544217687076,
+      "pred_px": 2142,
+      "gt_px": 4684,
+      "intersection": 2122,
+      "fired": true
+    },
+    {
+      "cls": "oil",
+      "iou": 0.8816495378450003,
+      "pred_px": 13858,
+      "gt_px": 15253,
+      "intersection": 13640,
+      "fired": true
+    },
+    {
+      "cls": "oil",
+      "iou": 0.28058007566204285,
+      "pred_px": 447,
+      "gt_px": 1584,
+      "intersection": 445,
+      "fired": true
+    },
+    {
+      "cls": "oil",
+      "iou": 0.8659549228944247,
+      "pred_px": 794,
+      "gt_px": 779,
+      "intersection": 730,
+      "fired": true
+    },
+    {
+      "cls": "oil",
+      "iou": 0.36270190895741555,
+      "pred_px": 494,
+      "gt_px": 1362,
+      "intersection": 494,
+      "fired": true
+    },
+    {
+      "cls": "lookalike",
+      "iou": 0.0,
+      "pred_px": 2135,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": true
+    },
+    {
+      "cls": "lookalike",
+      "iou": 0.0,
+      "pred_px": 606,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": true
+    },
+    {
+      "cls": "oil",
+      "iou": 0.7535364526659413,
+      "pred_px": 1450,
+      "gt_px": 1773,
+      "intersection": 1385,
+      "fired": true
+    },
+    {
+      "cls": "no_oil",
+      "iou": null,
+      "pred_px": 0,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": false
+    },
+    {
+      "cls": "oil",
+      "iou": 0.08298755186721991,
+      "pred_px": 20,
+      "gt_px": 241,
+      "intersection": 20,
+      "fired": true
+    },
+    {
+      "cls": "oil",
+      "iou": 0.3661252900232019,
+      "pred_px": 832,
+      "gt_px": 2112,
+      "intersection": 789,
+      "fired": true
+    },
+    {
+      "cls": "lookalike",
+      "iou": 0.0,
+      "pred_px": 1113,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": true
+    },
+    {
+      "cls": "no_oil",
+      "iou": null,
+      "pred_px": 0,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": false
+    },
+    {
+      "cls": "no_oil",
+      "iou": null,
+      "pred_px": 0,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": false
+    },
+    {
+      "cls": "lookalike",
+      "iou": 0.0,
+      "pred_px": 118,
+      "gt_px": 0,
+      "intersection": 0,
+      "fired": true
+    },
+    {
+      "cls": "oil",
+      "iou": 0.17567567567567569,
+      "pred_px": 47,
+      "gt_px": 214,
+      "intersection": 39,
+      "fired": true
+    }
+  ]
+}

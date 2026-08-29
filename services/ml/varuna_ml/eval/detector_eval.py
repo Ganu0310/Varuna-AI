@@ -117,6 +117,25 @@ def evaluate_scene(image_path: Path, mask_path: Path, truth_class: str) -> Scene
     )
 
 
+def evaluate_from_split(root: Path, split_file: Path, which: str = "test") -> dict:
+    """Score only the scenes in one side of the geographic split.
+
+    Added so the classical detector can be measured on exactly the 66 scenes the U-Net is
+    tested on. The original whole-dataset figures covered all 450, 315 of which later became
+    training data — comparing a learned model's test score against that would be comparing
+    two different questions and flattering whichever number was quoted second.
+    """
+    import json as _json
+
+    split = _json.loads(split_file.read_text(encoding="utf-8"))
+    results: list[SceneResult] = []
+    for item in split["items"][which]:
+        results.append(
+            evaluate_scene(root / item["image"], root / item["mask"], item["cls"])
+        )
+    return summarise(results)
+
+
 def evaluate_split(root: Path, limit: int | None = None) -> dict:
     """Run every scene in the Part III test split.
 
@@ -201,10 +220,16 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--root", required=True, type=Path, help="Part III root (has Images/, Mask/)")
     ap.add_argument("--limit", type=int, default=None, help="scenes per class (quick pass)")
+    ap.add_argument("--split-file", type=Path, default=None, help="score one side of a split")
+    ap.add_argument("--which", default="test", help="which side of --split-file")
     ap.add_argument("--out", type=Path, default=None, help="write full JSON results here")
     args = ap.parse_args()
 
-    summary = evaluate_split(args.root, limit=args.limit)
+    summary = (
+        evaluate_from_split(args.root, args.split_file, args.which)
+        if args.split_file
+        else evaluate_split(args.root, limit=args.limit)
+    )
 
     c = summary["counts"]
     o = summary["oil"]

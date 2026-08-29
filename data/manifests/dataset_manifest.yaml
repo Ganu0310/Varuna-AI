@@ -82,6 +82,23 @@ dataset_manifest:
       - simulated_ais
   assertion: 'no_synthetic_samples'
 
+  # Trained on the split above; scored once on its test side. NOT adopted — see
+  # data/eval/detector-comparison.json for the head-to-head and the reasoning.
+  models:
+    - id: unet-part3
+      trained_on: 'trujillo-acatitla-s1-oil-spill-part3-test :: train (315 scenes)'
+      architecture: 'UNet(base=16, in_ch=2), 482,593 parameters'
+      status: 'EVALUATED_NOT_ADOPTED'
+      test_mean_iou: 0.637
+      test_lookalike_fp_rate: 0.818
+      baseline_mean_iou: 0.564
+      baseline_lookalike_fp_rate: 0.682
+      reason: >
+        Better segmentation and perfect on open water, but fires on MORE look-alike scenes
+        than the classical detector it would replace. Look-alikes are the failure mode that
+        sends an investigator after a vessel that discharged nothing, so a model that
+        improves IoU while worsening that rate improves the metric and worsens the product.
+
 # ── Deliberately NOT acquired ────────────────────────────────────────────────
 #
 # A sibling key, not a `dataset_manifest.entries` member. An entry in that list is a dataset

@@ -1,0 +1,30 @@
+{
+  "measuredAt": "2026-08-29T06:31:29Z",
+  "split": "data/splits/part3-split.json :: test (22 oil, 22 look-alike, 22 oil-free)",
+  "note": "Both scored on the IDENTICAL held-out scenes, from geographic cells absent from train and val. Earlier classical figures covering all 450 scenes are retired: 315 of those are now training data, so they are no longer a held-out measurement.",
+  "classical_darkspot_v1": {
+    "meanIou": 0.5642,
+    "medianIou": 0.627,
+    "detectionRate": 1.0,
+    "lookalikeSceneFpRate": 0.6818,
+    "noOilSceneFpRate": 0.1818
+  },
+  "unet_part3": {
+    "meanIou": 0.6374,
+    "medianIou": 0.6962,
+    "detectionRate": 1.0,
+    "precision": 0.69,
+    "recall": 0.7933,
+    "f1Dice": 0.7381,
+    "lookalikeSceneFpRate": 0.8182,
+    "noOilSceneFpRate": 0.0,
+    "trainScenes": 315,
+    "parameters": 482593,
+    "selectedEpoch": 17,
+    "bestValIou": 0.3493,
+    "inputResolution": "256x256, 2ch (VH,VV), Sigma0 dB clipped [-35,5] scaled [0,1]"
+  },
+  "decision": "NOT ADOPTED as the production detector",
+  "rationale": "The U-Net segments better (IoU 0.64 vs 0.56) and is perfect on open water (0% vs 18% false positives on oil-free scenes), but it fires on MORE look-alike scenes: 81.8% against 68.2%. Look-alikes are the failure that matters here. An oil-free false positive wastes a look; a look-alike false positive is a dark feature that genuinely resembles a slick, and it is what sends an investigator after a vessel that discharged nothing. Trained on 315 scenes the model appears to have learned 'dark smooth region on water' more confidently than the classical detector, which helps everywhere except the one class built to defeat exactly that cue. Adopting it would improve the headline metric and worsen the product.",
+  "toRevisit": "Worth retraining with the full Parts I+II imagery (86.6 GB, not fetched) and with look-alike scenes weighted in the loss, since the class is present in training but carries no positive pixels to learn from under a segmentation objective."
+}
