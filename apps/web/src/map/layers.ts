@@ -1,4 +1,4 @@
-import { GeoJsonLayer, PathLayer, ScatterplotLayer, BitmapLayer } from '@deck.gl/layers';
+import { GeoJsonLayer, PathLayer, ScatterplotLayer } from '@deck.gl/layers';
 import type { Layer } from '@deck.gl/core';
 import { color, rgba } from '../design/tokens.ts';
 import type { Detection } from '../api/hooks.ts';
@@ -15,8 +15,6 @@ import type { Detection } from '../api/hooks.ts';
  */
 
 export interface LayerInputs {
-  sarTileUrl: string | null;
-  sarBounds: [number, number, number, number] | null;
   aoi: { type: 'Polygon'; coordinates: number[][][] } | null;
   originZone: { type: 'Polygon'; coordinates: number[][][] } | null;
   detections: Detection[];
@@ -35,17 +33,10 @@ export function buildLayers(input: LayerInputs): Layer[] {
   const on = (id: string) => input.visible[id] !== false;
   const alpha = (id: string) => input.opacity[id] ?? 1;
 
-  // 1 · SAR raster, served by TiTiler from the same COG the analysis ran on.
-  if (on('sar-raster') && input.sarTileUrl && input.sarBounds) {
-    layers.push(
-      new BitmapLayer({
-        id: 'sar-raster',
-        bounds: input.sarBounds,
-        image: input.sarTileUrl,
-        opacity: alpha('sar-raster'),
-      }) as unknown as Layer,
-    );
-  }
+  // 1 · The SAR raster is NOT a deck.gl layer. It is a MapLibre raster source owned by
+  // `MapRoot`: a BitmapLayer takes a single image rather than a tile template, and the
+  // deck.gl tiling layer would mean another dependency on an over-budget bundle. Draw order
+  // is preserved because MapRoot inserts it beneath the graticule, under everything here.
 
   // 2 · AOI outline — the analyst's declared search area.
   if (on('aoi') && input.aoi) {

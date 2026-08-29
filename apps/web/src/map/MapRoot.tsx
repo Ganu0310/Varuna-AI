@@ -5,6 +5,9 @@ import type { Layer } from '@deck.gl/core';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useMapStore, timeChannel, useTimeStore } from '../state/stores.ts';
 import { DARK_STYLE } from './style.ts';
+
+const SAR_SOURCE_ID = 'sar-scene';
+const SAR_LAYER_ID = 'sar-scene-raster';
 import { graticuleFor, chooseStep } from './graticule.ts';
 
 /**
@@ -19,18 +22,45 @@ import { graticuleFor, chooseStep } from './graticule.ts';
  * render order rather than floating above it — labels and coastlines can draw on top of a
  * SAR raster, which is what makes the composite readable.
  */
+export interface SarTile {
+  tileUrlTemplate: string;
+  bounds: [number, number, number, number] | null;
+  minZoom: number;
+  maxZoom: number;
+  attribution: string | null;
+}
+
 interface Props {
   layers: Layer[];
+  /**
+   * The SAR raster, served by TiTiler from the SAME COG the detector read.
+   *
+   * Handled by MapLibre rather than deck.gl: a `BitmapLayer` takes one image, not a tile
+   * template, and the tiling layer lives in `@deck.gl/geo-layers` which this app does not
+   * depend on and which would add to a bundle already over budget. MapLibre tiles rasters
+   * natively, and imagery belongs under the vector overlay anyway.
+   */
+  sarTile?: SarTile | null;
+  sarVisible?: boolean;
+  sarOpacity?: number;
   children?: ReactNode;
 }
 
-export function MapRoot({ layers, children }: Props) {
+export function MapRoot({
+  layers,
+  sarTile = null,
+  sarVisible = true,
+  sarOpacity = 1,
+  children,
+}: Props) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const overlay = useRef<MapboxOverlay | null>(null);
   const raf = useRef<number | null>(null);
+  const currentTemplate = useRef<string | null>(null);
 
   const setReady = useMapStore((s) => s.setReady);
+  const ready = useMapStore((s) => s.ready);
   const registerCamera = useMapStore((s) => s.registerCamera);
 
   useEffect(() => {
@@ -119,6 +149,67 @@ export function MapRoot({ layers, children }: Props) {
       overlay.current = null;
     };
   }, [setReady, registerCamera]);
+
+  /**
+   * The SAR raster source/layer, kept in sync with whichever scene is selected.
+   *
+   * Inserted directly above the graticule so it sits at the BOTTOM of the stack: detections,
+   * tracks and the AOI must draw over the imagery, never under it.
+   */
+  useEffect(() => {
+    const m = map.current;
+    if (!m) return;
+
+    const apply = () => {
+      const hasLayer = Boolean(m.getLayer(SAR_LAYER_ID));
+      const hasSource = Boolean(m.getSource(SAR_SOURCE_ID));
+
+      if (!sarTile) {
+        if (hasLayer) m.removeLayer(SAR_LAYER_ID);
+        if (hasSource) m.removeSource(SAR_SOURCE_ID);
+        return;
+      }
+
+      // A changed template means a different scene: tear the source down rather than trying
+      // to mutate it, so no tile from the previous scene can survive on screen.
+      const current = currentTemplate.current;
+      if (hasSource && current !== sarTile.tileUrlTemplate) {
+        if (hasLayer) m.removeLayer(SAR_LAYER_ID);
+        m.removeSource(SAR_SOURCE_ID);
+      }
+
+      if (!m.getSource(SAR_SOURCE_ID)) {
+        m.addSource(SAR_SOURCE_ID, {
+          type: 'raster',
+          tiles: [sarTile.tileUrlTemplate],
+          tileSize: 256,
+          minzoom: sarTile.minZoom,
+          maxzoom: sarTile.maxZoom,
+          ...(sarTile.bounds ? { bounds: sarTile.bounds } : {}),
+          ...(sarTile.attribution ? { attribution: sarTile.attribution } : {}),
+        });
+        currentTemplate.current = sarTile.tileUrlTemplate;
+      }
+
+      if (!m.getLayer(SAR_LAYER_ID)) {
+        m.addLayer(
+          { id: SAR_LAYER_ID, type: 'raster', source: SAR_SOURCE_ID, paint: {} },
+          m.getLayer('graticule') ? 'graticule' : undefined,
+        );
+      }
+
+      m.setLayoutProperty(SAR_LAYER_ID, 'visibility', sarVisible ? 'visible' : 'none');
+      m.setPaintProperty(SAR_LAYER_ID, 'raster-opacity', sarOpacity);
+    };
+
+    // Gated on the store's `ready` flag, set from the map's own `load` event, rather than on
+    // `isStyleLoaded()`. That method kept returning false here even long after the map was
+    // interactive — with deck.gl interleaved there is always something in flight — so a
+    // `once('load'/'styledata')` fallback registered afterwards never fired and the raster
+    // silently never appeared. `ready` is in the dependency list, so this re-runs the moment
+    // the map is usable.
+    if (ready) apply();
+  }, [sarTile, sarVisible, sarOpacity, ready]);
 
   // Layers are pushed straight to the overlay. `setProps` is deliberately outside React's
   // render cycle so a moving time cursor does not re-render the panels around the map.

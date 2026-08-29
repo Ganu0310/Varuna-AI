@@ -53,6 +53,28 @@ export function WorkspacePage() {
   const hovered = useSelectionStore((s) => s.hovered);
   const selected = useSelectionStore((s) => s.selected);
 
+  /**
+   * Tiles for the first READY scene — M1.
+   *
+   * `enabled` on a READY scene only: a CATALOGUED scene has no raster stored, and asking for
+   * its tiles returns 404. Waiting for READY keeps a normal pre-ingest state out of the
+   * error path.
+   */
+  const readyScene = (scenes.data?.items ?? []).find((sc) => sc.status === 'READY');
+  const sarTiles = useQuery({
+    queryKey: ['scene-tiles', id, readyScene?._id],
+    queryFn: () =>
+      api.get<{
+        tileUrlTemplate: string;
+        bounds: [number, number, number, number] | null;
+        minZoom: number;
+        maxZoom: number;
+        attribution: string | null;
+      }>(`/investigations/${id}/scenes/${readyScene!._id}/tiles`),
+    enabled: Boolean(id && readyScene?._id),
+    staleTime: 5 * 60_000,
+  });
+
   const coverage = useQuery({
     queryKey: ['ais-coverage', id],
     queryFn: () => api.get<AisCoverage>(`/investigations/${id}/ais/coverage`),
@@ -161,8 +183,6 @@ export function WorkspacePage() {
   const layers = useMemo(
     () =>
       buildLayers({
-        sarTileUrl: null, // wired when a scene raster is selected
-        sarBounds: null,
         aoi: inv?.aoi ?? null,
         originZone: null,
         detections: (detections.data?.items ?? []) as Detection[],
@@ -254,7 +274,12 @@ export function WorkspacePage() {
       </aside>
 
       <div className="ws-map">
-        <MapRoot layers={layers}>
+        <MapRoot
+          layers={layers}
+          sarTile={sarTiles.data ?? null}
+          sarVisible={layerVisible['sar-raster']?.visible ?? true}
+          sarOpacity={layerVisible['sar-raster']?.opacity ?? 1}
+        >
           <div className="ws-scrubber">
             <TimeScrubber
               sceneTimes={(scenes.data?.items ?? []).map((s) => s.acquiredAt)}
