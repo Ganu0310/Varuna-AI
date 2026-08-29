@@ -10,12 +10,14 @@ import { TimeScrubber } from '../../components/TimeScrubber.tsx';
 import { CandidateRanking } from '../candidates/CandidateRanking.tsx';
 import { DetectionsPanel } from '../detections/DetectionsPanel.tsx';
 import { OriginPanel } from '../origin/OriginPanel.tsx';
+import { JobActivity } from '../jobs/JobActivity.tsx';
+import { SensitivityPanel } from '../candidates/SensitivityPanel.tsx';
 import { CataloguePanel } from '../catalogue/CataloguePanel.tsx';
 import { useLayerStore, useSelectionStore, useTimeStore, useMapStore } from '../../state/stores.ts';
 import { vesselsAt } from '../../map/vesselAt.ts';
 import { formatUtc, formatAreaKm2 } from '../../lib/format.ts';
 
-type Tab = 'catalogue' | 'scenes' | 'origin' | 'ais' | 'candidates';
+type Tab = 'catalogue' | 'scenes' | 'origin' | 'ais' | 'candidates' | 'activity';
 
 interface AisCoverage {
   recordCount: number;
@@ -371,6 +373,7 @@ export function WorkspacePage() {
               ['origin', 'Origin', null],
               ['ais', 'AIS', coverage.data?.distinctVessels ?? null],
               ['candidates', 'Candidates', null],
+              ['activity', 'Activity', null],
             ] as const
           ).map(([key, label, count]) => (
             <button
@@ -474,6 +477,25 @@ export function WorkspacePage() {
               </table>
             </section>
           </div>
+        ) : null}
+
+        {tab === 'activity' ? (
+          <section className="card">
+            <h2>Job activity</h2>
+            <p className="muted">
+              Ingest, back-tracking and correlation run asynchronously. Failures show the provider’s
+              own message, because that is what says whether to change the date, the area, or the
+              provider.
+            </p>
+            <JobActivity investigationId={id!} />
+          </section>
+        ) : null}
+
+        {tab === 'candidates' && detections.data?.items?.[0] ? (
+          <details className="card sens-card">
+            <summary>Weight sensitivity</summary>
+            <SensitivityPanel investigationId={id!} detectionId={detections.data.items[0]._id} />
+          </details>
         ) : null}
 
         {tab === 'candidates' ? <CandidateRanking investigationId={id!} /> : null}

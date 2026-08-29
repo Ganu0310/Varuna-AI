@@ -33,7 +33,7 @@ interface Props {
   onFeatureClick?: (key: string) => void;
 }
 
-const LABELS: Record<string, string> = {
+export const FEATURE_LABELS: Record<string, string> = {
   spatial_proximity: 'Spatial proximity',
   temporal_alignment: 'Temporal alignment',
   track_intersection: 'Track intersection',
@@ -91,7 +91,7 @@ export function EvidenceWaterfall({
               onClick={() => onFeatureClick?.(f.key)}
               title="Show the source records behind this feature"
             >
-              {LABELS[f.key] ?? f.key}
+              {FEATURE_LABELS[f.key] ?? f.key}
             </button>
             {/* The raw measurement, always. */}
             <span className="wf-raw mono">
@@ -111,7 +111,7 @@ export function EvidenceWaterfall({
 
         {unmeasured.map((f) => (
           <li key={f.key} className="wf-row wf-unmeasured">
-            <span className="wf-label">{LABELS[f.key] ?? f.key}</span>
+            <span className="wf-label">{FEATURE_LABELS[f.key] ?? f.key}</span>
             <span className="wf-raw">
               <span className={`token ${f.status === 'MISSING' ? 'token-warn' : ''}`}>
                 {f.status === 'MISSING' ? 'NOT MEASURED' : 'NOT APPLICABLE'}
