@@ -2269,3 +2269,63 @@ button,
   padding-top: 18px;
   line-height: 1.7;
 }
+
+/* ── scene upload (Phase 4, 06_BACKEND §6.4.4) ────────────────────────
+   A short form, so the fields get room rather than being packed. */
+.upload-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: var(--space-3, 12px);
+}
+.upload-form input[type='file'] {
+  font: inherit;
+  color: var(--ink-secondary);
+  padding: 8px 0;
+}
+.upload-form input[type='file']::file-selector-button {
+  font: inherit;
+  margin-right: 10px;
+  padding: 6px 12px;
+  min-height: 32px;
+  background: var(--surface-3);
+  color: var(--ink-primary);
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.upload-form input[type='file']::file-selector-button:hover {
+  background: var(--surface-4);
+}
+.upload-form input[type='datetime-local'] {
+  font: inherit;
+  background: var(--surface-inset);
+  color: var(--ink-primary);
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  padding: 7px 10px;
+  min-height: 32px;
+  color-scheme: dark;
+}
+.upload-result {
+  margin-top: var(--space-3, 12px);
+  padding: 12px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--status-ok);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.upload-result p {
+  margin: 0;
+  font-size: 13.5px;
+}
+/* An uploaded scene carries a weaker claim than a catalogue one, and the notice that says so
+   is marked rather than set as ordinary body text. */
+.upload-provenance {
+  color: var(--oil-400);
+  font-size: 12.5px !important;
+  line-height: 1.55;
+}

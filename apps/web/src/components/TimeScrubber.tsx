@@ -122,14 +122,26 @@ export function TimeScrubber({ releaseWindow, sceneTimes = [] }: Props) {
           </>
         ) : null}
 
-        {sceneTimes.map((t) => (
-          <div
-            key={t}
-            className="scene-tick"
-            style={{ left: `${pct(Date.parse(t))}%` }}
-            title={`Acquisition ${formatUtc(t)}`}
-          />
-        ))}
+        {/* Grouped by instant, not one tick per scene.
+            Two scenes acquired at the same time land on the same pixel, so a second tick draws
+            nothing an analyst can see — and, keyed by timestamp, it also collided in React and
+            produced duplicate-key warnings. Uploaded scenes made that common: an analyst
+            attributing one incident supplies the same acquisition time for every image of it.
+            The count goes in the tooltip, where it is actually legible. */}
+        {[...new Map(sceneTimes.map((t) => [t, sceneTimes.filter((x) => x === t).length]))].map(
+          ([t, count]) => (
+            <div
+              key={t}
+              className="scene-tick"
+              style={{ left: `${pct(Date.parse(t))}%` }}
+              title={
+                count > 1
+                  ? `${count} acquisitions at ${formatUtc(t)}`
+                  : `Acquisition ${formatUtc(t)}`
+              }
+            />
+          ),
+        )}
 
         <input
           type="range"

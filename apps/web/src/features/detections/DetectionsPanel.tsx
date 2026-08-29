@@ -3,6 +3,7 @@ import { useDetections, useScenes, useIngestScene, type Detection } from '../../
 import { formatUtc, formatAreaKm2 } from '../../lib/format.ts';
 import { DetectionReview } from './DetectionReview.tsx';
 import { DetectionVersions } from './DetectionVersions.tsx';
+import { SceneUpload } from './SceneUpload.tsx';
 
 /**
  * Detections panel — 05_FRONTEND §5.5.5.
@@ -88,6 +89,10 @@ export function DetectionsPanel({ investigationId }: { investigationId: string }
           </p>
         ) : null}
       </section>
+
+      {/* Sits between the catalogue ingest and the results: an analyst arrives either with a
+          product ID or with a file, and the two ways in belong next to each other. */}
+      <SceneUpload investigationId={investigationId} />
 
       <section className="card">
         <h2>Detections</h2>
