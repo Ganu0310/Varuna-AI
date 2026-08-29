@@ -1610,3 +1610,54 @@ input[type='range'] {
   font-size: 11px;
   color: var(--ink-secondary);
 }
+
+/* ── space-time prism ─────────────────────────────────────────────────────
+   Full-viewport: the volume needs the room, and the workspace map is unmounted
+   while this route is open so only one WebGL context is ever alive. */
+.prism-page {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  height: 100vh;
+  background: var(--surface-0);
+}
+.prism-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-5);
+  padding: var(--space-5) var(--space-7);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-wrap: wrap;
+}
+.prism-head h1 {
+  margin: var(--space-2) 0 0;
+  font-size: 20px;
+}
+.prism-presets {
+  display: flex;
+  gap: var(--space-3);
+}
+.prism-presets button {
+  text-transform: capitalize;
+}
+.prism-canvas {
+  position: relative;
+  min-height: 0;
+}
+.prism-legend {
+  padding: var(--space-5) var(--space-7);
+  border-top: 1px solid var(--border-subtle);
+  background: var(--surface-1);
+  font-size: 12px;
+}
+.prism-legend p {
+  margin: 0 0 var(--space-2);
+  line-height: 1.55;
+}
+/* The axis caption cannot be dismissed. A viewer who reads the vertical axis as
+   altitude misreads every track on screen. */
+.prism-caption {
+  color: var(--ink-primary);
+  border-left: 3px solid var(--accent-600);
+  padding-left: var(--space-4);
+}

@@ -15,6 +15,10 @@ import { AdminPage } from '../features/admin/AdminPage.tsx';
 const ReportPage = lazy(() =>
   import('../features/reports/ReportPage.tsx').then((m) => ({ default: m.ReportPage })),
 );
+// Lazy like the workspace: the prism pulls deck.gl, which must not load on the login route.
+const PrismPage = lazy(() =>
+  import('../features/prism/PrismPage.tsx').then((m) => ({ default: m.PrismPage })),
+);
 const WorkspacePage = lazy(() =>
   import('../features/investigations/WorkspacePage.tsx').then((m) => ({
     default: m.WorkspacePage,
@@ -112,6 +116,16 @@ export function App() {
                       <WorkspacePage />
                     </Suspense>
                   </AppChrome>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/investigations/:id/prism"
+              element={
+                <RequireAuth>
+                  <Suspense fallback={<main className="page">Loading prism…</main>}>
+                    <PrismPage />
+                  </Suspense>
                 </RequireAuth>
               }
             />
