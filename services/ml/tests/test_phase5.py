@@ -100,17 +100,10 @@ def test_rejects_split_that_does_not_sum_to_one(tmp_path):
     assert not r.ok
 
 
-def test_repo_manifest_is_downloaded_and_holds_no_training_data():
-    """The shipped manifest now declares a real, downloaded dataset, so it validates under
+def test_repo_manifest_is_downloaded_and_usable():
+    """The manifest declares a real, downloaded dataset and validates under
     `require_downloaded=True` — the state it could not reach while the entry read
-    PENDING_DOWNLOAD.
-
-    The property that replaced that one matters more. The single dataset we hold is the
-    publisher's HELD-OUT TEST split, and every entry therefore declares `train: 0.0`. If a
-    future change gives any entry a non-zero train fraction, a training run would fit on the
-    only split available to it — the one every reported metric is measured against — and the
-    resulting numbers would be meaningless while looking entirely normal.
-    """
+    PENDING_DOWNLOAD."""
     p = REPO / "data" / "manifests" / "dataset_manifest.yaml"
     assert validate_manifest(p, require_downloaded=True).ok
 
@@ -118,10 +111,39 @@ def test_repo_manifest_is_downloaded_and_holds_no_training_data():
     entries = doc["dataset_manifest"]["entries"]
     assert entries, "manifest must declare at least one dataset"
     for e in entries:
-        assert e["split"]["train"] == 0.0, (
-            f"{e['id']} declares train={e['split']['train']}. The only data on disk is the "
-            "held-out test split; fitting on it would invalidate every reported metric."
-        )
+        frac = e["split"]
+        assert abs(sum(frac.values()) - 1.0) < 1e-6, f"{e['id']} splits must partition the set"
+
+
+def test_train_and_test_splits_share_no_geography():
+    """The anti-leakage invariant, now that training is allowed on this data.
+
+    This replaced an assertion that every entry declared `train: 0.0`, which was the right
+    check while the only dataset on disk was a held-out test set and nothing could be trained
+    on it. Once a train split exists that assertion had to go, but the thing it protected did
+    not: the reported test numbers are only meaningful if the model never saw those scenes.
+
+    Geographic disjointness is the sharp version of that. These images are tiles cut from a
+    smaller number of Sentinel-1 acquisitions, so tiles from one acquisition share sea state,
+    wind, look-alike population and often the same slick. A split that separates individual
+    tiles but not their source scenes leaks near-duplicates into the test set and inflates
+    IoU without any generalisation — and it fails silently, by producing a better number.
+    """
+    split_path = REPO / "data" / "splits" / "part3-split.json"
+    if not split_path.exists():
+        pytest.skip("split not generated in this checkout")
+
+    split = json.loads(split_path.read_text(encoding="utf-8"))
+    cells = {name: {tuple(c) for c in split["cells"][name]} for name in ("train", "val", "test")}
+
+    assert not (cells["train"] & cells["test"]), "a geographic cell is in BOTH train and test"
+    assert not (cells["train"] & cells["val"]), "a geographic cell is in BOTH train and val"
+    assert not (cells["val"] & cells["test"]), "a geographic cell is in BOTH val and test"
+
+    # Every class must be present in test, or a class-specific rate cannot be reported at
+    # all — the look-alike false-positive rate above all.
+    for cls, n in split["counts"]["test"].items():
+        assert n > 0, f"test split contains no {cls} scenes"
 
 
 # ── morphology ────────────────────────────────────────────────────────

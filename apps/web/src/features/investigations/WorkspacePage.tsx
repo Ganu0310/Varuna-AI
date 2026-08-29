@@ -9,12 +9,13 @@ import { LayerStackControl } from '../../map/LayerStackControl.tsx';
 import { TimeScrubber } from '../../components/TimeScrubber.tsx';
 import { CandidateRanking } from '../candidates/CandidateRanking.tsx';
 import { DetectionsPanel } from '../detections/DetectionsPanel.tsx';
+import { OriginPanel } from '../origin/OriginPanel.tsx';
 import { CataloguePanel } from '../catalogue/CataloguePanel.tsx';
 import { useLayerStore, useSelectionStore, useTimeStore, useMapStore } from '../../state/stores.ts';
 import { vesselsAt } from '../../map/vesselAt.ts';
 import { formatUtc, formatAreaKm2 } from '../../lib/format.ts';
 
-type Tab = 'catalogue' | 'scenes' | 'ais' | 'candidates';
+type Tab = 'catalogue' | 'scenes' | 'origin' | 'ais' | 'candidates';
 
 interface AisCoverage {
   recordCount: number;
@@ -349,6 +350,7 @@ export function WorkspacePage() {
             [
               ['catalogue', 'Catalogue', null],
               ['scenes', 'Scenes & detections', detections.data?.items.length ?? null],
+              ['origin', 'Origin', null],
               ['ais', 'AIS', coverage.data?.distinctVessels ?? null],
               ['candidates', 'Candidates', null],
             ] as const
@@ -391,6 +393,14 @@ export function WorkspacePage() {
         ) : null}
 
         {tab === 'scenes' ? <DetectionsPanel investigationId={id!} /> : null}
+
+        {tab === 'origin' ? (
+          <OriginPanel
+            investigationId={id!}
+            origin={origin.data?.origin ?? null}
+            originReason={origin.data?.reason}
+          />
+        ) : null}
 
         {tab === 'ais' ? (
           <div className="stack-sm">

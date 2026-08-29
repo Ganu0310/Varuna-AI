@@ -1,0 +1,3 @@
+# Regenerable from the source dataset + the committed split:
+#   python -m varuna_ml.eval.prepare_cache --root <part III> --split data/splits/part3-split.json --out data/cache/part3-256
+*.npz

@@ -6,11 +6,16 @@
 dataset_manifest:
   version: '2026.08.29'
   entries:
-    # ── HELD OUT TEST SPLIT — downloaded, verified, and in use ──────────────
-    # This is the split the classical detector is measured against
-    # (`varuna_ml.eval.detector_eval`). The detector is analytic and was never fitted to any
-    # of it, so there is no leakage to reason about — but it is still recorded as a test
-    # split so that a future learned model cannot quietly train on it.
+    # ── Part III, re-split for training and evaluation ──────────────────────
+    # Originally used whole as an evaluation set for the analytic detector, which could not
+    # leak because it fits nothing. Training a model on it required cutting a real held-out
+    # portion first, so it is now re-split 315/69/66 by GEOGRAPHY:
+    # `data/splits/part3-split.json` assigns whole one-degree cells to exactly one side.
+    #
+    # A random tile split would be wrong here and would look better. These images are tiles
+    # cut from a smaller number of acquisitions, so neighbouring tiles share sea state, wind
+    # and often the same slick; splitting randomly puts near-duplicates on both sides and
+    # inflates test IoU without any generalisation.
     - id: trujillo-acatitla-s1-oil-spill-part3-test
       provider: 'IPICYT (Instituto Potosino de Investigación Científica y Tecnológica)'
       citation: >
@@ -32,8 +37,17 @@ dataset_manifest:
       real_data: true
       synthetic_content: none
       tiles: 450
-      split: { train: 0.0, val: 0.0, test: 1.0 }
-      split_strategy: 'publisher-defined held-out test split; never used for fitting'
+      split: { train: 0.70, val: 0.153, test: 0.147 }
+      split_strategy: >
+        Whole 1-degree geographic cells assigned to one split (34 train / 21 val / 19 test
+        cells, disjoint), stratified so each class lands 105/23/22. Greedy largest-first and
+        deterministic — no RNG, so the split is reproducible from the data alone. Generated
+        by `varuna_ml.eval.make_split`; the assignment is in data/splits/part3-split.json.
+      split_file: 'data/splits/part3-split.json'
+      selection_rule: >
+        Model selection uses the VALIDATION split only. The test split is scored once, after
+        training, at a fixed 0.5 threshold. Tuning a threshold on test would make the
+        reported figure an optimistic estimate of itself.
       composition:
         oil_spill: 150
         lookalike: 150

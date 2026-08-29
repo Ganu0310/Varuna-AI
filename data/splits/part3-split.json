@@ -1,0 +1,4388 @@
+{
+  "dataset": "trujillo-acatitla-s1-oil-spill-part3",
+  "strategy": "whole 1.0-degree geographic cells assigned to one split, greedy largest-first against per-class targets; deterministic, no RNG",
+  "targets": {
+    "train": 0.7,
+    "val": 0.15,
+    "test": 0.15
+  },
+  "cells": {
+    "train": [
+      [
+        -120,
+        34
+      ],
+      [
+        -90,
+        28
+      ],
+      [
+        -90,
+        29
+      ],
+      [
+        -5,
+        45
+      ],
+      [
+        -4,
+        45
+      ],
+      [
+        -4,
+        46
+      ],
+      [
+        9,
+        43
+      ],
+      [
+        10,
+        42
+      ],
+      [
+        21,
+        59
+      ],
+      [
+        22,
+        59
+      ],
+      [
+        23,
+        59
+      ],
+      [
+        32,
+        31
+      ],
+      [
+        33,
+        34
+      ],
+      [
+        33,
+        35
+      ],
+      [
+        34,
+        35
+      ],
+      [
+        34,
+        36
+      ],
+      [
+        35,
+        35
+      ],
+      [
+        35,
+        36
+      ],
+      [
+        36,
+        34
+      ],
+      [
+        36,
+        35
+      ],
+      [
+        36,
+        36
+      ],
+      [
+        37,
+        18
+      ],
+      [
+        37,
+        19
+      ],
+      [
+        38,
+        18
+      ],
+      [
+        38,
+        19
+      ],
+      [
+        38,
+        20
+      ],
+      [
+        38,
+        21
+      ],
+      [
+        39,
+        17
+      ],
+      [
+        39,
+        20
+      ],
+      [
+        54,
+        25
+      ],
+      [
+        97,
+        4
+      ],
+      [
+        105,
+        -6
+      ],
+      [
+        105,
+        -1
+      ],
+      [
+        116,
+        -4
+      ]
+    ],
+    "val": [
+      [
+        -126,
+        46
+      ],
+      [
+        -125,
+        45
+      ],
+      [
+        -91,
+        28
+      ],
+      [
+        -89,
+        29
+      ],
+      [
+        7,
+        43
+      ],
+      [
+        8,
+        43
+      ],
+      [
+        9,
+        42
+      ],
+      [
+        10,
+        43
+      ],
+      [
+        20,
+        60
+      ],
+      [
+        35,
+        34
+      ],
+      [
+        37,
+        21
+      ],
+      [
+        39,
+        18
+      ],
+      [
+        39,
+        19
+      ],
+      [
+        39,
+        21
+      ],
+      [
+        40,
+        18
+      ],
+      [
+        55,
+        25
+      ],
+      [
+        98,
+        5
+      ],
+      [
+        104,
+        3
+      ],
+      [
+        106,
+        -6
+      ],
+      [
+        115,
+        -9
+      ],
+      [
+        116,
+        -5
+      ]
+    ],
+    "test": [
+      [
+        -126,
+        45
+      ],
+      [
+        -125,
+        46
+      ],
+      [
+        -124,
+        46
+      ],
+      [
+        -121,
+        33
+      ],
+      [
+        -89,
+        28
+      ],
+      [
+        -5,
+        46
+      ],
+      [
+        7,
+        42
+      ],
+      [
+        20,
+        59
+      ],
+      [
+        22,
+        60
+      ],
+      [
+        34,
+        34
+      ],
+      [
+        37,
+        20
+      ],
+      [
+        37,
+        36
+      ],
+      [
+        38,
+        22
+      ],
+      [
+        48,
+        28
+      ],
+      [
+        98,
+        4
+      ],
+      [
+        104,
+        2
+      ],
+      [
+        106,
+        -2
+      ],
+      [
+        107,
+        -7
+      ],
+      [
+        114,
+        -9
+      ]
+    ]
+  },
+  "counts": {
+    "train": {
+      "oil": 105,
+      "lookalike": 105,
+      "no_oil": 105
+    },
+    "val": {
+      "oil": 23,
+      "lookalike": 23,
+      "no_oil": 23
+    },
+    "test": {
+      "oil": 22,
+      "lookalike": 22,
+      "no_oil": 22
+    }
+  },
+  "items": {
+    "train": [
+      {
+        "image": "Images/Oil/00004.tif",
+        "mask": "Mask/Oil/00004_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00005.tif",
+        "mask": "Mask/Oil/00005_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00009.tif",
+        "mask": "Mask/Oil/00009_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00012.tif",
+        "mask": "Mask/Oil/00012_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00018.tif",
+        "mask": "Mask/Oil/00018_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00019.tif",
+        "mask": "Mask/Oil/00019_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00020.tif",
+        "mask": "Mask/Oil/00020_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00021.tif",
+        "mask": "Mask/Oil/00021_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00022.tif",
+        "mask": "Mask/Oil/00022_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00025.tif",
+        "mask": "Mask/Oil/00025_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00026.tif",
+        "mask": "Mask/Oil/00026_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00027.tif",
+        "mask": "Mask/Oil/00027_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00028.tif",
+        "mask": "Mask/Oil/00028_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00036.tif",
+        "mask": "Mask/Oil/00036_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00040.tif",
+        "mask": "Mask/Oil/00040_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00042.tif",
+        "mask": "Mask/Oil/00042_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00073.tif",
+        "mask": "Mask/Oil/00073_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00116.tif",
+        "mask": "Mask/Oil/00116_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00125.tif",
+        "mask": "Mask/Oil/00125_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00127.tif",
+        "mask": "Mask/Oil/00127_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00092.tif",
+        "mask": "Mask/Lookalike/00092_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00000.tif",
+        "mask": "Mask/No oil/00000_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00013.tif",
+        "mask": "Mask/No oil/00013_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00025.tif",
+        "mask": "Mask/No oil/00025_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00034.tif",
+        "mask": "Mask/No oil/00034_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00035.tif",
+        "mask": "Mask/No oil/00035_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00036.tif",
+        "mask": "Mask/No oil/00036_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00043.tif",
+        "mask": "Mask/No oil/00043_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00044.tif",
+        "mask": "Mask/No oil/00044_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00051.tif",
+        "mask": "Mask/No oil/00051_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00053.tif",
+        "mask": "Mask/No oil/00053_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00056.tif",
+        "mask": "Mask/No oil/00056_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00066.tif",
+        "mask": "Mask/No oil/00066_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00070.tif",
+        "mask": "Mask/No oil/00070_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00072.tif",
+        "mask": "Mask/No oil/00072_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00123.tif",
+        "mask": "Mask/No oil/00123_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00131.tif",
+        "mask": "Mask/No oil/00131_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00000.tif",
+        "mask": "Mask/Oil/00000_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          34,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00001.tif",
+        "mask": "Mask/Oil/00001_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          34,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00006.tif",
+        "mask": "Mask/Oil/00006_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          34,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00007.tif",
+        "mask": "Mask/Oil/00007_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          34,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00013.tif",
+        "mask": "Mask/Oil/00013_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          34,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00014.tif",
+        "mask": "Mask/Oil/00014_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          34,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00015.tif",
+        "mask": "Mask/Oil/00015_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          34,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00059.tif",
+        "mask": "Mask/Oil/00059_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          34,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00061.tif",
+        "mask": "Mask/Oil/00061_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          34,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00065.tif",
+        "mask": "Mask/Oil/00065_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          34,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00067.tif",
+        "mask": "Mask/Oil/00067_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          34,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00068.tif",
+        "mask": "Mask/Oil/00068_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          34,
+          35
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00003.tif",
+        "mask": "Mask/Lookalike/00003_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          34,
+          35
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00110.tif",
+        "mask": "Mask/Lookalike/00110_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          34,
+          35
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00111.tif",
+        "mask": "Mask/Lookalike/00111_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          34,
+          35
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00117.tif",
+        "mask": "Mask/Lookalike/00117_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          34,
+          35
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00118.tif",
+        "mask": "Mask/Lookalike/00118_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          34,
+          35
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00125.tif",
+        "mask": "Mask/Lookalike/00125_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          34,
+          35
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00144.tif",
+        "mask": "Mask/Lookalike/00144_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          34,
+          35
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00145.tif",
+        "mask": "Mask/Lookalike/00145_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          34,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00024.tif",
+        "mask": "Mask/No oil/00024_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          34,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00079.tif",
+        "mask": "Mask/No oil/00079_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          34,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00080.tif",
+        "mask": "Mask/No oil/00080_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          34,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00081.tif",
+        "mask": "Mask/No oil/00081_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          34,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00085.tif",
+        "mask": "Mask/No oil/00085_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          34,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00090.tif",
+        "mask": "Mask/No oil/00090_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          34,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00092.tif",
+        "mask": "Mask/No oil/00092_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          34,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00110.tif",
+        "mask": "Mask/No oil/00110_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          34,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00143.tif",
+        "mask": "Mask/No oil/00143_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          34,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00144.tif",
+        "mask": "Mask/No oil/00144_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          34,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00012.tif",
+        "mask": "Mask/No oil/00012_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00017.tif",
+        "mask": "Mask/No oil/00017_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00018.tif",
+        "mask": "Mask/No oil/00018_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00091.tif",
+        "mask": "Mask/No oil/00091_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00094.tif",
+        "mask": "Mask/No oil/00094_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00095.tif",
+        "mask": "Mask/No oil/00095_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00102.tif",
+        "mask": "Mask/No oil/00102_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00103.tif",
+        "mask": "Mask/No oil/00103_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00104.tif",
+        "mask": "Mask/No oil/00104_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00105.tif",
+        "mask": "Mask/No oil/00105_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00106.tif",
+        "mask": "Mask/No oil/00106_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00107.tif",
+        "mask": "Mask/No oil/00107_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00109.tif",
+        "mask": "Mask/No oil/00109_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00117.tif",
+        "mask": "Mask/No oil/00117_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00128.tif",
+        "mask": "Mask/No oil/00128_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00129.tif",
+        "mask": "Mask/No oil/00129_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00130.tif",
+        "mask": "Mask/No oil/00130_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00140.tif",
+        "mask": "Mask/No oil/00140_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00147.tif",
+        "mask": "Mask/No oil/00147_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00148.tif",
+        "mask": "Mask/No oil/00148_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          35
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00075.tif",
+        "mask": "Mask/Lookalike/00075_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          22,
+          59
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00076.tif",
+        "mask": "Mask/Lookalike/00076_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          22,
+          59
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00085.tif",
+        "mask": "Mask/Lookalike/00085_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          22,
+          59
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00086.tif",
+        "mask": "Mask/Lookalike/00086_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          22,
+          59
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00089.tif",
+        "mask": "Mask/Lookalike/00089_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          22,
+          59
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00090.tif",
+        "mask": "Mask/Lookalike/00090_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          22,
+          59
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00091.tif",
+        "mask": "Mask/Lookalike/00091_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          22,
+          59
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00093.tif",
+        "mask": "Mask/Lookalike/00093_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          22,
+          59
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00094.tif",
+        "mask": "Mask/Lookalike/00094_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          22,
+          59
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00095.tif",
+        "mask": "Mask/Lookalike/00095_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          22,
+          59
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00096.tif",
+        "mask": "Mask/Lookalike/00096_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          22,
+          59
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00097.tif",
+        "mask": "Mask/Lookalike/00097_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          22,
+          59
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00098.tif",
+        "mask": "Mask/Lookalike/00098_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          22,
+          59
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00099.tif",
+        "mask": "Mask/Lookalike/00099_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          22,
+          59
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00100.tif",
+        "mask": "Mask/Lookalike/00100_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          22,
+          59
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00101.tif",
+        "mask": "Mask/Lookalike/00101_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          22,
+          59
+        ]
+      },
+      {
+        "image": "Images/Oil/00033.tif",
+        "mask": "Mask/Oil/00033_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          35,
+          36
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00036.tif",
+        "mask": "Mask/Lookalike/00036_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          35,
+          36
+        ]
+      },
+      {
+        "image": "Images/No oil/00002.tif",
+        "mask": "Mask/No oil/00002_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          36
+        ]
+      },
+      {
+        "image": "Images/No oil/00003.tif",
+        "mask": "Mask/No oil/00003_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          36
+        ]
+      },
+      {
+        "image": "Images/No oil/00030.tif",
+        "mask": "Mask/No oil/00030_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          36
+        ]
+      },
+      {
+        "image": "Images/No oil/00032.tif",
+        "mask": "Mask/No oil/00032_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          36
+        ]
+      },
+      {
+        "image": "Images/No oil/00033.tif",
+        "mask": "Mask/No oil/00033_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          36
+        ]
+      },
+      {
+        "image": "Images/No oil/00040.tif",
+        "mask": "Mask/No oil/00040_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          36
+        ]
+      },
+      {
+        "image": "Images/No oil/00041.tif",
+        "mask": "Mask/No oil/00041_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          36
+        ]
+      },
+      {
+        "image": "Images/No oil/00042.tif",
+        "mask": "Mask/No oil/00042_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          36
+        ]
+      },
+      {
+        "image": "Images/No oil/00046.tif",
+        "mask": "Mask/No oil/00046_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          36
+        ]
+      },
+      {
+        "image": "Images/No oil/00048.tif",
+        "mask": "Mask/No oil/00048_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          36
+        ]
+      },
+      {
+        "image": "Images/No oil/00052.tif",
+        "mask": "Mask/No oil/00052_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          36
+        ]
+      },
+      {
+        "image": "Images/No oil/00061.tif",
+        "mask": "Mask/No oil/00061_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          36
+        ]
+      },
+      {
+        "image": "Images/No oil/00063.tif",
+        "mask": "Mask/No oil/00063_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          36
+        ]
+      },
+      {
+        "image": "Images/No oil/00065.tif",
+        "mask": "Mask/No oil/00065_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          36
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00058.tif",
+        "mask": "Mask/Lookalike/00058_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -4,
+          46
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00059.tif",
+        "mask": "Mask/Lookalike/00059_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -4,
+          46
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00061.tif",
+        "mask": "Mask/Lookalike/00061_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -4,
+          46
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00062.tif",
+        "mask": "Mask/Lookalike/00062_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -4,
+          46
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00063.tif",
+        "mask": "Mask/Lookalike/00063_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -4,
+          46
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00069.tif",
+        "mask": "Mask/Lookalike/00069_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -4,
+          46
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00070.tif",
+        "mask": "Mask/Lookalike/00070_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -4,
+          46
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00071.tif",
+        "mask": "Mask/Lookalike/00071_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -4,
+          46
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00072.tif",
+        "mask": "Mask/Lookalike/00072_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -4,
+          46
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00073.tif",
+        "mask": "Mask/Lookalike/00073_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -4,
+          46
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00079.tif",
+        "mask": "Mask/Lookalike/00079_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -4,
+          46
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00080.tif",
+        "mask": "Mask/Lookalike/00080_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -4,
+          46
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00081.tif",
+        "mask": "Mask/Lookalike/00081_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -4,
+          46
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00082.tif",
+        "mask": "Mask/Lookalike/00082_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -4,
+          46
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00083.tif",
+        "mask": "Mask/Lookalike/00083_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -4,
+          46
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00022.tif",
+        "mask": "Mask/Lookalike/00022_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          10,
+          42
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00023.tif",
+        "mask": "Mask/Lookalike/00023_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          10,
+          42
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00024.tif",
+        "mask": "Mask/Lookalike/00024_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          10,
+          42
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00027.tif",
+        "mask": "Mask/Lookalike/00027_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          10,
+          42
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00034.tif",
+        "mask": "Mask/Lookalike/00034_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          10,
+          42
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00035.tif",
+        "mask": "Mask/Lookalike/00035_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          10,
+          42
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00038.tif",
+        "mask": "Mask/Lookalike/00038_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          10,
+          42
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00045.tif",
+        "mask": "Mask/Lookalike/00045_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          10,
+          42
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00046.tif",
+        "mask": "Mask/Lookalike/00046_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          10,
+          42
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00049.tif",
+        "mask": "Mask/Lookalike/00049_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          10,
+          42
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00054.tif",
+        "mask": "Mask/Lookalike/00054_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          10,
+          42
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00056.tif",
+        "mask": "Mask/Lookalike/00056_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          10,
+          42
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00057.tif",
+        "mask": "Mask/Lookalike/00057_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          10,
+          42
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00067.tif",
+        "mask": "Mask/Lookalike/00067_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          10,
+          42
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00068.tif",
+        "mask": "Mask/Lookalike/00068_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          10,
+          42
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00114.tif",
+        "mask": "Mask/Lookalike/00114_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          33,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00001.tif",
+        "mask": "Mask/No oil/00001_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          33,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00015.tif",
+        "mask": "Mask/No oil/00015_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          33,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00047.tif",
+        "mask": "Mask/No oil/00047_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          33,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00055.tif",
+        "mask": "Mask/No oil/00055_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          33,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00057.tif",
+        "mask": "Mask/No oil/00057_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          33,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00058.tif",
+        "mask": "Mask/No oil/00058_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          33,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00060.tif",
+        "mask": "Mask/No oil/00060_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          33,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00062.tif",
+        "mask": "Mask/No oil/00062_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          33,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00067.tif",
+        "mask": "Mask/No oil/00067_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          33,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00068.tif",
+        "mask": "Mask/No oil/00068_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          33,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00069.tif",
+        "mask": "Mask/No oil/00069_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          33,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00074.tif",
+        "mask": "Mask/No oil/00074_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          33,
+          35
+        ]
+      },
+      {
+        "image": "Images/No oil/00075.tif",
+        "mask": "Mask/No oil/00075_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          33,
+          35
+        ]
+      },
+      {
+        "image": "Images/Oil/00046.tif",
+        "mask": "Mask/Oil/00046_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          54,
+          25
+        ]
+      },
+      {
+        "image": "Images/Oil/00077.tif",
+        "mask": "Mask/Oil/00077_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          54,
+          25
+        ]
+      },
+      {
+        "image": "Images/Oil/00084.tif",
+        "mask": "Mask/Oil/00084_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          54,
+          25
+        ]
+      },
+      {
+        "image": "Images/Oil/00088.tif",
+        "mask": "Mask/Oil/00088_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          54,
+          25
+        ]
+      },
+      {
+        "image": "Images/Oil/00089.tif",
+        "mask": "Mask/Oil/00089_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          54,
+          25
+        ]
+      },
+      {
+        "image": "Images/Oil/00092.tif",
+        "mask": "Mask/Oil/00092_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          54,
+          25
+        ]
+      },
+      {
+        "image": "Images/Oil/00104.tif",
+        "mask": "Mask/Oil/00104_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          54,
+          25
+        ]
+      },
+      {
+        "image": "Images/Oil/00108.tif",
+        "mask": "Mask/Oil/00108_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          54,
+          25
+        ]
+      },
+      {
+        "image": "Images/Oil/00109.tif",
+        "mask": "Mask/Oil/00109_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          54,
+          25
+        ]
+      },
+      {
+        "image": "Images/Oil/00132.tif",
+        "mask": "Mask/Oil/00132_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          54,
+          25
+        ]
+      },
+      {
+        "image": "Images/Oil/00133.tif",
+        "mask": "Mask/Oil/00133_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          54,
+          25
+        ]
+      },
+      {
+        "image": "Images/Oil/00141.tif",
+        "mask": "Mask/Oil/00141_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          54,
+          25
+        ]
+      },
+      {
+        "image": "Images/Oil/00144.tif",
+        "mask": "Mask/Oil/00144_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          54,
+          25
+        ]
+      },
+      {
+        "image": "Images/Oil/00145.tif",
+        "mask": "Mask/Oil/00145_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          54,
+          25
+        ]
+      },
+      {
+        "image": "Images/Oil/00029.tif",
+        "mask": "Mask/Oil/00029_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          9,
+          43
+        ]
+      },
+      {
+        "image": "Images/Oil/00030.tif",
+        "mask": "Mask/Oil/00030_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          9,
+          43
+        ]
+      },
+      {
+        "image": "Images/Oil/00031.tif",
+        "mask": "Mask/Oil/00031_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          9,
+          43
+        ]
+      },
+      {
+        "image": "Images/Oil/00032.tif",
+        "mask": "Mask/Oil/00032_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          9,
+          43
+        ]
+      },
+      {
+        "image": "Images/Oil/00048.tif",
+        "mask": "Mask/Oil/00048_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          9,
+          43
+        ]
+      },
+      {
+        "image": "Images/Oil/00049.tif",
+        "mask": "Mask/Oil/00049_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          9,
+          43
+        ]
+      },
+      {
+        "image": "Images/Oil/00052.tif",
+        "mask": "Mask/Oil/00052_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          9,
+          43
+        ]
+      },
+      {
+        "image": "Images/Oil/00095.tif",
+        "mask": "Mask/Oil/00095_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          9,
+          43
+        ]
+      },
+      {
+        "image": "Images/Oil/00102.tif",
+        "mask": "Mask/Oil/00102_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          9,
+          43
+        ]
+      },
+      {
+        "image": "Images/Oil/00123.tif",
+        "mask": "Mask/Oil/00123_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          9,
+          43
+        ]
+      },
+      {
+        "image": "Images/Oil/00140.tif",
+        "mask": "Mask/Oil/00140_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          9,
+          43
+        ]
+      },
+      {
+        "image": "Images/No oil/00004.tif",
+        "mask": "Mask/No oil/00004_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          36
+        ]
+      },
+      {
+        "image": "Images/No oil/00009.tif",
+        "mask": "Mask/No oil/00009_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          36
+        ]
+      },
+      {
+        "image": "Images/No oil/00010.tif",
+        "mask": "Mask/No oil/00010_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          36
+        ]
+      },
+      {
+        "image": "Images/No oil/00011.tif",
+        "mask": "Mask/No oil/00011_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          36
+        ]
+      },
+      {
+        "image": "Images/No oil/00083.tif",
+        "mask": "Mask/No oil/00083_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          36
+        ]
+      },
+      {
+        "image": "Images/No oil/00084.tif",
+        "mask": "Mask/No oil/00084_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          36
+        ]
+      },
+      {
+        "image": "Images/No oil/00086.tif",
+        "mask": "Mask/No oil/00086_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          36
+        ]
+      },
+      {
+        "image": "Images/No oil/00097.tif",
+        "mask": "Mask/No oil/00097_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          36
+        ]
+      },
+      {
+        "image": "Images/No oil/00098.tif",
+        "mask": "Mask/No oil/00098_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          36
+        ]
+      },
+      {
+        "image": "Images/No oil/00100.tif",
+        "mask": "Mask/No oil/00100_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          36
+        ]
+      },
+      {
+        "image": "Images/No oil/00101.tif",
+        "mask": "Mask/No oil/00101_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          36
+        ]
+      },
+      {
+        "image": "Images/Oil/00072.tif",
+        "mask": "Mask/Oil/00072_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          -90,
+          28
+        ]
+      },
+      {
+        "image": "Images/Oil/00080.tif",
+        "mask": "Mask/Oil/00080_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          -90,
+          28
+        ]
+      },
+      {
+        "image": "Images/Oil/00083.tif",
+        "mask": "Mask/Oil/00083_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          -90,
+          28
+        ]
+      },
+      {
+        "image": "Images/Oil/00085.tif",
+        "mask": "Mask/Oil/00085_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          -90,
+          28
+        ]
+      },
+      {
+        "image": "Images/Oil/00091.tif",
+        "mask": "Mask/Oil/00091_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          -90,
+          28
+        ]
+      },
+      {
+        "image": "Images/Oil/00096.tif",
+        "mask": "Mask/Oil/00096_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          -90,
+          28
+        ]
+      },
+      {
+        "image": "Images/Oil/00103.tif",
+        "mask": "Mask/Oil/00103_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          -90,
+          28
+        ]
+      },
+      {
+        "image": "Images/Oil/00121.tif",
+        "mask": "Mask/Oil/00121_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          -90,
+          28
+        ]
+      },
+      {
+        "image": "Images/Oil/00139.tif",
+        "mask": "Mask/Oil/00139_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          -90,
+          28
+        ]
+      },
+      {
+        "image": "Images/Oil/00149.tif",
+        "mask": "Mask/Oil/00149_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          -90,
+          28
+        ]
+      },
+      {
+        "image": "Images/Oil/00041.tif",
+        "mask": "Mask/Oil/00041_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          38,
+          18
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00000.tif",
+        "mask": "Mask/Lookalike/00000_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          38,
+          18
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00008.tif",
+        "mask": "Mask/Lookalike/00008_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          38,
+          18
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00009.tif",
+        "mask": "Mask/Lookalike/00009_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          38,
+          18
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00017.tif",
+        "mask": "Mask/Lookalike/00017_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          38,
+          18
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00019.tif",
+        "mask": "Mask/Lookalike/00019_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          38,
+          18
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00026.tif",
+        "mask": "Mask/Lookalike/00026_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          38,
+          18
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00028.tif",
+        "mask": "Mask/Lookalike/00028_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          38,
+          18
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00141.tif",
+        "mask": "Mask/Lookalike/00141_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          38,
+          18
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00149.tif",
+        "mask": "Mask/Lookalike/00149_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          38,
+          18
+        ]
+      },
+      {
+        "image": "Images/Oil/00034.tif",
+        "mask": "Mask/Oil/00034_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          38,
+          19
+        ]
+      },
+      {
+        "image": "Images/Oil/00039.tif",
+        "mask": "Mask/Oil/00039_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          38,
+          19
+        ]
+      },
+      {
+        "image": "Images/Oil/00071.tif",
+        "mask": "Mask/Oil/00071_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          38,
+          19
+        ]
+      },
+      {
+        "image": "Images/Oil/00087.tif",
+        "mask": "Mask/Oil/00087_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          38,
+          19
+        ]
+      },
+      {
+        "image": "Images/Oil/00117.tif",
+        "mask": "Mask/Oil/00117_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          38,
+          19
+        ]
+      },
+      {
+        "image": "Images/Oil/00138.tif",
+        "mask": "Mask/Oil/00138_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          38,
+          19
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00007.tif",
+        "mask": "Mask/Lookalike/00007_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          38,
+          19
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00146.tif",
+        "mask": "Mask/Lookalike/00146_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          38,
+          19
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00147.tif",
+        "mask": "Mask/Lookalike/00147_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          38,
+          19
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00148.tif",
+        "mask": "Mask/Lookalike/00148_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          38,
+          19
+        ]
+      },
+      {
+        "image": "Images/Oil/00002.tif",
+        "mask": "Mask/Oil/00002_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          38,
+          20
+        ]
+      },
+      {
+        "image": "Images/Oil/00003.tif",
+        "mask": "Mask/Oil/00003_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          38,
+          20
+        ]
+      },
+      {
+        "image": "Images/Oil/00010.tif",
+        "mask": "Mask/Oil/00010_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          38,
+          20
+        ]
+      },
+      {
+        "image": "Images/Oil/00011.tif",
+        "mask": "Mask/Oil/00011_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          38,
+          20
+        ]
+      },
+      {
+        "image": "Images/Oil/00017.tif",
+        "mask": "Mask/Oil/00017_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          38,
+          20
+        ]
+      },
+      {
+        "image": "Images/Oil/00023.tif",
+        "mask": "Mask/Oil/00023_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          38,
+          20
+        ]
+      },
+      {
+        "image": "Images/Oil/00024.tif",
+        "mask": "Mask/Oil/00024_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          38,
+          20
+        ]
+      },
+      {
+        "image": "Images/Oil/00066.tif",
+        "mask": "Mask/Oil/00066_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          38,
+          20
+        ]
+      },
+      {
+        "image": "Images/Oil/00079.tif",
+        "mask": "Mask/Oil/00079_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          38,
+          20
+        ]
+      },
+      {
+        "image": "Images/Oil/00093.tif",
+        "mask": "Mask/Oil/00093_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          38,
+          20
+        ]
+      },
+      {
+        "image": "Images/Oil/00037.tif",
+        "mask": "Mask/Oil/00037_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          116,
+          -4
+        ]
+      },
+      {
+        "image": "Images/Oil/00038.tif",
+        "mask": "Mask/Oil/00038_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          116,
+          -4
+        ]
+      },
+      {
+        "image": "Images/Oil/00094.tif",
+        "mask": "Mask/Oil/00094_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          116,
+          -4
+        ]
+      },
+      {
+        "image": "Images/Oil/00097.tif",
+        "mask": "Mask/Oil/00097_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          116,
+          -4
+        ]
+      },
+      {
+        "image": "Images/Oil/00118.tif",
+        "mask": "Mask/Oil/00118_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          116,
+          -4
+        ]
+      },
+      {
+        "image": "Images/Oil/00128.tif",
+        "mask": "Mask/Oil/00128_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          116,
+          -4
+        ]
+      },
+      {
+        "image": "Images/Oil/00137.tif",
+        "mask": "Mask/Oil/00137_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          116,
+          -4
+        ]
+      },
+      {
+        "image": "Images/Oil/00147.tif",
+        "mask": "Mask/Oil/00147_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          116,
+          -4
+        ]
+      },
+      {
+        "image": "Images/Oil/00148.tif",
+        "mask": "Mask/Oil/00148_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          116,
+          -4
+        ]
+      },
+      {
+        "image": "Images/Oil/00126.tif",
+        "mask": "Mask/Oil/00126_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          -90,
+          29
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00001.tif",
+        "mask": "Mask/Lookalike/00001_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -90,
+          29
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00002.tif",
+        "mask": "Mask/Lookalike/00002_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -90,
+          29
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00133.tif",
+        "mask": "Mask/Lookalike/00133_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -90,
+          29
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00134.tif",
+        "mask": "Mask/Lookalike/00134_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -90,
+          29
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00142.tif",
+        "mask": "Mask/Lookalike/00142_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -90,
+          29
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00143.tif",
+        "mask": "Mask/Lookalike/00143_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -90,
+          29
+        ]
+      },
+      {
+        "image": "Images/No oil/00146.tif",
+        "mask": "Mask/No oil/00146_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          -90,
+          29
+        ]
+      },
+      {
+        "image": "Images/No oil/00019.tif",
+        "mask": "Mask/No oil/00019_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          34
+        ]
+      },
+      {
+        "image": "Images/No oil/00087.tif",
+        "mask": "Mask/No oil/00087_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          34
+        ]
+      },
+      {
+        "image": "Images/No oil/00093.tif",
+        "mask": "Mask/No oil/00093_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          34
+        ]
+      },
+      {
+        "image": "Images/No oil/00096.tif",
+        "mask": "Mask/No oil/00096_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          34
+        ]
+      },
+      {
+        "image": "Images/No oil/00099.tif",
+        "mask": "Mask/No oil/00099_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          34
+        ]
+      },
+      {
+        "image": "Images/No oil/00112.tif",
+        "mask": "Mask/No oil/00112_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          34
+        ]
+      },
+      {
+        "image": "Images/No oil/00141.tif",
+        "mask": "Mask/No oil/00141_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          34
+        ]
+      },
+      {
+        "image": "Images/No oil/00142.tif",
+        "mask": "Mask/No oil/00142_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          36,
+          34
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00109.tif",
+        "mask": "Mask/Lookalike/00109_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          37,
+          19
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00112.tif",
+        "mask": "Mask/Lookalike/00112_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          37,
+          19
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00127.tif",
+        "mask": "Mask/Lookalike/00127_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          37,
+          19
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00128.tif",
+        "mask": "Mask/Lookalike/00128_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          37,
+          19
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00129.tif",
+        "mask": "Mask/Lookalike/00129_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          37,
+          19
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00137.tif",
+        "mask": "Mask/Lookalike/00137_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          37,
+          19
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00138.tif",
+        "mask": "Mask/Lookalike/00138_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          37,
+          19
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00139.tif",
+        "mask": "Mask/Lookalike/00139_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          37,
+          19
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00116.tif",
+        "mask": "Mask/Lookalike/00116_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          34,
+          36
+        ]
+      },
+      {
+        "image": "Images/No oil/00021.tif",
+        "mask": "Mask/No oil/00021_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          34,
+          36
+        ]
+      },
+      {
+        "image": "Images/No oil/00022.tif",
+        "mask": "Mask/No oil/00022_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          34,
+          36
+        ]
+      },
+      {
+        "image": "Images/No oil/00023.tif",
+        "mask": "Mask/No oil/00023_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          34,
+          36
+        ]
+      },
+      {
+        "image": "Images/No oil/00078.tif",
+        "mask": "Mask/No oil/00078_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          34,
+          36
+        ]
+      },
+      {
+        "image": "Images/No oil/00088.tif",
+        "mask": "Mask/No oil/00088_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          34,
+          36
+        ]
+      },
+      {
+        "image": "Images/No oil/00089.tif",
+        "mask": "Mask/No oil/00089_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          34,
+          36
+        ]
+      },
+      {
+        "image": "Images/Oil/00053.tif",
+        "mask": "Mask/Oil/00053_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          38,
+          21
+        ]
+      },
+      {
+        "image": "Images/Oil/00054.tif",
+        "mask": "Mask/Oil/00054_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          38,
+          21
+        ]
+      },
+      {
+        "image": "Images/Oil/00058.tif",
+        "mask": "Mask/Oil/00058_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          38,
+          21
+        ]
+      },
+      {
+        "image": "Images/Oil/00078.tif",
+        "mask": "Mask/Oil/00078_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          38,
+          21
+        ]
+      },
+      {
+        "image": "Images/Oil/00124.tif",
+        "mask": "Mask/Oil/00124_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          38,
+          21
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00020.tif",
+        "mask": "Mask/Lookalike/00020_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          38,
+          21
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00021.tif",
+        "mask": "Mask/Lookalike/00021_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          38,
+          21
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00102.tif",
+        "mask": "Mask/Lookalike/00102_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          23,
+          59
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00103.tif",
+        "mask": "Mask/Lookalike/00103_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          23,
+          59
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00104.tif",
+        "mask": "Mask/Lookalike/00104_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          23,
+          59
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00105.tif",
+        "mask": "Mask/Lookalike/00105_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          23,
+          59
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00106.tif",
+        "mask": "Mask/Lookalike/00106_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          23,
+          59
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00107.tif",
+        "mask": "Mask/Lookalike/00107_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          23,
+          59
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00064.tif",
+        "mask": "Mask/Lookalike/00064_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -4,
+          45
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00077.tif",
+        "mask": "Mask/Lookalike/00077_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -4,
+          45
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00078.tif",
+        "mask": "Mask/Lookalike/00078_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -4,
+          45
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00087.tif",
+        "mask": "Mask/Lookalike/00087_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -4,
+          45
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00042.tif",
+        "mask": "Mask/Lookalike/00042_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          21,
+          59
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00044.tif",
+        "mask": "Mask/Lookalike/00044_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          21,
+          59
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00066.tif",
+        "mask": "Mask/Lookalike/00066_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          21,
+          59
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00108.tif",
+        "mask": "Mask/Lookalike/00108_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          33,
+          34
+        ]
+      },
+      {
+        "image": "Images/No oil/00049.tif",
+        "mask": "Mask/No oil/00049_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          33,
+          34
+        ]
+      },
+      {
+        "image": "Images/No oil/00059.tif",
+        "mask": "Mask/No oil/00059_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          33,
+          34
+        ]
+      },
+      {
+        "image": "Images/No oil/00006.tif",
+        "mask": "Mask/No oil/00006_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          105,
+          -6
+        ]
+      },
+      {
+        "image": "Images/No oil/00007.tif",
+        "mask": "Mask/No oil/00007_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          105,
+          -6
+        ]
+      },
+      {
+        "image": "Images/No oil/00008.tif",
+        "mask": "Mask/No oil/00008_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          105,
+          -6
+        ]
+      },
+      {
+        "image": "Images/Oil/00135.tif",
+        "mask": "Mask/Oil/00135_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          32,
+          31
+        ]
+      },
+      {
+        "image": "Images/Oil/00136.tif",
+        "mask": "Mask/Oil/00136_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          32,
+          31
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00132.tif",
+        "mask": "Mask/Lookalike/00132_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          37,
+          18
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00140.tif",
+        "mask": "Mask/Lookalike/00140_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          37,
+          18
+        ]
+      },
+      {
+        "image": "Images/Oil/00086.tif",
+        "mask": "Mask/Oil/00086_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          -120,
+          34
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00053.tif",
+        "mask": "Mask/Lookalike/00053_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -5,
+          45
+        ]
+      },
+      {
+        "image": "Images/Oil/00008.tif",
+        "mask": "Mask/Oil/00008_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          39,
+          17
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00033.tif",
+        "mask": "Mask/Lookalike/00033_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          39,
+          20
+        ]
+      },
+      {
+        "image": "Images/No oil/00145.tif",
+        "mask": "Mask/No oil/00145_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          97,
+          4
+        ]
+      },
+      {
+        "image": "Images/Oil/00113.tif",
+        "mask": "Mask/Oil/00113_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          105,
+          -1
+        ]
+      }
+    ],
+    "val": [
+      {
+        "image": "Images/Oil/00044.tif",
+        "mask": "Mask/Oil/00044_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          39,
+          18
+        ]
+      },
+      {
+        "image": "Images/Oil/00047.tif",
+        "mask": "Mask/Oil/00047_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          39,
+          18
+        ]
+      },
+      {
+        "image": "Images/Oil/00056.tif",
+        "mask": "Mask/Oil/00056_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          39,
+          18
+        ]
+      },
+      {
+        "image": "Images/Oil/00070.tif",
+        "mask": "Mask/Oil/00070_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          39,
+          18
+        ]
+      },
+      {
+        "image": "Images/Oil/00076.tif",
+        "mask": "Mask/Oil/00076_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          39,
+          18
+        ]
+      },
+      {
+        "image": "Images/Oil/00090.tif",
+        "mask": "Mask/Oil/00090_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          39,
+          18
+        ]
+      },
+      {
+        "image": "Images/Oil/00101.tif",
+        "mask": "Mask/Oil/00101_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          39,
+          18
+        ]
+      },
+      {
+        "image": "Images/Oil/00107.tif",
+        "mask": "Mask/Oil/00107_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          39,
+          18
+        ]
+      },
+      {
+        "image": "Images/Oil/00112.tif",
+        "mask": "Mask/Oil/00112_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          39,
+          18
+        ]
+      },
+      {
+        "image": "Images/Oil/00114.tif",
+        "mask": "Mask/Oil/00114_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          39,
+          18
+        ]
+      },
+      {
+        "image": "Images/No oil/00005.tif",
+        "mask": "Mask/No oil/00005_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          34
+        ]
+      },
+      {
+        "image": "Images/No oil/00026.tif",
+        "mask": "Mask/No oil/00026_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          34
+        ]
+      },
+      {
+        "image": "Images/No oil/00027.tif",
+        "mask": "Mask/No oil/00027_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          34
+        ]
+      },
+      {
+        "image": "Images/No oil/00028.tif",
+        "mask": "Mask/No oil/00028_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          34
+        ]
+      },
+      {
+        "image": "Images/No oil/00037.tif",
+        "mask": "Mask/No oil/00037_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          34
+        ]
+      },
+      {
+        "image": "Images/No oil/00038.tif",
+        "mask": "Mask/No oil/00038_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          34
+        ]
+      },
+      {
+        "image": "Images/No oil/00064.tif",
+        "mask": "Mask/No oil/00064_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          34
+        ]
+      },
+      {
+        "image": "Images/No oil/00138.tif",
+        "mask": "Mask/No oil/00138_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          34
+        ]
+      },
+      {
+        "image": "Images/No oil/00139.tif",
+        "mask": "Mask/No oil/00139_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          35,
+          34
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00025.tif",
+        "mask": "Mask/Lookalike/00025_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -125,
+          45
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00043.tif",
+        "mask": "Mask/Lookalike/00043_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -125,
+          45
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00055.tif",
+        "mask": "Mask/Lookalike/00055_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -125,
+          45
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00060.tif",
+        "mask": "Mask/Lookalike/00060_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -125,
+          45
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00065.tif",
+        "mask": "Mask/Lookalike/00065_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -125,
+          45
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00130.tif",
+        "mask": "Mask/Lookalike/00130_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -125,
+          45
+        ]
+      },
+      {
+        "image": "Images/No oil/00031.tif",
+        "mask": "Mask/No oil/00031_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          -125,
+          45
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00124.tif",
+        "mask": "Mask/Lookalike/00124_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -126,
+          46
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00131.tif",
+        "mask": "Mask/Lookalike/00131_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -126,
+          46
+        ]
+      },
+      {
+        "image": "Images/No oil/00020.tif",
+        "mask": "Mask/No oil/00020_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          -126,
+          46
+        ]
+      },
+      {
+        "image": "Images/No oil/00050.tif",
+        "mask": "Mask/No oil/00050_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          -126,
+          46
+        ]
+      },
+      {
+        "image": "Images/No oil/00054.tif",
+        "mask": "Mask/No oil/00054_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          -126,
+          46
+        ]
+      },
+      {
+        "image": "Images/No oil/00116.tif",
+        "mask": "Mask/No oil/00116_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          -126,
+          46
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00005.tif",
+        "mask": "Mask/Lookalike/00005_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          9,
+          42
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00006.tif",
+        "mask": "Mask/Lookalike/00006_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          9,
+          42
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00015.tif",
+        "mask": "Mask/Lookalike/00015_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          9,
+          42
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00016.tif",
+        "mask": "Mask/Lookalike/00016_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          9,
+          42
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00119.tif",
+        "mask": "Mask/Lookalike/00119_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          9,
+          42
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00004.tif",
+        "mask": "Mask/Lookalike/00004_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          20,
+          60
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00126.tif",
+        "mask": "Mask/Lookalike/00126_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          20,
+          60
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00135.tif",
+        "mask": "Mask/Lookalike/00135_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          20,
+          60
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00136.tif",
+        "mask": "Mask/Lookalike/00136_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          20,
+          60
+        ]
+      },
+      {
+        "image": "Images/Oil/00105.tif",
+        "mask": "Mask/Oil/00105_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          -89,
+          29
+        ]
+      },
+      {
+        "image": "Images/No oil/00039.tif",
+        "mask": "Mask/No oil/00039_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          -89,
+          29
+        ]
+      },
+      {
+        "image": "Images/No oil/00127.tif",
+        "mask": "Mask/No oil/00127_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          -89,
+          29
+        ]
+      },
+      {
+        "image": "Images/No oil/00113.tif",
+        "mask": "Mask/No oil/00113_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          7,
+          43
+        ]
+      },
+      {
+        "image": "Images/No oil/00114.tif",
+        "mask": "Mask/No oil/00114_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          7,
+          43
+        ]
+      },
+      {
+        "image": "Images/No oil/00115.tif",
+        "mask": "Mask/No oil/00115_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          7,
+          43
+        ]
+      },
+      {
+        "image": "Images/Oil/00043.tif",
+        "mask": "Mask/Oil/00043_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          39,
+          19
+        ]
+      },
+      {
+        "image": "Images/Oil/00075.tif",
+        "mask": "Mask/Oil/00075_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          39,
+          19
+        ]
+      },
+      {
+        "image": "Images/Oil/00115.tif",
+        "mask": "Mask/Oil/00115_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          39,
+          19
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00030.tif",
+        "mask": "Mask/Lookalike/00030_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          39,
+          21
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00031.tif",
+        "mask": "Mask/Lookalike/00031_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          39,
+          21
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00032.tif",
+        "mask": "Mask/Lookalike/00032_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          39,
+          21
+        ]
+      },
+      {
+        "image": "Images/Oil/00051.tif",
+        "mask": "Mask/Oil/00051_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          104,
+          3
+        ]
+      },
+      {
+        "image": "Images/Oil/00082.tif",
+        "mask": "Mask/Oil/00082_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          104,
+          3
+        ]
+      },
+      {
+        "image": "Images/Oil/00142.tif",
+        "mask": "Mask/Oil/00142_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          104,
+          3
+        ]
+      },
+      {
+        "image": "Images/Oil/00131.tif",
+        "mask": "Mask/Oil/00131_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          -91,
+          28
+        ]
+      },
+      {
+        "image": "Images/No oil/00133.tif",
+        "mask": "Mask/No oil/00133_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          -91,
+          28
+        ]
+      },
+      {
+        "image": "Images/Oil/00110.tif",
+        "mask": "Mask/Oil/00110_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          55,
+          25
+        ]
+      },
+      {
+        "image": "Images/Oil/00146.tif",
+        "mask": "Mask/Oil/00146_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          55,
+          25
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00123.tif",
+        "mask": "Mask/Lookalike/00123_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          106,
+          -6
+        ]
+      },
+      {
+        "image": "Images/No oil/00132.tif",
+        "mask": "Mask/No oil/00132_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          106,
+          -6
+        ]
+      },
+      {
+        "image": "Images/No oil/00014.tif",
+        "mask": "Mask/No oil/00014_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          8,
+          43
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00040.tif",
+        "mask": "Mask/Lookalike/00040_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          10,
+          43
+        ]
+      },
+      {
+        "image": "Images/Oil/00050.tif",
+        "mask": "Mask/Oil/00050_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          37,
+          21
+        ]
+      },
+      {
+        "image": "Images/Oil/00130.tif",
+        "mask": "Mask/Oil/00130_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          40,
+          18
+        ]
+      },
+      {
+        "image": "Images/No oil/00111.tif",
+        "mask": "Mask/No oil/00111_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          98,
+          5
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00029.tif",
+        "mask": "Mask/Lookalike/00029_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          115,
+          -9
+        ]
+      },
+      {
+        "image": "Images/Oil/00106.tif",
+        "mask": "Mask/Oil/00106_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          116,
+          -5
+        ]
+      }
+    ],
+    "test": [
+      {
+        "image": "Images/Oil/00060.tif",
+        "mask": "Mask/Oil/00060_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          -126,
+          45
+        ]
+      },
+      {
+        "image": "Images/Oil/00062.tif",
+        "mask": "Mask/Oil/00062_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          -126,
+          45
+        ]
+      },
+      {
+        "image": "Images/Oil/00063.tif",
+        "mask": "Mask/Oil/00063_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          -126,
+          45
+        ]
+      },
+      {
+        "image": "Images/Oil/00064.tif",
+        "mask": "Mask/Oil/00064_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          -126,
+          45
+        ]
+      },
+      {
+        "image": "Images/No oil/00016.tif",
+        "mask": "Mask/No oil/00016_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          -126,
+          45
+        ]
+      },
+      {
+        "image": "Images/No oil/00071.tif",
+        "mask": "Mask/No oil/00071_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          -126,
+          45
+        ]
+      },
+      {
+        "image": "Images/No oil/00073.tif",
+        "mask": "Mask/No oil/00073_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          -126,
+          45
+        ]
+      },
+      {
+        "image": "Images/No oil/00082.tif",
+        "mask": "Mask/No oil/00082_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          -126,
+          45
+        ]
+      },
+      {
+        "image": "Images/No oil/00118.tif",
+        "mask": "Mask/No oil/00118_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          -126,
+          45
+        ]
+      },
+      {
+        "image": "Images/Oil/00100.tif",
+        "mask": "Mask/Oil/00100_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          -89,
+          28
+        ]
+      },
+      {
+        "image": "Images/Oil/00111.tif",
+        "mask": "Mask/Oil/00111_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          -89,
+          28
+        ]
+      },
+      {
+        "image": "Images/Oil/00120.tif",
+        "mask": "Mask/Oil/00120_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          -89,
+          28
+        ]
+      },
+      {
+        "image": "Images/Oil/00129.tif",
+        "mask": "Mask/Oil/00129_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          -89,
+          28
+        ]
+      },
+      {
+        "image": "Images/No oil/00045.tif",
+        "mask": "Mask/No oil/00045_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          -89,
+          28
+        ]
+      },
+      {
+        "image": "Images/No oil/00134.tif",
+        "mask": "Mask/No oil/00134_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          -89,
+          28
+        ]
+      },
+      {
+        "image": "Images/No oil/00135.tif",
+        "mask": "Mask/No oil/00135_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          -89,
+          28
+        ]
+      },
+      {
+        "image": "Images/No oil/00136.tif",
+        "mask": "Mask/No oil/00136_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          -89,
+          28
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00037.tif",
+        "mask": "Mask/Lookalike/00037_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -5,
+          46
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00039.tif",
+        "mask": "Mask/Lookalike/00039_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -5,
+          46
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00047.tif",
+        "mask": "Mask/Lookalike/00047_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -5,
+          46
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00048.tif",
+        "mask": "Mask/Lookalike/00048_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -5,
+          46
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00050.tif",
+        "mask": "Mask/Lookalike/00050_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -5,
+          46
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00051.tif",
+        "mask": "Mask/Lookalike/00051_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -5,
+          46
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00052.tif",
+        "mask": "Mask/Lookalike/00052_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -5,
+          46
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00113.tif",
+        "mask": "Mask/Lookalike/00113_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          34,
+          34
+        ]
+      },
+      {
+        "image": "Images/No oil/00108.tif",
+        "mask": "Mask/No oil/00108_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          34,
+          34
+        ]
+      },
+      {
+        "image": "Images/No oil/00120.tif",
+        "mask": "Mask/No oil/00120_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          34,
+          34
+        ]
+      },
+      {
+        "image": "Images/No oil/00121.tif",
+        "mask": "Mask/No oil/00121_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          34,
+          34
+        ]
+      },
+      {
+        "image": "Images/No oil/00122.tif",
+        "mask": "Mask/No oil/00122_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          34,
+          34
+        ]
+      },
+      {
+        "image": "Images/No oil/00126.tif",
+        "mask": "Mask/No oil/00126_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          34,
+          34
+        ]
+      },
+      {
+        "image": "Images/Oil/00016.tif",
+        "mask": "Mask/Oil/00016_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          20,
+          59
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00115.tif",
+        "mask": "Mask/Lookalike/00115_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          20,
+          59
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00120.tif",
+        "mask": "Mask/Lookalike/00120_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          20,
+          59
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00121.tif",
+        "mask": "Mask/Lookalike/00121_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          20,
+          59
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00122.tif",
+        "mask": "Mask/Lookalike/00122_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          20,
+          59
+        ]
+      },
+      {
+        "image": "Images/Oil/00074.tif",
+        "mask": "Mask/Oil/00074_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          114,
+          -9
+        ]
+      },
+      {
+        "image": "Images/Oil/00098.tif",
+        "mask": "Mask/Oil/00098_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          114,
+          -9
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00010.tif",
+        "mask": "Mask/Lookalike/00010_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          114,
+          -9
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00011.tif",
+        "mask": "Mask/Lookalike/00011_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          114,
+          -9
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00012.tif",
+        "mask": "Mask/Lookalike/00012_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          114,
+          -9
+        ]
+      },
+      {
+        "image": "Images/No oil/00119.tif",
+        "mask": "Mask/No oil/00119_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          7,
+          42
+        ]
+      },
+      {
+        "image": "Images/No oil/00124.tif",
+        "mask": "Mask/No oil/00124_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          7,
+          42
+        ]
+      },
+      {
+        "image": "Images/No oil/00125.tif",
+        "mask": "Mask/No oil/00125_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          7,
+          42
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00074.tif",
+        "mask": "Mask/Lookalike/00074_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          22,
+          60
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00084.tif",
+        "mask": "Mask/Lookalike/00084_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          22,
+          60
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00088.tif",
+        "mask": "Mask/Lookalike/00088_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          22,
+          60
+        ]
+      },
+      {
+        "image": "Images/Oil/00057.tif",
+        "mask": "Mask/Oil/00057_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          37,
+          20
+        ]
+      },
+      {
+        "image": "Images/No oil/00076.tif",
+        "mask": "Mask/No oil/00076_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          37,
+          20
+        ]
+      },
+      {
+        "image": "Images/No oil/00077.tif",
+        "mask": "Mask/No oil/00077_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          37,
+          20
+        ]
+      },
+      {
+        "image": "Images/Oil/00035.tif",
+        "mask": "Mask/Oil/00035_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          48,
+          28
+        ]
+      },
+      {
+        "image": "Images/Oil/00069.tif",
+        "mask": "Mask/Oil/00069_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          48,
+          28
+        ]
+      },
+      {
+        "image": "Images/Oil/00122.tif",
+        "mask": "Mask/Oil/00122_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          48,
+          28
+        ]
+      },
+      {
+        "image": "Images/Oil/00119.tif",
+        "mask": "Mask/Oil/00119_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          106,
+          -2
+        ]
+      },
+      {
+        "image": "Images/Oil/00134.tif",
+        "mask": "Mask/Oil/00134_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          106,
+          -2
+        ]
+      },
+      {
+        "image": "Images/Oil/00143.tif",
+        "mask": "Mask/Oil/00143_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          106,
+          -2
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00013.tif",
+        "mask": "Mask/Lookalike/00013_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -125,
+          46
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00014.tif",
+        "mask": "Mask/Lookalike/00014_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -125,
+          46
+        ]
+      },
+      {
+        "image": "Images/Oil/00055.tif",
+        "mask": "Mask/Oil/00055_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          98,
+          4
+        ]
+      },
+      {
+        "image": "Images/No oil/00149.tif",
+        "mask": "Mask/No oil/00149_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          98,
+          4
+        ]
+      },
+      {
+        "image": "Images/Oil/00081.tif",
+        "mask": "Mask/Oil/00081_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          107,
+          -7
+        ]
+      },
+      {
+        "image": "Images/Oil/00099.tif",
+        "mask": "Mask/Oil/00099_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          107,
+          -7
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00041.tif",
+        "mask": "Mask/Lookalike/00041_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          -124,
+          46
+        ]
+      },
+      {
+        "image": "Images/No oil/00137.tif",
+        "mask": "Mask/No oil/00137_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          -121,
+          33
+        ]
+      },
+      {
+        "image": "Images/No oil/00029.tif",
+        "mask": "Mask/No oil/00029_segmentation.tif",
+        "cls": "no_oil",
+        "cell": [
+          37,
+          36
+        ]
+      },
+      {
+        "image": "Images/Lookalike/00018.tif",
+        "mask": "Mask/Lookalike/00018_segmentation.tif",
+        "cls": "lookalike",
+        "cell": [
+          38,
+          22
+        ]
+      },
+      {
+        "image": "Images/Oil/00045.tif",
+        "mask": "Mask/Oil/00045_segmentation.tif",
+        "cls": "oil",
+        "cell": [
+          104,
+          2
+        ]
+      }
+    ]
+  }
+}

@@ -364,3 +364,33 @@ export function useIngestScene(investigationId: string | undefined) {
     },
   });
 }
+
+// ── pipeline: origin estimation and correlation ─────────────────────────
+//
+// These two steps existed only as API routes: the workspace could ingest a scene and read
+// results, but nothing in the UI could run back-tracking or correlation, so the chain from a
+// detection to a ranked candidate could only be driven with curl.
+
+export function useRunOrigin(investigationId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { detectionId: string; horizonHours?: number; particleCount?: number }) =>
+      api.post<{ jobId: string }>(`/investigations/${investigationId}/origin/run`, body),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['jobs'] });
+      void qc.invalidateQueries({ queryKey: ['origin', investigationId] });
+    },
+  });
+}
+
+export function useCorrelate(investigationId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { detectionId: string; originEstimateId?: string }) =>
+      api.post<{ jobId: string }>(`/investigations/${investigationId}/candidates/correlate`, body),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['jobs'] });
+      void qc.invalidateQueries({ queryKey: ['candidates', investigationId] });
+    },
+  });
+}
