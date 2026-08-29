@@ -42,9 +42,61 @@ export interface ParsedPolygon {
  * Parse pasted GeoJSON into a Polygon, with messages that say what is wrong and what to do
  * (04_UIUX §4.11). Accepts a bare geometry, a Feature, or a FeatureCollection of one.
  */
+/**
+ * `west,south,east,north` — the shorthand every other tool in this stack already speaks.
+ *
+ * The AOI field previously took GeoJSON only, which meant hand-writing a five-position ring
+ * and closing it correctly just to search a rectangle. The bbox form is what the AIS importer,
+ * the envelope benchmark and every provider query use, so it is the notation someone working
+ * on this data already has to hand.
+ *
+ * Ring order is counter-clockwise. MongoDB reads a clockwise ring as the polygon's COMPLEMENT
+ * — the rest of the planet — and does not error. The server rewinds on save as well; this is
+ * simply not a mistake worth letting anyone make in the first place.
+ */
+function parseBbox(text: string): ParsedPolygon | null {
+  const parts = text.split(',').map((p) => p.trim());
+  if (parts.length !== 4 || !parts.every((p) => p !== '' && Number.isFinite(Number(p)))) {
+    return null;
+  }
+  const [w, s, e, n] = parts.map(Number) as [number, number, number, number];
+
+  if (w < -180 || e > 180 || s < -90 || n > 90) {
+    return { polygon: null, error: 'Longitudes must be -180..180 and latitudes -90..90.' };
+  }
+  if (e <= w || n <= s) {
+    return {
+      polygon: null,
+      error: 'Expected west,south,east,north — east must exceed west, and north exceed south.',
+    };
+  }
+
+  return {
+    polygon: {
+      type: 'Polygon',
+      coordinates: [
+        [
+          [w, s],
+          [e, s],
+          [e, n],
+          [w, n],
+          [w, s],
+        ],
+      ],
+    },
+    error: null,
+  };
+}
+
 export function parsePolygon(text: string): ParsedPolygon {
   const trimmed = text.trim();
   if (!trimmed) return { polygon: null, error: null };
+
+  // Tried before JSON so a bare "144.55,13.3,144.95,13.6" is not reported as invalid JSON.
+  if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+    const bbox = parseBbox(trimmed);
+    if (bbox) return bbox;
+  }
 
   let parsed: unknown;
   try {

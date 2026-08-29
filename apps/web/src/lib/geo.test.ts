@@ -70,3 +70,45 @@ describe('approxPolygonAreaKm2 (readout only — server value is authoritative)'
     expect(polar).toBeLessThan(eq * 0.45);
   });
 });
+
+describe('AOI as a bounding box', () => {
+  it('accepts west,south,east,north and closes the ring', () => {
+    const { polygon, error } = parsePolygon('144.55,13.3,144.95,13.6');
+    expect(error).toBeNull();
+    const ring = polygon!.coordinates[0]!;
+    expect(ring).toHaveLength(5);
+    expect(ring[0]).toEqual(ring[4]); // closed
+  });
+
+  it('winds counter-clockwise', () => {
+    // A clockwise ring is read by MongoDB as the polygon's COMPLEMENT — the rest of the
+    // planet — and it does not error. The shoelace sum is positive for CCW.
+    const { polygon } = parsePolygon('144.55,13.3,144.95,13.6');
+    const ring = polygon!.coordinates[0]!;
+    let area = 0;
+    for (let i = 0; i < ring.length - 1; i++) {
+      area += ring[i]![0]! * ring[i + 1]![1]! - ring[i + 1]![0]! * ring[i]![1]!;
+    }
+    expect(area).toBeGreaterThan(0);
+  });
+
+  it('rejects a reversed box rather than silently normalising it', () => {
+    // Swapping the corners usually means the values were entered in the wrong order, and
+    // quietly fixing it would hide that from someone who typed lat,lon by mistake.
+    expect(parsePolygon('144.95,13.6,144.55,13.3').error).toMatch(/east must exceed west/i);
+  });
+
+  it('rejects out-of-range coordinates', () => {
+    expect(parsePolygon('-200,13.3,144.95,13.6').error).toMatch(/-180/);
+  });
+
+  it('still parses GeoJSON, and does not mistake it for a bbox', () => {
+    const gj =
+      '{"type":"Polygon","coordinates":[[[80,13],[80.4,13],[80.4,13.4],[80,13.4],[80,13]]]}';
+    expect(parsePolygon(gj).polygon).not.toBeNull();
+  });
+
+  it('reports invalid JSON as invalid JSON, not as a bad bbox', () => {
+    expect(parsePolygon('{not json').error).toMatch(/JSON/i);
+  });
+});

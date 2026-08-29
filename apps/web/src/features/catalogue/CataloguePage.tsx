@@ -24,7 +24,9 @@ export function CataloguePage() {
       </p>
 
       <section className="card">
-        <label htmlFor="aoi">Area of interest — GeoJSON Polygon, [longitude, latitude]</label>
+        <label htmlFor="aoi">
+          Area of interest — a bounding box (<code>west,south,east,north</code>) or GeoJSON
+        </label>
         <textarea
           id="aoi"
           rows={4}

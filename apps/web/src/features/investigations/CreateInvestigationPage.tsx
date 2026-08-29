@@ -77,7 +77,9 @@ export function CreateInvestigationPage() {
 
         <section className="card">
           <h2>Area of interest</h2>
-          <label htmlFor="aoi">GeoJSON Polygon — coordinates as [longitude, latitude]</label>
+          <label htmlFor="aoi">
+            Area of interest — a bounding box, or GeoJSON. Coordinates are [longitude, latitude].
+          </label>
           <textarea
             id="aoi"
             rows={6}
@@ -85,7 +87,7 @@ export function CreateInvestigationPage() {
             spellCheck={false}
             value={aoiText}
             onChange={(e) => setAoiText(e.target.value)}
-            placeholder='{"type":"Polygon","coordinates":[[[80.0,13.0],[80.4,13.0],[80.4,13.4],[80.0,13.4],[80.0,13.0]]]}'
+            placeholder="144.55,13.3,144.95,13.6    —  or a GeoJSON Polygon / Feature"
             aria-describedby="aoi-readout"
           />
           <div id="aoi-readout" className="readout" aria-live="polite">
@@ -108,7 +110,9 @@ export function CreateInvestigationPage() {
             )}
           </div>
           <p className="field-hint">
-            Drawing an AOI on the map arrives with the map subsystem. Until then, paste GeoJSON.
+            Quickest form is a bounding box: <code>west,south,east,north</code> — for example{' '}
+            <code>144.55,13.3,144.95,13.6</code> for the Guam demo area. A GeoJSON Polygon, Feature
+            or FeatureCollection also works. Drawing directly on the map is not implemented yet.
           </p>
         </section>
 
