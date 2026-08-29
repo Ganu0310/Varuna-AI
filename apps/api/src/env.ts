@@ -57,6 +57,13 @@ export const EnvSchema = z.object({
     .regex(/^[a-f\d]{24}$/i)
     .optional(),
 
+  // Where operator-supplied scenes are stored. Resolved against the repo root for the same
+  // reason REPORTS_DIR is: the API writes these and the worker reads them.
+  UPLOADS_DIR: z
+    .string()
+    .default('data/uploads')
+    .transform((v) => resolve(HERE, '../../../', v)),
+
   REPORTS_DIR: z
     .string()
     .default('data/reports')
