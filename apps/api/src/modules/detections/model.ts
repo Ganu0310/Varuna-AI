@@ -1,4 +1,5 @@
 import { Schema, model, type InferSchemaType } from 'mongoose';
+import { REJECTION_CATEGORY_IDS } from '@varuna/shared';
 import { PointSchema, PolygonSchema } from '../../db/schemas/geojson.js';
 import { provenancePlugin } from '../../db/plugins/provenance.js';
 
@@ -39,6 +40,10 @@ const ReviewEntrySchema = new Schema(
     action: { type: String, enum: ['CONFIRM', 'REJECT', 'EDIT', 'REOPEN'], required: true },
     at: { type: Date, required: true },
     note: String,
+    // REJECT only. Not `required` at the schema level because entries written before the
+    // taxonomy existed have none and must stay readable; the API refuses a new rejection
+    // without one (see review.ts).
+    rejectionCategory: { type: String, enum: REJECTION_CATEGORY_IDS },
     geometryBefore: Schema.Types.Mixed,
   },
   { _id: true },

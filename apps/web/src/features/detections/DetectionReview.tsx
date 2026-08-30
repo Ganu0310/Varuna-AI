@@ -2,6 +2,7 @@ import { useState } from 'react';
 import {
   useDetection,
   useDetectionVersions,
+  useRejectionCategories,
   useReviewDetection,
   type Detection,
 } from '../../api/hooks.ts';
@@ -51,13 +52,23 @@ function rawFor(key: string, d: Detection): string {
 export function DetectionReview({ detectionId, investigationId, onClose }: Props) {
   const { data: d, isLoading } = useDetection(detectionId);
   const { data: versions } = useDetectionVersions(detectionId);
+  const { data: categories } = useRejectionCategories();
   const review = useReviewDetection(investigationId);
   const [note, setNote] = useState('');
+  const [category, setCategory] = useState('');
 
   if (isLoading || !d) return <p className="muted">Loading detection…</p>;
 
   const err = review.error instanceof ApiError ? review.error : null;
   const rejecting = review.variables?.action === 'REJECT';
+
+  const chosen = (categories?.items ?? []).find((c) => c.id === category);
+  const canReject = Boolean(note.trim() && category);
+  // The two kinds are grouped rather than listed flat, because the choice between them is
+  // the one an analyst gets wrong: "duplicate" and "rain cell" both feel like reasons, and
+  // only one of them is a statement about the imagery.
+  const lookAlikes = (categories?.items ?? []).filter((c) => c.kind === 'LOOK_ALIKE');
+  const operational = (categories?.items ?? []).filter((c) => c.kind === 'OPERATIONAL');
 
   return (
     <section className="detection-review">
@@ -145,6 +156,62 @@ export function DetectionReview({ detectionId, investigationId, onClose }: Props
           onChange={(e) => setNote(e.target.value)}
           placeholder="e.g. Wind shadow behind the headland, not oil."
         />
+
+        {/*
+         * The category is required to reject, alongside the note, and the two do different
+         * jobs: the note explains this decision to the next person reading this case; the
+         * category is the same decision in a form that counts across cases and becomes a
+         * labelled negative the detector can be retrained on. The detector fires on 68% of
+         * look-alike scenes with its own warning reading 0.26 — this is where the data that
+         * fixes that comes from, and it only exists if it is captured at the moment of the
+         * judgement.
+         */}
+        <label htmlFor="dr-category">
+          What was it? <span className="req">(required to reject)</span>
+        </label>
+        <select
+          id="dr-category"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          aria-describedby="dr-category-hint"
+        >
+          <option value="">Choose a category…</option>
+          <optgroup label="Not oil — a statement about the imagery">
+            {lookAlikes.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.label}
+              </option>
+            ))}
+          </optgroup>
+          <optgroup label="Operational — not about the imagery">
+            {operational.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.label}
+              </option>
+            ))}
+          </optgroup>
+        </select>
+        <p className="field-hint" id="dr-category-hint">
+          {chosen ? (
+            <>
+              {chosen.description}{' '}
+              {chosen.sarClass ? (
+                <strong>
+                  Recorded as a labelled <code>{chosen.sarClass}</code> negative for detector
+                  training.
+                </strong>
+              ) : (
+                <strong>
+                  Recorded on the case, and not used as a training label — this says nothing about
+                  what the detector saw.
+                </strong>
+              )}
+            </>
+          ) : (
+            'Naming the mechanism is what turns a rejection into evidence about the detector rather than only about this case.'
+          )}
+        </p>
+
         <div className="form-error" role="alert" aria-live="polite">
           {review.isError ? (err?.problem?.detail ?? 'Review failed.') : ''}
         </div>
@@ -159,9 +226,16 @@ export function DetectionReview({ detectionId, investigationId, onClose }: Props
           </button>
           <button
             className="btn-danger"
-            onClick={() => review.mutate({ id: detectionId, action: 'REJECT', note })}
-            disabled={review.isPending || !note.trim()}
-            title={!note.trim() ? 'A reason is required to reject' : undefined}
+            onClick={() =>
+              review.mutate({
+                id: detectionId,
+                action: 'REJECT',
+                note,
+                rejectionCategory: category,
+              })
+            }
+            disabled={review.isPending || !canReject}
+            title={canReject ? undefined : 'Rejecting needs both a reason and a category'}
           >
             Reject
           </button>
@@ -185,6 +259,7 @@ export function DetectionReview({ detectionId, investigationId, onClose }: Props
             <li key={v.version} className={v.isModelOutput ? 'v-model' : ''}>
               <span className="token">{v.isModelOutput ? 'MODEL OUTPUT' : v.action}</span>
               <span className="mono muted">{formatUtc(v.at)}</span>
+              {v.rejectionCategory ? <span className="token">{v.rejectionCategory}</span> : null}
               {v.note ? <span className="v-note">“{v.note}”</span> : null}
             </li>
           ))}

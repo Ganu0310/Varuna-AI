@@ -4,9 +4,11 @@ import {
   extendZodWithOpenApi,
 } from '@asteasolutions/zod-to-openapi';
 import { z } from 'zod';
-import { ProblemDetails } from '@varuna/shared';
+import { ProblemDetails, REJECTION_CATEGORY_IDS, SAR_CLASSES } from '@varuna/shared';
 import { LoginBody, PublicUser, RegisterBody } from './modules/auth/schema.js';
 import { CatalogueSearchQuery } from './modules/catalogue/schema.js';
+import { ReviewBody } from './modules/detections/schema.js';
+import { TrainingLabelQuery } from './modules/admin/schema.js';
 import {
   AddMemberBody,
   CreateInvestigationBody,
@@ -261,6 +263,135 @@ function buildRegistry(): OpenAPIRegistry {
         content: { 'application/json': { schema: z.object({ items: z.array(z.unknown()) }) } },
       },
       401: problem,
+    },
+  });
+
+  r.registerPath({
+    method: 'get',
+    path: '/api/v1/detections/rejection-categories',
+    tags: ['detections'],
+    summary:
+      'The rejection taxonomy a REJECT review must name. A category is usable as a labelled ' +
+      'negative for the detector iff it names a sarClass; OPERATIONAL categories describe ' +
+      'the workflow rather than the imagery and are deliberately excluded from training.',
+    responses: {
+      200: {
+        description: 'Every category, with its kind, training class and description',
+        content: {
+          'application/json': {
+            schema: z.object({
+              items: z.array(
+                z.object({
+                  id: z.string(),
+                  label: z.string(),
+                  kind: z.enum(['LOOK_ALIKE', 'OPERATIONAL']),
+                  sarClass: z.enum(SAR_CLASSES).nullable(),
+                  description: z.string(),
+                }),
+              ),
+              note: z.string(),
+            }),
+          },
+        },
+      },
+      401: problem,
+    },
+  });
+
+  r.registerPath({
+    method: 'post',
+    path: '/api/v1/detections/{id}/review',
+    tags: ['detections'],
+    summary:
+      'CONFIRM / REJECT / EDIT / REOPEN. The model output is immutable — an EDIT appends a ' +
+      'version carrying the pre-edit geometry rather than overwriting it. REJECT requires ' +
+      'BOTH a note (so the decision is reviewable) and a rejectionCategory (so it counts ' +
+      'across cases and can become a labelled negative).',
+    request: {
+      params: z.object({ id: z.string() }),
+      body: { content: { 'application/json': { schema: ReviewBody } } },
+    },
+    responses: {
+      200: {
+        description:
+          'Reviewed. `trainingClass` is the SAR class this rejection contributes as a ' +
+          'labelled negative, or null when it contributes none.',
+        content: {
+          'application/json': {
+            schema: z.object({
+              detectionId: z.string(),
+              reviewStatus: z.string(),
+              version: z.number().int(),
+              areaKm2: z.number(),
+              geometryChanged: z.boolean(),
+              rejectionCategory: z.enum(REJECTION_CATEGORY_IDS).optional(),
+              trainingClass: z.enum(SAR_CLASSES).nullable().optional(),
+            }),
+          },
+        },
+      },
+      404: problem,
+      422: {
+        description:
+          'A REJECT without a note or without a category, or an EDIT without a geometry.',
+        content: { 'application/problem+json': { schema: ProblemDetails } },
+      },
+    },
+  });
+
+  r.registerPath({
+    method: 'get',
+    path: '/api/v1/admin/training-labels',
+    tags: ['admin'],
+    summary:
+      'The labelled set analyst review has produced, across every investigation. Admin-only ' +
+      'because a training set is only a set once it spans cases, and no membership does. ' +
+      'Assembled from real review actions; nothing is generated and nothing is trained ' +
+      'automatically.',
+    request: { query: TrainingLabelQuery },
+    responses: {
+      200: {
+        description:
+          'Usable labels, the rejections that are NOT usable with the reason for each, and ' +
+          'a summary carrying the per-class shortfall against the working target.',
+        content: {
+          'application/json': {
+            schema: z.object({
+              items: z.array(z.unknown()),
+              unusable: z.array(
+                z.object({
+                  detectionId: z.string(),
+                  reviewStatus: z.string(),
+                  rejectionCategory: z.string().nullable(),
+                  reason: z.string(),
+                }),
+              ),
+              summary: z.object({
+                reviewedDetections: z.number().int(),
+                usable: z.number().int(),
+                byClass: z.record(z.string(), z.number().int()),
+                byCategory: z.record(z.string(), z.number().int()),
+                unusable: z.object({
+                  count: z.number().int(),
+                  byReason: z.record(z.string(), z.number().int()),
+                }),
+                shortfall: z.array(
+                  z.object({
+                    sarClass: z.string(),
+                    held: z.number().int(),
+                    needed: z.number().int(),
+                  }),
+                ),
+                readyToRetrain: z.boolean(),
+                assessment: z.string(),
+              }),
+              note: z.string(),
+            }),
+          },
+        },
+      },
+      401: problem,
+      403: problem,
     },
   });
 

@@ -11,14 +11,20 @@
  * agree. A deliberate API change is one line of `--write`; an accidental one fails the build
  * and shows exactly which operations moved.
  *
- * It also reports COVERAGE, because drift detection alone would happily hold a spec that
+ * It also gates COVERAGE, because drift detection alone would happily hold a spec that
  * documents three endpoints steady forever. "We publish an OpenAPI spec" and "our OpenAPI spec
  * covers the API" are very different claims to make to an evaluator, and only one of them is
- * checkable. Coverage is printed, not enforced — the spec is filled in as phases land — but it
- * must not be invisible.
+ * checkable.
+ *
+ * Coverage is a RATCHET, not a threshold: `doc/openapi-coverage.json` records how many mounted
+ * operations are currently undocumented, and the build fails if that number GOES UP. A
+ * percentage target would have to be argued about and would fail the build for work nobody
+ * had started; a ratchet only ever fails the person who added the undocumented route, while
+ * they still have it in their head. Documenting anything lowers the floor, and the lower
+ * number is committed — so the gate tightens on its own and never loosens by accident.
  *
  *   node scripts/check-openapi.mjs           # verify (CI)
- *   node scripts/check-openapi.mjs --write    # accept the current API as the new baseline
+ *   node scripts/check-openapi.mjs --write    # accept the current API + coverage as baseline
  */
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
@@ -26,6 +32,7 @@ import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const BASELINE = resolve(ROOT, 'doc/openapi.json');
+const COVERAGE = resolve(ROOT, 'doc/openapi-coverage.json');
 const write = process.argv.includes('--write');
 
 // The API's env schema requires real secrets. This script only reads route definitions, so
@@ -48,13 +55,7 @@ process.env.PUBLIC_APP_URL ??= 'http://localhost:5173';
 const { openApiDocument } = await import('../apps/api/src/openapi.ts');
 const current = JSON.stringify(openApiDocument(), null, 2) + '\n';
 
-if (write) {
-  writeFileSync(BASELINE, current);
-  console.log('✓ openapi baseline written to doc/openapi.json');
-  process.exit(0);
-}
-
-if (!existsSync(BASELINE)) {
+if (!write && !existsSync(BASELINE)) {
   console.error('✗ doc/openapi.json is missing. Run: node scripts/check-openapi.mjs --write');
   process.exit(1);
 }
@@ -101,6 +102,58 @@ const normalise = (op) =>
     .replace(/\/+$/, '')
     .replace(/\/{2,}/g, '/');
 
+/**
+ * Measure coverage, or return null if the app cannot be mounted.
+ *
+ * Null is a distinct answer from zero and is treated as one: a coverage number that could
+ * not be taken must never read as "nothing is documented", and must never fail the build
+ * on its own.
+ */
+async function measureCoverage() {
+  try {
+    const mounted = await mountedOperations();
+    const documented = new Set(specOperations(JSON.parse(current)).map(normalise));
+    const undocumented = [...mounted]
+      .map(normalise)
+      .filter((o) => !documented.has(o))
+      .sort();
+    return { mounted: mounted.size, undocumented };
+  } catch (e) {
+    console.log(`\n  (coverage not measured: ${e instanceof Error ? e.message : e})`);
+    return null;
+  }
+}
+
+if (write) {
+  writeFileSync(BASELINE, current);
+  console.log('✓ openapi baseline written to doc/openapi.json');
+
+  const cov = await measureCoverage();
+  if (cov) {
+    writeFileSync(
+      COVERAGE,
+      JSON.stringify(
+        {
+          note:
+            'A ratchet, not a target. `undocumented` may go DOWN freely; the build fails ' +
+            'when it goes up. Lower it by documenting a route in apps/api/src/openapi.ts, ' +
+            'then re-run with --write and commit this file.',
+          mounted: cov.mounted,
+          undocumented: cov.undocumented.length,
+          operations: cov.undocumented,
+        },
+        null,
+        2,
+      ) + '\n',
+    );
+    console.log(
+      `✓ coverage floor written: ${cov.mounted - cov.undocumented.length}/${cov.mounted} ` +
+        `documented, ${cov.undocumented.length} undocumented`,
+    );
+  }
+  process.exit(0);
+}
+
 const baseline = readFileSync(BASELINE, 'utf8');
 const drifted = baseline !== current;
 
@@ -145,27 +198,58 @@ if (drifted) {
   );
 }
 
-// Coverage is reported either way — a drifted spec is still worth knowing the size of.
-try {
-  const mounted = await mountedOperations();
-  const documented = new Set(specOperations(JSON.parse(current)).map(normalise));
-  const undocumented = [...mounted]
-    .map(normalise)
-    .filter((o) => !documented.has(o))
-    .sort();
-  const covered = mounted.size - undocumented.length;
-  const pct = mounted.size ? Math.round((covered / mounted.size) * 100) : 0;
+// Coverage is measured either way — a drifted spec is still worth knowing the size of.
+let coverageRegressed = false;
+const cov = await measureCoverage();
 
-  console.log(`\n  spec coverage: ${covered}/${mounted.size} mounted operations (${pct}%)`);
-  if (undocumented.length) {
-    console.log(`  undocumented (not a failure — the spec is filled in as phases land):`);
-    for (const o of undocumented.slice(0, 30)) console.log(`    ${o}`);
-    if (undocumented.length > 30) console.log(`    …and ${undocumented.length - 30} more`);
+if (cov) {
+  const covered = cov.mounted - cov.undocumented.length;
+  const pct = cov.mounted ? Math.round((covered / cov.mounted) * 100) : 0;
+  console.log(`\n  spec coverage: ${covered}/${cov.mounted} mounted operations (${pct}%)`);
+
+  if (!existsSync(COVERAGE)) {
+    console.log('  no coverage floor recorded yet — run with --write to set one and commit it.');
+  } else {
+    const floor = JSON.parse(readFileSync(COVERAGE, 'utf8'));
+    const previouslyUndocumented = new Set(floor.operations ?? []);
+    const newlyUndocumented = cov.undocumented.filter((o) => !previouslyUndocumented.has(o));
+
+    if (cov.undocumented.length > floor.undocumented) {
+      coverageRegressed = true;
+      console.error(
+        `\n✗ spec coverage went backwards: ${cov.undocumented.length} operations are ` +
+          `undocumented, against a floor of ${floor.undocumented}.`,
+      );
+      // Name the specific routes, not only the count. The count says a rule was broken; the
+      // list says which line to go and fix.
+      if (newlyUndocumented.length) {
+        console.error('\n  mounted, and described nowhere in the spec:');
+        for (const o of newlyUndocumented) console.error(`    ${o}`);
+      }
+      console.error(
+        '\n  Document these in apps/api/src/openapi.ts — a route an evaluator cannot find ' +
+          'in the spec is a route they cannot call.\n' +
+          '  If a route is genuinely not part of the public contract, run ' +
+          'node scripts/check-openapi.mjs --write and say so in the commit.',
+      );
+    } else if (cov.undocumented.length < floor.undocumented) {
+      console.log(
+        `  ✓ coverage improved: ${floor.undocumented - cov.undocumented.length} fewer ` +
+          'undocumented operation(s) than the floor. Run --write to ratchet it down and ' +
+          'commit doc/openapi-coverage.json.',
+      );
+    } else {
+      console.log(`  ✓ coverage holding at the floor (${floor.undocumented} undocumented)`);
+    }
   }
-} catch (e) {
-  // Coverage is a report, not the gate. If mounting the app fails here, say so and let the
-  // drift result stand on its own rather than failing a documentation check for it.
-  console.log(`\n  (coverage not measured: ${e instanceof Error ? e.message : e})`);
+
+  if (cov.undocumented.length && !coverageRegressed) {
+    console.log('  undocumented:');
+    for (const o of cov.undocumented.slice(0, 30)) console.log(`    ${o}`);
+    if (cov.undocumented.length > 30) {
+      console.log(`    …and ${cov.undocumented.length - 30} more`);
+    }
+  }
 }
 
-process.exit(drifted ? 1 : 0);
+process.exit(drifted || coverageRegressed ? 1 : 0);

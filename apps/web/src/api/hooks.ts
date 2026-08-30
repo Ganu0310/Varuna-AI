@@ -280,7 +280,13 @@ export interface Detection {
   model: { name: string; version: string; artefactSha256: string };
   confidence: DetectionConfidence;
   reviewStatus: 'UNREVIEWED' | 'CONFIRMED' | 'REJECTED' | 'EDITED';
-  reviewHistory: Array<{ userId: string; action: string; at: string; note?: string }>;
+  reviewHistory: Array<{
+    userId: string;
+    action: string;
+    at: string;
+    note?: string;
+    rejectionCategory?: string;
+  }>;
   provenance: { sourceType: string; provider: string; datasetId: string; externalId: string };
 }
 
@@ -316,8 +322,34 @@ export interface DetectionVersion {
   at: string;
   userId: string | null;
   note?: string;
+  rejectionCategory?: string;
   geometry: { type: 'Polygon'; coordinates: number[][][] };
   isModelOutput: boolean;
+}
+
+/**
+ * The rejection taxonomy, fetched rather than hard-coded — 07_AIML §7.2.12.
+ *
+ * A copy in the frontend would be a second source of truth for a list the API validates
+ * against, and the failure mode is a category that is offered in the dropdown and refused
+ * on submit. Cached for the session; the taxonomy changes with a deploy, not with a case.
+ */
+export interface RejectionCategory {
+  id: string;
+  label: string;
+  kind: 'LOOK_ALIKE' | 'OPERATIONAL';
+  /** Non-null iff this rejection is usable as a labelled negative for the detector. */
+  sarClass: string | null;
+  description: string;
+}
+
+export function useRejectionCategories() {
+  return useQuery({
+    queryKey: ['rejection-categories'],
+    queryFn: () =>
+      api.get<{ items: RejectionCategory[]; note: string }>('/detections/rejection-categories'),
+    staleTime: Infinity,
+  });
 }
 
 export function useDetectionVersions(id: string | undefined) {
@@ -336,12 +368,23 @@ export function useReviewDetection(investigationId?: string) {
       id: string;
       action: 'CONFIRM' | 'REJECT' | 'EDIT' | 'REOPEN';
       note?: string;
+      rejectionCategory?: string;
       geometry?: { type: 'Polygon'; coordinates: number[][][] };
     }) =>
-      api.post<{ detectionId: string; reviewStatus: string; version: number; areaKm2: number }>(
-        `/detections/${v.id}/review`,
-        { action: v.action, note: v.note, geometry: v.geometry },
-      ),
+      api.post<{
+        detectionId: string;
+        reviewStatus: string;
+        version: number;
+        areaKm2: number;
+        rejectionCategory?: string;
+        // null when the rejection is recorded but contributes no labelled negative.
+        trainingClass?: string | null;
+      }>(`/detections/${v.id}/review`, {
+        action: v.action,
+        note: v.note,
+        rejectionCategory: v.rejectionCategory,
+        geometry: v.geometry,
+      }),
     onSuccess: (_d, v) => {
       void qc.invalidateQueries({ queryKey: ['detection', v.id] });
       void qc.invalidateQueries({ queryKey: ['detection-versions', v.id] });

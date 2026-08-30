@@ -3,7 +3,7 @@ import { Router, type NextFunction, type Request, type Response } from 'express'
 import { z } from 'zod';
 import { simplify as turfSimplify } from '@turf/turf';
 import type { Polygon } from 'geojson';
-import { GeoPolygon } from '@varuna/shared';
+import { REJECTION_CATEGORIES } from '@varuna/shared';
 import { rbac, canAccessInvestigation } from '../../middleware/rbac.js';
 import { validate, validatedQuery, param } from '../../middleware/validate.js';
 import { reqId } from '../../middleware/requestId.js';
@@ -11,11 +11,33 @@ import { NotFoundError } from '../../errors.js';
 import { env } from '../../env.js';
 import { SpillDetectionModel } from './model.js';
 import { detectionVersions, reviewDetection } from './review.js';
+import { ReviewBody } from './schema.js';
 
 /** Detections — 06_BACKEND §6.4.5. */
 export const detectionsRouter: Router = Router();
 
 const IdParam = z.object({ id: z.string().regex(/^[a-f\d]{24}$/i) });
+
+/**
+ * The rejection taxonomy — 07_AIML §7.2.12.
+ *
+ * Registered BEFORE `/:id`, because Express matches in order and `/:id` would otherwise
+ * swallow this path and reject it as a malformed ObjectId.
+ *
+ * Served rather than hard-coded in the frontend so the list an analyst picks from and the
+ * list the API validates against cannot drift into disagreement — the failure mode being
+ * a category that looks selectable and is refused on submit.
+ */
+detectionsRouter.get('/rejection-categories', rbac('viewer'), (_req: Request, res: Response) => {
+  res.json({
+    items: REJECTION_CATEGORIES,
+    note:
+      'A rejection is usable as a labelled negative for the detector iff it names a ' +
+      'sarClass. OPERATIONAL categories describe the workflow, not the imagery, and are ' +
+      'deliberately excluded from training — rejecting a real slick as a duplicate must ' +
+      'never teach the detector that a slick is not a slick.',
+  });
+});
 
 /** A detection is visible only to someone who can see its investigation. */
 async function visibleDetection(req: Request, id: string) {
@@ -106,14 +128,6 @@ detectionsRouter.get(
   },
 );
 
-const ReviewBody = z
-  .object({
-    action: z.enum(['CONFIRM', 'REJECT', 'EDIT', 'REOPEN']),
-    note: z.string().trim().max(4000).optional(),
-    geometry: GeoPolygon.optional(),
-  })
-  .strict();
-
 detectionsRouter.post(
   '/:id/review',
   rbac('analyst'),
@@ -127,6 +141,7 @@ detectionsRouter.post(
         action: req.body.action,
         actorId: req.user!.id,
         note: req.body.note,
+        rejectionCategory: req.body.rejectionCategory,
         geometry: req.body.geometry as Polygon | undefined,
         requestId: reqId(req),
       });

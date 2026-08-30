@@ -24,6 +24,148 @@ export const DETECTION_MIN_MEAN_OIL_PROB = 0.6;
 export const SEGMENTATION_TILE_SIZE = 256;
 export const SEGMENTATION_STRIDE = 192;
 
+/**
+ * Why a rejected detection is rejected — 07_AIML §7.2.12, 06_BACKEND §6.4.5.
+ *
+ * A rejection already requires a reason in prose. Prose is unusable in aggregate: it cannot
+ * answer "which look-alike class does this detector fall for most?", and it cannot become a
+ * labelled negative. The measured false-positive rate on the held-out split is 68% on
+ * look-alike scenes with a mean look-alike risk of 0.26 — wrong AND unwarned — and the one
+ * thing that fixes that is labelled negatives of each physical class. Every rejection an
+ * analyst makes is one, if we record which class it was.
+ *
+ * `kind` separates the two questions a rejection can answer:
+ *
+ *   LOOK_ALIKE   the analyst judged the pixels are not oil — a statement about the imagery
+ *   OPERATIONAL  the rejection is about the workflow, not the pixels — it says nothing at
+ *                all about what the detector saw, and must never be trained on
+ *
+ * `sarClass` is the class these pixels should have carried, and is the single rule for
+ * whether a rejection is usable as a training label: **usable iff `sarClass !== null`.**
+ * A sensor artefact is genuinely not oil, but it is not a valid sample of any physical
+ * class either, so it is a LOOK_ALIKE with no `sarClass` — recorded, and not trained on.
+ */
+export const REJECTION_CATEGORIES = [
+  {
+    id: 'LOW_WIND',
+    label: 'Low-wind or wind-shadow zone',
+    kind: 'LOOK_ALIKE',
+    sarClass: 'sea_surface',
+    description:
+      'Glassy water returns low backscatter for the same reason oil does. The commonest ' +
+      'false positive in the literature and the one a wind field would have caught.',
+  },
+  {
+    id: 'BIOGENIC_FILM',
+    label: 'Biogenic film or algal slick',
+    kind: 'LOOK_ALIKE',
+    sarClass: 'look_alike',
+    description: 'A natural surfactant damps capillary waves exactly as mineral oil does.',
+  },
+  {
+    id: 'RAIN_CELL',
+    label: 'Rain cell',
+    kind: 'LOOK_ALIKE',
+    sarClass: 'look_alike',
+    description: 'Rain damping produces a dark patch, usually with a softer edge than a slick.',
+  },
+  {
+    id: 'SHIP_WAKE',
+    label: 'Ship wake or turbulent trail',
+    kind: 'LOOK_ALIKE',
+    sarClass: 'look_alike',
+    description: 'A wake is linear and vessel-attached; a discharge trail is not the same thing.',
+  },
+  {
+    id: 'INTERNAL_WAVE',
+    label: 'Internal wave or current shear',
+    kind: 'LOOK_ALIKE',
+    sarClass: 'look_alike',
+    description: 'Oceanographic surface signature — often banded, and repeats across the scene.',
+  },
+  {
+    id: 'SEA_ICE',
+    label: 'Sea ice',
+    kind: 'LOOK_ALIKE',
+    sarClass: 'look_alike',
+    description: 'Ice and its leads produce dark features with slick-like outlines.',
+  },
+  {
+    id: 'LAND_OR_STRUCTURE',
+    label: 'Land, tidal flat or fixed structure',
+    kind: 'LOOK_ALIKE',
+    sarClass: 'land',
+    description:
+      'Dark land — wet asphalt, runways, tidal flats, aquaculture — that the coastline mask ' +
+      'did not remove. Each one is a hole in the mask and worth knowing about as such.',
+  },
+  {
+    id: 'SENSOR_ARTEFACT',
+    label: 'Sensor or processing artefact',
+    kind: 'LOOK_ALIKE',
+    sarClass: null,
+    description:
+      'Azimuth ambiguity, scalloping, thermal-noise banding, radiometric artefact. Not oil, ' +
+      'and not a valid sample of any physical class either — recorded, never trained on.',
+  },
+  {
+    id: 'LOOK_ALIKE_UNCLASSIFIED',
+    label: 'Not oil — class not determined',
+    kind: 'LOOK_ALIKE',
+    sarClass: 'look_alike',
+    description:
+      'The analyst is confident it is not oil but will not name the mechanism. Honest, and ' +
+      'still a usable negative.',
+  },
+  {
+    id: 'INSUFFICIENT_IMAGE_QUALITY',
+    label: 'Cannot be judged from this scene',
+    kind: 'OPERATIONAL',
+    sarClass: null,
+    description:
+      'Noise, far-range incidence angle or partial coverage make the call unsafe. This is an ' +
+      'absence of evidence, not evidence of absence, so it is not a negative.',
+  },
+  {
+    id: 'DUPLICATE',
+    label: 'Duplicate of another detection',
+    kind: 'OPERATIONAL',
+    sarClass: null,
+    description: 'The same feature is already recorded. Says nothing about the pixels.',
+  },
+  {
+    id: 'SUPERSEDED',
+    label: 'Superseded by a better acquisition',
+    kind: 'OPERATIONAL',
+    sarClass: null,
+    description: 'A later or cleaner scene covers the same feature and is being used instead.',
+  },
+  {
+    id: 'OUT_OF_SCOPE',
+    label: 'Outside this investigation',
+    kind: 'OPERATIONAL',
+    sarClass: null,
+    description: 'A real feature, but outside the AOI, window or remit of this case.',
+  },
+] as const satisfies ReadonlyArray<{
+  id: string;
+  label: string;
+  kind: 'LOOK_ALIKE' | 'OPERATIONAL';
+  sarClass: SarClass | null;
+  description: string;
+}>;
+
+export type RejectionCategory = (typeof REJECTION_CATEGORIES)[number]['id'];
+export const REJECTION_CATEGORY_IDS = REJECTION_CATEGORIES.map((c) => c.id) as [
+  RejectionCategory,
+  ...RejectionCategory[],
+];
+
+/** A rejection is usable as a labelled negative iff it names a physical class. */
+export function trainingClassFor(id: RejectionCategory): SarClass | null {
+  return REJECTION_CATEGORIES.find((c) => c.id === id)?.sarClass ?? null;
+}
+
 // ── Drift defaults (02_TRD §2.8.3, 07_AIML §7.3) ─────────────────────
 export const DRIFT_DEFAULTS = {
   particleCount: 5_000,

@@ -17,7 +17,9 @@
   "paths": {
     "/api/v1/auth/register": {
       "post": {
-        "tags": ["auth"],
+        "tags": [
+          "auth"
+        ],
         "summary": "Create an account and start a session",
         "requestBody": {
           "content": {
@@ -45,7 +47,11 @@
                     "maxLength": 120
                   }
                 },
-                "required": ["email", "password", "name"],
+                "required": [
+                  "email",
+                  "password",
+                  "name"
+                ],
                 "additionalProperties": false
               }
             }
@@ -74,7 +80,12 @@
                         },
                         "role": {
                           "type": "string",
-                          "enum": ["viewer", "analyst", "lead", "admin"]
+                          "enum": [
+                            "viewer",
+                            "analyst",
+                            "lead",
+                            "admin"
+                          ]
                         },
                         "orgId": {
                           "type": "string"
@@ -84,10 +95,17 @@
                           "format": "date-time"
                         }
                       },
-                      "required": ["_id", "email", "name", "role"]
+                      "required": [
+                        "_id",
+                        "email",
+                        "name",
+                        "role"
+                      ]
                     }
                   },
-                  "required": ["user"]
+                  "required": [
+                    "user"
+                  ]
                 }
               }
             }
@@ -126,7 +144,10 @@
                             "type": "string"
                           }
                         },
-                        "required": ["path", "message"]
+                        "required": [
+                          "path",
+                          "message"
+                        ]
                       }
                     },
                     "attempted": {
@@ -141,14 +162,21 @@
                             "type": "string"
                           }
                         },
-                        "required": ["provider", "outcome"]
+                        "required": [
+                          "provider",
+                          "outcome"
+                        ]
                       }
                     },
                     "consequence": {
                       "type": "string"
                     }
                   },
-                  "required": ["type", "title", "status"]
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ]
                 }
               }
             }
@@ -187,7 +215,10 @@
                             "type": "string"
                           }
                         },
-                        "required": ["path", "message"]
+                        "required": [
+                          "path",
+                          "message"
+                        ]
                       }
                     },
                     "attempted": {
@@ -202,14 +233,21 @@
                             "type": "string"
                           }
                         },
-                        "required": ["provider", "outcome"]
+                        "required": [
+                          "provider",
+                          "outcome"
+                        ]
                       }
                     },
                     "consequence": {
                       "type": "string"
                     }
                   },
-                  "required": ["type", "title", "status"]
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ]
                 }
               }
             }
@@ -219,7 +257,9 @@
     },
     "/api/v1/auth/login": {
       "post": {
-        "tags": ["auth"],
+        "tags": [
+          "auth"
+        ],
         "requestBody": {
           "content": {
             "application/json": {
@@ -237,7 +277,10 @@
                     "maxLength": 200
                   }
                 },
-                "required": ["email", "password"],
+                "required": [
+                  "email",
+                  "password"
+                ],
                 "additionalProperties": false
               }
             }
@@ -266,7 +309,12 @@
                         },
                         "role": {
                           "type": "string",
-                          "enum": ["viewer", "analyst", "lead", "admin"]
+                          "enum": [
+                            "viewer",
+                            "analyst",
+                            "lead",
+                            "admin"
+                          ]
                         },
                         "orgId": {
                           "type": "string"
@@ -276,10 +324,17 @@
                           "format": "date-time"
                         }
                       },
-                      "required": ["_id", "email", "name", "role"]
+                      "required": [
+                        "_id",
+                        "email",
+                        "name",
+                        "role"
+                      ]
                     }
                   },
-                  "required": ["user"]
+                  "required": [
+                    "user"
+                  ]
                 }
               }
             }
@@ -318,7 +373,10 @@
                             "type": "string"
                           }
                         },
-                        "required": ["path", "message"]
+                        "required": [
+                          "path",
+                          "message"
+                        ]
                       }
                     },
                     "attempted": {
@@ -333,14 +391,21 @@
                             "type": "string"
                           }
                         },
-                        "required": ["provider", "outcome"]
+                        "required": [
+                          "provider",
+                          "outcome"
+                        ]
                       }
                     },
                     "consequence": {
                       "type": "string"
                     }
                   },
-                  "required": ["type", "title", "status"]
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ]
                 }
               }
             }
@@ -379,7 +444,10 @@
                             "type": "string"
                           }
                         },
-                        "required": ["path", "message"]
+                        "required": [
+                          "path",
+                          "message"
+                        ]
                       }
                     },
                     "attempted": {
@@ -394,14 +462,21 @@
                             "type": "string"
                           }
                         },
-                        "required": ["provider", "outcome"]
+                        "required": [
+                          "provider",
+                          "outcome"
+                        ]
                       }
                     },
                     "consequence": {
                       "type": "string"
                     }
                   },
-                  "required": ["type", "title", "status"]
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ]
                 }
               }
             }
@@ -411,7 +486,9 @@
     },
     "/api/v1/auth/refresh": {
       "post": {
-        "tags": ["auth"],
+        "tags": [
+          "auth"
+        ],
         "summary": "Rotate the refresh token. Reuse of a spent token revokes the whole family.",
         "responses": {
           "200": {
@@ -436,7 +513,12 @@
                         },
                         "role": {
                           "type": "string",
-                          "enum": ["viewer", "analyst", "lead", "admin"]
+                          "enum": [
+                            "viewer",
+                            "analyst",
+                            "lead",
+                            "admin"
+                          ]
                         },
                         "orgId": {
                           "type": "string"
@@ -446,10 +528,17 @@
                           "format": "date-time"
                         }
                       },
-                      "required": ["_id", "email", "name", "role"]
+                      "required": [
+                        "_id",
+                        "email",
+                        "name",
+                        "role"
+                      ]
                     }
                   },
-                  "required": ["user"]
+                  "required": [
+                    "user"
+                  ]
                 }
               }
             }
@@ -488,7 +577,10 @@
                             "type": "string"
                           }
                         },
-                        "required": ["path", "message"]
+                        "required": [
+                          "path",
+                          "message"
+                        ]
                       }
                     },
                     "attempted": {
@@ -503,14 +595,21 @@
                             "type": "string"
                           }
                         },
-                        "required": ["provider", "outcome"]
+                        "required": [
+                          "provider",
+                          "outcome"
+                        ]
                       }
                     },
                     "consequence": {
                       "type": "string"
                     }
                   },
-                  "required": ["type", "title", "status"]
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ]
                 }
               }
             }
@@ -520,7 +619,9 @@
     },
     "/api/v1/auth/logout": {
       "post": {
-        "tags": ["auth"],
+        "tags": [
+          "auth"
+        ],
         "responses": {
           "204": {
             "description": "Session ended"
@@ -530,7 +631,9 @@
     },
     "/api/v1/auth/me": {
       "get": {
-        "tags": ["auth"],
+        "tags": [
+          "auth"
+        ],
         "responses": {
           "200": {
             "description": "Current user",
@@ -554,7 +657,12 @@
                         },
                         "role": {
                           "type": "string",
-                          "enum": ["viewer", "analyst", "lead", "admin"]
+                          "enum": [
+                            "viewer",
+                            "analyst",
+                            "lead",
+                            "admin"
+                          ]
                         },
                         "orgId": {
                           "type": "string"
@@ -564,7 +672,12 @@
                           "format": "date-time"
                         }
                       },
-                      "required": ["_id", "email", "name", "role"]
+                      "required": [
+                        "_id",
+                        "email",
+                        "name",
+                        "role"
+                      ]
                     },
                     "permissions": {
                       "type": "object",
@@ -573,10 +686,15 @@
                           "type": "string"
                         }
                       },
-                      "required": ["role"]
+                      "required": [
+                        "role"
+                      ]
                     }
                   },
-                  "required": ["user", "permissions"]
+                  "required": [
+                    "user",
+                    "permissions"
+                  ]
                 }
               }
             }
@@ -615,7 +733,10 @@
                             "type": "string"
                           }
                         },
-                        "required": ["path", "message"]
+                        "required": [
+                          "path",
+                          "message"
+                        ]
                       }
                     },
                     "attempted": {
@@ -630,14 +751,21 @@
                             "type": "string"
                           }
                         },
-                        "required": ["provider", "outcome"]
+                        "required": [
+                          "provider",
+                          "outcome"
+                        ]
                       }
                     },
                     "consequence": {
                       "type": "string"
                     }
                   },
-                  "required": ["type", "title", "status"]
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ]
                 }
               }
             }
@@ -647,7 +775,9 @@
     },
     "/api/v1/investigations": {
       "get": {
-        "tags": ["investigations"],
+        "tags": [
+          "investigations"
+        ],
         "parameters": [
           {
             "schema": {
@@ -708,10 +838,16 @@
                       "items": {}
                     },
                     "nextCursor": {
-                      "type": ["string", "null"]
+                      "type": [
+                        "string",
+                        "null"
+                      ]
                     }
                   },
-                  "required": ["items", "nextCursor"]
+                  "required": [
+                    "items",
+                    "nextCursor"
+                  ]
                 }
               }
             }
@@ -750,7 +886,10 @@
                             "type": "string"
                           }
                         },
-                        "required": ["path", "message"]
+                        "required": [
+                          "path",
+                          "message"
+                        ]
                       }
                     },
                     "attempted": {
@@ -765,14 +904,21 @@
                             "type": "string"
                           }
                         },
-                        "required": ["provider", "outcome"]
+                        "required": [
+                          "provider",
+                          "outcome"
+                        ]
                       }
                     },
                     "consequence": {
                       "type": "string"
                     }
                   },
-                  "required": ["type", "title", "status"]
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ]
                 }
               }
             }
@@ -811,7 +957,10 @@
                             "type": "string"
                           }
                         },
-                        "required": ["path", "message"]
+                        "required": [
+                          "path",
+                          "message"
+                        ]
                       }
                     },
                     "attempted": {
@@ -826,14 +975,21 @@
                             "type": "string"
                           }
                         },
-                        "required": ["provider", "outcome"]
+                        "required": [
+                          "provider",
+                          "outcome"
+                        ]
                       }
                     },
                     "consequence": {
                       "type": "string"
                     }
                   },
-                  "required": ["type", "title", "status"]
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ]
                 }
               }
             }
@@ -841,7 +997,9 @@
         }
       },
       "post": {
-        "tags": ["investigations"],
+        "tags": [
+          "investigations"
+        ],
         "summary": "Create an investigation. AOI is capped at 50,000 km² (geodesic) and the window at 30 days.",
         "requestBody": {
           "content": {
@@ -867,7 +1025,9 @@
                     "properties": {
                       "type": {
                         "type": "string",
-                        "enum": ["Polygon"]
+                        "enum": [
+                          "Polygon"
+                        ]
                       },
                       "coordinates": {
                         "type": "array",
@@ -893,7 +1053,10 @@
                         "minItems": 1
                       }
                     },
-                    "required": ["type", "coordinates"]
+                    "required": [
+                      "type",
+                      "coordinates"
+                    ]
                   },
                   "windowStart": {
                     "type": "string",
@@ -908,7 +1071,12 @@
                     "format": "date-time"
                   }
                 },
-                "required": ["name", "aoi", "windowStart", "windowEnd"],
+                "required": [
+                  "name",
+                  "aoi",
+                  "windowStart",
+                  "windowEnd"
+                ],
                 "additionalProperties": false
               }
             }
@@ -957,7 +1125,10 @@
                             "type": "string"
                           }
                         },
-                        "required": ["path", "message"]
+                        "required": [
+                          "path",
+                          "message"
+                        ]
                       }
                     },
                     "attempted": {
@@ -972,14 +1143,21 @@
                             "type": "string"
                           }
                         },
-                        "required": ["provider", "outcome"]
+                        "required": [
+                          "provider",
+                          "outcome"
+                        ]
                       }
                     },
                     "consequence": {
                       "type": "string"
                     }
                   },
-                  "required": ["type", "title", "status"]
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ]
                 }
               }
             }
@@ -1018,7 +1196,10 @@
                             "type": "string"
                           }
                         },
-                        "required": ["path", "message"]
+                        "required": [
+                          "path",
+                          "message"
+                        ]
                       }
                     },
                     "attempted": {
@@ -1033,14 +1214,21 @@
                             "type": "string"
                           }
                         },
-                        "required": ["provider", "outcome"]
+                        "required": [
+                          "provider",
+                          "outcome"
+                        ]
                       }
                     },
                     "consequence": {
                       "type": "string"
                     }
                   },
-                  "required": ["type", "title", "status"]
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ]
                 }
               }
             }
@@ -1050,7 +1238,9 @@
     },
     "/api/v1/investigations/{id}": {
       "get": {
-        "tags": ["investigations"],
+        "tags": [
+          "investigations"
+        ],
         "parameters": [
           {
             "schema": {
@@ -1104,7 +1294,10 @@
                             "type": "string"
                           }
                         },
-                        "required": ["path", "message"]
+                        "required": [
+                          "path",
+                          "message"
+                        ]
                       }
                     },
                     "attempted": {
@@ -1119,14 +1312,21 @@
                             "type": "string"
                           }
                         },
-                        "required": ["provider", "outcome"]
+                        "required": [
+                          "provider",
+                          "outcome"
+                        ]
                       }
                     },
                     "consequence": {
                       "type": "string"
                     }
                   },
-                  "required": ["type", "title", "status"]
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ]
                 }
               }
             }
@@ -1134,7 +1334,9 @@
         }
       },
       "patch": {
-        "tags": ["investigations"],
+        "tags": [
+          "investigations"
+        ],
         "summary": "Update. Changing the AOI or window invalidates downstream results and says so.",
         "parameters": [
           {
@@ -1170,7 +1372,9 @@
                     "properties": {
                       "type": {
                         "type": "string",
-                        "enum": ["Polygon"]
+                        "enum": [
+                          "Polygon"
+                        ]
                       },
                       "coordinates": {
                         "type": "array",
@@ -1196,7 +1400,10 @@
                         "minItems": 1
                       }
                     },
-                    "required": ["type", "coordinates"]
+                    "required": [
+                      "type",
+                      "coordinates"
+                    ]
                   },
                   "windowStart": {
                     "type": "string",
@@ -1259,7 +1466,10 @@
                             "type": "string"
                           }
                         },
-                        "required": ["path", "message"]
+                        "required": [
+                          "path",
+                          "message"
+                        ]
                       }
                     },
                     "attempted": {
@@ -1274,14 +1484,21 @@
                             "type": "string"
                           }
                         },
-                        "required": ["provider", "outcome"]
+                        "required": [
+                          "provider",
+                          "outcome"
+                        ]
                       }
                     },
                     "consequence": {
                       "type": "string"
                     }
                   },
-                  "required": ["type", "title", "status"]
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ]
                 }
               }
             }
@@ -1320,7 +1537,10 @@
                             "type": "string"
                           }
                         },
-                        "required": ["path", "message"]
+                        "required": [
+                          "path",
+                          "message"
+                        ]
                       }
                     },
                     "attempted": {
@@ -1335,14 +1555,21 @@
                             "type": "string"
                           }
                         },
-                        "required": ["provider", "outcome"]
+                        "required": [
+                          "provider",
+                          "outcome"
+                        ]
                       }
                     },
                     "consequence": {
                       "type": "string"
                     }
                   },
-                  "required": ["type", "title", "status"]
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ]
                 }
               }
             }
@@ -1350,7 +1577,9 @@
         }
       },
       "delete": {
-        "tags": ["investigations"],
+        "tags": [
+          "investigations"
+        ],
         "parameters": [
           {
             "schema": {
@@ -1399,7 +1628,10 @@
                             "type": "string"
                           }
                         },
-                        "required": ["path", "message"]
+                        "required": [
+                          "path",
+                          "message"
+                        ]
                       }
                     },
                     "attempted": {
@@ -1414,14 +1646,21 @@
                             "type": "string"
                           }
                         },
-                        "required": ["provider", "outcome"]
+                        "required": [
+                          "provider",
+                          "outcome"
+                        ]
                       }
                     },
                     "consequence": {
                       "type": "string"
                     }
                   },
-                  "required": ["type", "title", "status"]
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ]
                 }
               }
             }
@@ -1431,7 +1670,9 @@
     },
     "/api/v1/investigations/{id}/summary": {
       "get": {
-        "tags": ["investigations"],
+        "tags": [
+          "investigations"
+        ],
         "parameters": [
           {
             "schema": {
@@ -1485,7 +1726,10 @@
                             "type": "string"
                           }
                         },
-                        "required": ["path", "message"]
+                        "required": [
+                          "path",
+                          "message"
+                        ]
                       }
                     },
                     "attempted": {
@@ -1500,14 +1744,21 @@
                             "type": "string"
                           }
                         },
-                        "required": ["provider", "outcome"]
+                        "required": [
+                          "provider",
+                          "outcome"
+                        ]
                       }
                     },
                     "consequence": {
                       "type": "string"
                     }
                   },
-                  "required": ["type", "title", "status"]
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ]
                 }
               }
             }
@@ -1517,7 +1768,9 @@
     },
     "/api/v1/investigations/{id}/members": {
       "post": {
-        "tags": ["investigations"],
+        "tags": [
+          "investigations"
+        ],
         "parameters": [
           {
             "schema": {
@@ -1540,10 +1793,18 @@
                   },
                   "role": {
                     "type": "string",
-                    "enum": ["viewer", "analyst", "lead", "admin"]
+                    "enum": [
+                      "viewer",
+                      "analyst",
+                      "lead",
+                      "admin"
+                    ]
                   }
                 },
-                "required": ["userId", "role"],
+                "required": [
+                  "userId",
+                  "role"
+                ],
                 "additionalProperties": false
               }
             }
@@ -1592,7 +1853,10 @@
                             "type": "string"
                           }
                         },
-                        "required": ["path", "message"]
+                        "required": [
+                          "path",
+                          "message"
+                        ]
                       }
                     },
                     "attempted": {
@@ -1607,14 +1871,21 @@
                             "type": "string"
                           }
                         },
-                        "required": ["provider", "outcome"]
+                        "required": [
+                          "provider",
+                          "outcome"
+                        ]
                       }
                     },
                     "consequence": {
                       "type": "string"
                     }
                   },
-                  "required": ["type", "title", "status"]
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ]
                 }
               }
             }
@@ -1624,7 +1895,9 @@
     },
     "/api/v1/catalogue/search": {
       "get": {
-        "tags": ["catalogue"],
+        "tags": [
+          "catalogue"
+        ],
         "summary": "Live satellite catalogue search. Queries every configured provider in parallel and returns a normalised, de-duplicated list plus a per-provider status. Nothing is persisted. A provider returning zero results is reported as NO_RESULTS (a real answer about coverage), not as a failure.",
         "parameters": [
           {
@@ -1665,7 +1938,10 @@
           {
             "schema": {
               "type": "string",
-              "enum": ["ASCENDING", "DESCENDING"]
+              "enum": [
+                "ASCENDING",
+                "DESCENDING"
+              ]
             },
             "required": false,
             "name": "orbitDirection",
@@ -1674,7 +1950,12 @@
           {
             "schema": {
               "type": "string",
-              "enum": ["VV", "VH", "HH", "HV"]
+              "enum": [
+                "VV",
+                "VH",
+                "HH",
+                "HV"
+              ]
             },
             "required": false,
             "name": "polarisation",
@@ -1682,7 +1963,10 @@
           },
           {
             "schema": {
-              "type": ["number", "null"],
+              "type": [
+                "number",
+                "null"
+              ],
               "minimum": 0,
               "maximum": 100
             },
@@ -1746,7 +2030,10 @@
                             "type": "number"
                           },
                           "latencyMs": {
-                            "type": ["number", "null"]
+                            "type": [
+                              "number",
+                              "null"
+                            ]
                           },
                           "reason": {
                             "type": "string"
@@ -1755,11 +2042,19 @@
                             "type": "string"
                           }
                         },
-                        "required": ["provider", "status", "count", "latencyMs"]
+                        "required": [
+                          "provider",
+                          "status",
+                          "count",
+                          "latencyMs"
+                        ]
                       }
                     }
                   },
-                  "required": ["items", "providerStatus"]
+                  "required": [
+                    "items",
+                    "providerStatus"
+                  ]
                 }
               }
             }
@@ -1798,7 +2093,10 @@
                             "type": "string"
                           }
                         },
-                        "required": ["path", "message"]
+                        "required": [
+                          "path",
+                          "message"
+                        ]
                       }
                     },
                     "attempted": {
@@ -1813,14 +2111,21 @@
                             "type": "string"
                           }
                         },
-                        "required": ["provider", "outcome"]
+                        "required": [
+                          "provider",
+                          "outcome"
+                        ]
                       }
                     },
                     "consequence": {
                       "type": "string"
                     }
                   },
-                  "required": ["type", "title", "status"]
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ]
                 }
               }
             }
@@ -1859,7 +2164,10 @@
                             "type": "string"
                           }
                         },
-                        "required": ["path", "message"]
+                        "required": [
+                          "path",
+                          "message"
+                        ]
                       }
                     },
                     "attempted": {
@@ -1874,14 +2182,21 @@
                             "type": "string"
                           }
                         },
-                        "required": ["provider", "outcome"]
+                        "required": [
+                          "provider",
+                          "outcome"
+                        ]
                       }
                     },
                     "consequence": {
                       "type": "string"
                     }
                   },
-                  "required": ["type", "title", "status"]
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ]
                 }
               }
             }
@@ -1920,7 +2235,10 @@
                             "type": "string"
                           }
                         },
-                        "required": ["path", "message"]
+                        "required": [
+                          "path",
+                          "message"
+                        ]
                       }
                     },
                     "attempted": {
@@ -1935,14 +2253,21 @@
                             "type": "string"
                           }
                         },
-                        "required": ["provider", "outcome"]
+                        "required": [
+                          "provider",
+                          "outcome"
+                        ]
                       }
                     },
                     "consequence": {
                       "type": "string"
                     }
                   },
-                  "required": ["type", "title", "status"]
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ]
                 }
               }
             }
@@ -1952,7 +2277,9 @@
     },
     "/api/v1/catalogue/providers": {
       "get": {
-        "tags": ["catalogue"],
+        "tags": [
+          "catalogue"
+        ],
         "summary": "Provider health: circuit state, quota consumed, p95 latency, last success.",
         "responses": {
           "200": {
@@ -1967,7 +2294,9 @@
                       "items": {}
                     }
                   },
-                  "required": ["items"]
+                  "required": [
+                    "items"
+                  ]
                 }
               }
             }
@@ -2006,7 +2335,10 @@
                             "type": "string"
                           }
                         },
-                        "required": ["path", "message"]
+                        "required": [
+                          "path",
+                          "message"
+                        ]
                       }
                     },
                     "attempted": {
@@ -2021,14 +2353,783 @@
                             "type": "string"
                           }
                         },
-                        "required": ["provider", "outcome"]
+                        "required": [
+                          "provider",
+                          "outcome"
+                        ]
                       }
                     },
                     "consequence": {
                       "type": "string"
                     }
                   },
-                  "required": ["type", "title", "status"]
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/detections/rejection-categories": {
+      "get": {
+        "tags": [
+          "detections"
+        ],
+        "summary": "The rejection taxonomy a REJECT review must name. A category is usable as a labelled negative for the detector iff it names a sarClass; OPERATIONAL categories describe the workflow rather than the imagery and are deliberately excluded from training.",
+        "responses": {
+          "200": {
+            "description": "Every category, with its kind, training class and description",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "LOOK_ALIKE",
+                              "OPERATIONAL"
+                            ]
+                          },
+                          "sarClass": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "enum": [
+                              "sea_surface",
+                              "oil_spill",
+                              "look_alike",
+                              "ship",
+                              "land"
+                            ]
+                          },
+                          "description": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "id",
+                          "label",
+                          "kind",
+                          "sarClass",
+                          "description"
+                        ]
+                      }
+                    },
+                    "note": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "note"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "RFC 9457 problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "path",
+                          "message"
+                        ]
+                      }
+                    },
+                    "attempted": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "provider",
+                          "outcome"
+                        ]
+                      }
+                    },
+                    "consequence": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/detections/{id}/review": {
+      "post": {
+        "tags": [
+          "detections"
+        ],
+        "summary": "CONFIRM / REJECT / EDIT / REOPEN. The model output is immutable — an EDIT appends a version carrying the pre-edit geometry rather than overwriting it. REJECT requires BOTH a note (so the decision is reviewable) and a rejectionCategory (so it counts across cases and can become a labelled negative).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "CONFIRM",
+                      "REJECT",
+                      "EDIT",
+                      "REOPEN"
+                    ]
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 4000
+                  },
+                  "rejectionCategory": {
+                    "type": "string",
+                    "enum": [
+                      "LOW_WIND",
+                      "BIOGENIC_FILM",
+                      "RAIN_CELL",
+                      "SHIP_WAKE",
+                      "INTERNAL_WAVE",
+                      "SEA_ICE",
+                      "LAND_OR_STRUCTURE",
+                      "SENSOR_ARTEFACT",
+                      "LOOK_ALIKE_UNCLASSIFIED",
+                      "INSUFFICIENT_IMAGE_QUALITY",
+                      "DUPLICATE",
+                      "SUPERSEDED",
+                      "OUT_OF_SCOPE"
+                    ]
+                  },
+                  "geometry": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": [
+                          "Polygon"
+                        ]
+                      },
+                      "coordinates": {
+                        "type": "array",
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "array",
+                            "prefixItems": [
+                              {
+                                "type": "number",
+                                "minimum": -180,
+                                "maximum": 180
+                              },
+                              {
+                                "type": "number",
+                                "minimum": -90,
+                                "maximum": 90
+                              }
+                            ]
+                          },
+                          "minItems": 4
+                        },
+                        "minItems": 1
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "coordinates"
+                    ]
+                  }
+                },
+                "required": [
+                  "action"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Reviewed. `trainingClass` is the SAR class this rejection contributes as a labelled negative, or null when it contributes none.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "detectionId": {
+                      "type": "string"
+                    },
+                    "reviewStatus": {
+                      "type": "string"
+                    },
+                    "version": {
+                      "type": "integer"
+                    },
+                    "areaKm2": {
+                      "type": "number"
+                    },
+                    "geometryChanged": {
+                      "type": "boolean"
+                    },
+                    "rejectionCategory": {
+                      "type": "string",
+                      "enum": [
+                        "LOW_WIND",
+                        "BIOGENIC_FILM",
+                        "RAIN_CELL",
+                        "SHIP_WAKE",
+                        "INTERNAL_WAVE",
+                        "SEA_ICE",
+                        "LAND_OR_STRUCTURE",
+                        "SENSOR_ARTEFACT",
+                        "LOOK_ALIKE_UNCLASSIFIED",
+                        "INSUFFICIENT_IMAGE_QUALITY",
+                        "DUPLICATE",
+                        "SUPERSEDED",
+                        "OUT_OF_SCOPE"
+                      ]
+                    },
+                    "trainingClass": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "enum": [
+                        "sea_surface",
+                        "oil_spill",
+                        "look_alike",
+                        "ship",
+                        "land"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "detectionId",
+                    "reviewStatus",
+                    "version",
+                    "areaKm2",
+                    "geometryChanged"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "RFC 9457 problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "path",
+                          "message"
+                        ]
+                      }
+                    },
+                    "attempted": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "provider",
+                          "outcome"
+                        ]
+                      }
+                    },
+                    "consequence": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "A REJECT without a note or without a category, or an EDIT without a geometry.",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "path",
+                          "message"
+                        ]
+                      }
+                    },
+                    "attempted": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "provider",
+                          "outcome"
+                        ]
+                      }
+                    },
+                    "consequence": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/training-labels": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "The labelled set analyst review has produced, across every investigation. Admin-only because a training set is only a set once it spans cases, and no membership does. Assembled from real review actions; nothing is generated and nothing is trained automatically.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-f\\d]{24}$"
+            },
+            "required": false,
+            "name": "investigationId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000,
+              "default": 2000
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Usable labels, the rejections that are NOT usable with the reason for each, and a summary carrying the per-class shortfall against the working target.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {}
+                    },
+                    "unusable": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "detectionId": {
+                            "type": "string"
+                          },
+                          "reviewStatus": {
+                            "type": "string"
+                          },
+                          "rejectionCategory": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "reason": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "detectionId",
+                          "reviewStatus",
+                          "rejectionCategory",
+                          "reason"
+                        ]
+                      }
+                    },
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "reviewedDetections": {
+                          "type": "integer"
+                        },
+                        "usable": {
+                          "type": "integer"
+                        },
+                        "byClass": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "integer"
+                          }
+                        },
+                        "byCategory": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "type": "integer"
+                          }
+                        },
+                        "unusable": {
+                          "type": "object",
+                          "properties": {
+                            "count": {
+                              "type": "integer"
+                            },
+                            "byReason": {
+                              "type": "object",
+                              "additionalProperties": {
+                                "type": "integer"
+                              }
+                            }
+                          },
+                          "required": [
+                            "count",
+                            "byReason"
+                          ]
+                        },
+                        "shortfall": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "sarClass": {
+                                "type": "string"
+                              },
+                              "held": {
+                                "type": "integer"
+                              },
+                              "needed": {
+                                "type": "integer"
+                              }
+                            },
+                            "required": [
+                              "sarClass",
+                              "held",
+                              "needed"
+                            ]
+                          }
+                        },
+                        "readyToRetrain": {
+                          "type": "boolean"
+                        },
+                        "assessment": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "reviewedDetections",
+                        "usable",
+                        "byClass",
+                        "byCategory",
+                        "unusable",
+                        "shortfall",
+                        "readyToRetrain",
+                        "assessment"
+                      ]
+                    },
+                    "note": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "items",
+                    "unusable",
+                    "summary",
+                    "note"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "RFC 9457 problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "path",
+                          "message"
+                        ]
+                      }
+                    },
+                    "attempted": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "provider",
+                          "outcome"
+                        ]
+                      }
+                    },
+                    "consequence": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "RFC 9457 problem+json",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "path",
+                          "message"
+                        ]
+                      }
+                    },
+                    "attempted": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "provider": {
+                            "type": "string"
+                          },
+                          "outcome": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "provider",
+                          "outcome"
+                        ]
+                      }
+                    },
+                    "consequence": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ]
                 }
               }
             }
@@ -2038,7 +3139,9 @@
     },
     "/api/v1/jobs": {
       "get": {
-        "tags": ["jobs"],
+        "tags": [
+          "jobs"
+        ],
         "responses": {
           "200": {
             "description": "Jobs",
@@ -2082,7 +3185,10 @@
                             "type": "string"
                           }
                         },
-                        "required": ["path", "message"]
+                        "required": [
+                          "path",
+                          "message"
+                        ]
                       }
                     },
                     "attempted": {
@@ -2097,14 +3203,21 @@
                             "type": "string"
                           }
                         },
-                        "required": ["provider", "outcome"]
+                        "required": [
+                          "provider",
+                          "outcome"
+                        ]
                       }
                     },
                     "consequence": {
                       "type": "string"
                     }
                   },
-                  "required": ["type", "title", "status"]
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ]
                 }
               }
             }
@@ -2114,7 +3227,9 @@
     },
     "/api/v1/jobs/{id}/cancel": {
       "post": {
-        "tags": ["jobs"],
+        "tags": [
+          "jobs"
+        ],
         "parameters": [
           {
             "schema": {
@@ -2168,7 +3283,10 @@
                             "type": "string"
                           }
                         },
-                        "required": ["path", "message"]
+                        "required": [
+                          "path",
+                          "message"
+                        ]
                       }
                     },
                     "attempted": {
@@ -2183,14 +3301,21 @@
                             "type": "string"
                           }
                         },
-                        "required": ["provider", "outcome"]
+                        "required": [
+                          "provider",
+                          "outcome"
+                        ]
                       }
                     },
                     "consequence": {
                       "type": "string"
                     }
                   },
-                  "required": ["type", "title", "status"]
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ]
                 }
               }
             }
@@ -2200,7 +3325,9 @@
     },
     "/api/v1/jobs/{id}/retry": {
       "post": {
-        "tags": ["jobs"],
+        "tags": [
+          "jobs"
+        ],
         "parameters": [
           {
             "schema": {
@@ -2254,7 +3381,10 @@
                             "type": "string"
                           }
                         },
-                        "required": ["path", "message"]
+                        "required": [
+                          "path",
+                          "message"
+                        ]
                       }
                     },
                     "attempted": {
@@ -2269,14 +3399,21 @@
                             "type": "string"
                           }
                         },
-                        "required": ["provider", "outcome"]
+                        "required": [
+                          "provider",
+                          "outcome"
+                        ]
                       }
                     },
                     "consequence": {
                       "type": "string"
                     }
                   },
-                  "required": ["type", "title", "status"]
+                  "required": [
+                    "type",
+                    "title",
+                    "status"
+                  ]
                 }
               }
             }

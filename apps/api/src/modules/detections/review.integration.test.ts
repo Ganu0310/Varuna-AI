@@ -179,11 +179,79 @@ describe('detection review (real MongoDB)', () => {
     // The detection is untouched by the refused attempt.
     expect((await agent.get(`/api/v1/detections/${id}`)).body.reviewStatus).toBe('UNREVIEWED');
 
-    const withReason = await agent
-      .post(`/api/v1/detections/${id}/review`)
-      .send({ action: 'REJECT', note: 'Wind shadow behind the headland, not oil.' });
+    const withReason = await agent.post(`/api/v1/detections/${id}/review`).send({
+      action: 'REJECT',
+      note: 'Wind shadow behind the headland, not oil.',
+      rejectionCategory: 'LOW_WIND',
+    });
     expect(withReason.status).toBe(200);
     expect(withReason.body.reviewStatus).toBe('REJECTED');
+  });
+
+  it('REJECT also requires a CATEGORY — prose alone does not aggregate', async () => {
+    const id = await seedDetection(investigationId);
+
+    const proseOnly = await agent
+      .post(`/api/v1/detections/${id}/review`)
+      .send({ action: 'REJECT', note: 'Wind shadow behind the headland, not oil.' });
+    expect(proseOnly.status).toBe(422);
+    expect(proseOnly.body.detail).toMatch(/labelled negative/);
+    // Named in the problem detail so a client can act on it without reading the docs.
+    expect(proseOnly.body.detail).toMatch(/LOW_WIND/);
+
+    expect((await agent.get(`/api/v1/detections/${id}`)).body.reviewStatus).toBe('UNREVIEWED');
+
+    // An id outside the taxonomy is refused by the schema, not silently stored.
+    const invented = await agent.post(`/api/v1/detections/${id}/review`).send({
+      action: 'REJECT',
+      note: 'Not oil.',
+      rejectionCategory: 'VIBES',
+    });
+    expect(invented.status).toBe(400);
+  });
+
+  it('a look-alike rejection yields a labelled negative; an operational one does not', async () => {
+    const lookAlike = await seedDetection(investigationId);
+    const physical = await agent.post(`/api/v1/detections/${lookAlike}/review`).send({
+      action: 'REJECT',
+      note: 'Banded signature repeating across the scene.',
+      rejectionCategory: 'INTERNAL_WAVE',
+    });
+    expect(physical.status).toBe(200);
+    expect(physical.body.rejectionCategory).toBe('INTERNAL_WAVE');
+    expect(physical.body.trainingClass).toBe('look_alike');
+
+    // THE POINT: an operational rejection is recorded but contributes no training label,
+    // because it is a statement about the workflow and not about the imagery.
+    const duplicate = await seedDetection(investigationId);
+    const workflow = await agent.post(`/api/v1/detections/${duplicate}/review`).send({
+      action: 'REJECT',
+      note: 'Same feature as the detection above.',
+      rejectionCategory: 'DUPLICATE',
+    });
+    expect(workflow.status).toBe(200);
+    expect(workflow.body.rejectionCategory).toBe('DUPLICATE');
+    expect(workflow.body.trainingClass).toBeNull();
+
+    // And the category survives into the version history, which is what makes it auditable.
+    const versions = (await agent.get(`/api/v1/detections/${lookAlike}/versions`)).body.items;
+    expect(versions[1]).toMatchObject({ action: 'REJECT', rejectionCategory: 'INTERNAL_WAVE' });
+  });
+
+  it('serves the taxonomy it validates against, so the two cannot disagree', async () => {
+    const res = await agent.get('/api/v1/detections/rejection-categories');
+    expect(res.status).toBe(200);
+
+    const items = res.body.items as Array<{ id: string; kind: string; sarClass: string | null }>;
+    expect(items.length).toBeGreaterThan(0);
+    expect(items.map((c) => c.id)).toContain('LOW_WIND');
+
+    // The rule the whole export rests on: usable as a negative iff it names a class, and
+    // no OPERATIONAL category ever names one.
+    for (const c of items) {
+      if (c.kind === 'OPERATIONAL') expect(c.sarClass).toBeNull();
+    }
+    expect(items.some((c) => c.kind === 'LOOK_ALIKE' && c.sarClass !== null)).toBe(true);
   });
 
   it('EDIT creates a NEW VERSION and the model output remains retrievable', async () => {
@@ -229,9 +297,11 @@ describe('detection review (real MongoDB)', () => {
     await agent
       .post(`/api/v1/detections/${id}/review`)
       .send({ action: 'EDIT', geometry: CORRECTED_GEOMETRY });
-    await agent
-      .post(`/api/v1/detections/${id}/review`)
-      .send({ action: 'REJECT', note: 'Superseded by a better acquisition.' });
+    await agent.post(`/api/v1/detections/${id}/review`).send({
+      action: 'REJECT',
+      note: 'Superseded by a better acquisition.',
+      rejectionCategory: 'SUPERSEDED',
+    });
 
     const versions = (await agent.get(`/api/v1/detections/${id}/versions`)).body.items;
     expect(versions.map((v: { action: string }) => v.action)).toEqual([

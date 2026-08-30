@@ -335,7 +335,7 @@ human-confirmed one must never look the same in a screenshot that might end up i
 
 **The governing rule: the model's output is immutable.**
 
-- `REJECT` **requires a note** (`422` without one).
+- `REJECT` **requires a note** (`422` without one) **and a category** (`422` without one).
 - `EDIT` **requires a corrected polygon**, and recomputes `areaKm2` geodesically from what you
   actually drew — not the model's old figure.
 - An edit does **not** overwrite anything. It appends a `reviewHistory` entry that captures
@@ -346,7 +346,67 @@ human-confirmed one must never look the same in a screenshot that might end up i
 own output**, then one version per review action, each with its actor, timestamp, note and
 the geometry as it stood. The **Version history** panel renders it.
 
-### 7.4 Geometry endpoint
+### 7.4 Why a rejection is rejected — the taxonomy
+
+A note explains one decision to one reader. It cannot be counted, and it cannot be trained
+on. So a `REJECT` also names a **category**, served from
+`GET /detections/rejection-categories` — the same list the API validates against, so the
+dropdown and the validator cannot drift apart.
+
+Categories divide into two **kinds**, and the split is the whole point:
+
+| Kind | Meaning | Examples |
+|---|---|---|
+| `LOOK_ALIKE` | A statement about the **imagery** — the analyst judged these pixels are not oil. | Low-wind zone, biogenic film, rain cell, ship wake, internal wave, sea ice, dark land, sensor artefact |
+| `OPERATIONAL` | A statement about the **workflow** — it says nothing about what the detector saw. | Duplicate, superseded, out of scope, image quality too poor to judge |
+
+Each category also carries a `sarClass`, and **that field alone decides whether the
+rejection becomes a labelled negative**: usable iff `sarClass` is non-null.
+
+- *Low-wind zone* → `sea_surface`. It really is open water; it just looked dark.
+- *Dark land the coastline mask missed* → `land`. Each one is a **hole in the mask**, which
+  is a different fix from a retrain.
+- *Sensor artefact* → `null`. Genuinely not oil, and genuinely not a valid sample of any
+  physical class either. Recorded; never trained on.
+- Every `OPERATIONAL` category → `null`. Rejecting a real slick as a duplicate must never
+  teach the detector that a slick is not a slick.
+
+The review response tells the analyst which of the two they just did, in the moment:
+`trainingClass` is the class the rejection contributed, or `null` when it contributed none.
+
+**Why this exists.** The detector's measured failure (§7.1) is 68% false positives on
+look-alike scenes, with its own warning channel averaging 0.26 on exactly those scenes — it
+is not merely wrong, it is *unwarned*. No threshold fixes that. Labelled negatives of each
+physical class do, and every rejection an analyst makes is one that was previously thrown
+away the moment it was recorded. The imagery is free; the labelling is the expensive part,
+and this system now produces it as a by-product of ordinary review.
+
+`GET /admin/training-labels` assembles what has accumulated — **admin-only**, because a
+training set is only a set once it spans cases and no membership does, and audited for the
+same reason. It returns:
+
+- **`items`** — the usable labels. A `CONFIRMED` or `EDITED` detection is a positive
+  `oil_spill`; a categorised look-alike rejection is a negative of its class. Each carries
+  the scene's `productId` so the pixels can be fetched again, the detector's SHA, the
+  look-alike risk it assigned, and `geometrySource` (`MODEL` or `ANALYST` — training a
+  segmenter on a human-corrected mask while calling it the detector's own output would
+  corrupt the very comparison a retrain exists to win).
+- **`unusable`** — every rejection that is *not* a label, **with the reason for each**.
+  Reported rather than dropped: a set that quietly shed 40% of its input would misrepresent
+  how much review work had been done. Rejections recorded before this taxonomy existed
+  appear here as uncategorised, and are **not** back-filled with a guess.
+- **`summary`** — counts by class and category, and the **per-class shortfall** against a
+  25-sample working target. That target is a judgement call (the held-out split carries 22
+  scenes per class), is labelled as one, and `readyToRetrain` additionally requires at least
+  two classes — a model trained on negatives alone would learn to find nothing, and would
+  score beautifully on the look-alike half of the split doing it.
+
+Nothing here trains anything. A retrained model still has to beat the shipped detector on
+the held-out split before it ships, exactly as the U-Net had to and did not.
+
+---
+
+### 7.5 Geometry endpoint
 
 `GET /detections/:id/geometry?simplify=z12` returns the outline simplified to roughly one
 screen pixel at that zoom, with an `ETag` and `Cache-Control: private, max-age=60`.
@@ -1020,7 +1080,8 @@ OpenAPI 3.1 is generated from the Zod schemas and served at `/api/v1/openapi.jso
 | `GET` | `/investigations/:id/scenes/:sceneId/tiles` | viewer | TiTiler raster **and** Terrain-RGB templates. |
 | `GET` | `/investigations/:id/detections` | viewer | Detections for the investigation. |
 | `GET` | `/detections/:id` · `/geometry` · `/versions` · `/tiles` | viewer | Detail, zoom-simplified outline, version history, raster. |
-| `POST` | `/detections/:id/review` | analyst | `CONFIRM` / `REJECT` / `EDIT` / `REOPEN`. |
+| `POST` | `/detections/:id/review` | analyst | `CONFIRM` / `REJECT` / `EDIT` / `REOPEN`. `REJECT` needs a note **and** a category. |
+| `GET` | `/detections/rejection-categories` | viewer | The rejection taxonomy the validator uses. |
 | `GET` | `/investigations/:id/ais/coverage` | viewer | **The honesty endpoint.** |
 | `GET` | `/investigations/:id/ais/tracks` | viewer | Tracks, `times[]`, dark periods, query plan. |
 | `GET` | `/investigations/:id/ais/vessels` | viewer | Persisted vessel tracks. |
@@ -1040,6 +1101,7 @@ OpenAPI 3.1 is generated from the Zod schemas and served at `/api/v1/openapi.jso
 | `GET` | `/jobs` · `/jobs/:id` | viewer | Job list and detail. |
 | `POST` | `/jobs/:id/cancel` · `/jobs/:id/retry` | analyst | Job control. |
 | `GET` | `/admin/users` · `/admin/providers` · `/admin/quotas` · `/admin/audit` | admin | Administration. |
+| `GET` | `/admin/training-labels` | admin | The labelled set review has produced, with its shortfall. |
 | `POST` | `/admin/users/:id/role` | admin | Change a global role. |
 
 **ML service** (internal only, never publicly exposed, `X-Service-Token` guarded):

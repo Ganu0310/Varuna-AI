@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { GeoPoint, GeoPolygon, GeoMultiPolygon } from './geojson.js';
 import { Provenance } from './provenance.js';
+import { REJECTION_CATEGORY_IDS } from '../constants.js';
 
 /** 02_TRD §2.4.3, 07_AIML §7.2.10 / §7.2.11. */
 
@@ -47,6 +48,13 @@ export const ReviewEntry = z.object({
   action: z.enum(['CONFIRM', 'REJECT', 'EDIT', 'REOPEN']),
   at: z.string().datetime(),
   note: z.string().optional(),
+  /**
+   * Present on REJECT only, and required there. Optional in the contract because
+   * rejections recorded before the taxonomy existed carry none, and a record that
+   * predates a rule is not a violation of it — it is reported as UNCATEGORISED rather
+   * than back-filled with a guess (see REJECTION_CATEGORIES).
+   */
+  rejectionCategory: z.enum(REJECTION_CATEGORY_IDS).optional(),
   geometryBefore: z.union([GeoPolygon, GeoMultiPolygon]).optional(),
 });
 

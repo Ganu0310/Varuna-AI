@@ -10,3 +10,10 @@ services/ml
 # Captured provider responses — verbatim, never reformatted (13_REAL_DATA_POLICY §13.7).
 # Their recorded sha256 must keep matching the bytes on disk.
 **/__fixtures__/real/
+
+# Generated, and compared BYTE FOR BYTE by scripts/check-openapi.mjs. Prettier collapses
+# short arrays onto one line, which JSON.stringify never does, so a prettier pass over these
+# guarantees the drift gate can never pass again -- it had in fact been failing for exactly
+# this reason. The generator is the only thing that may write them.
+doc/openapi.json
+doc/openapi-coverage.json
