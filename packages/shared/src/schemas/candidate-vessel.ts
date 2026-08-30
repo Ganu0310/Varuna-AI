@@ -35,6 +35,24 @@ export const CandidateVessel = z.object({
   score: z.number().min(0).max(100),
   /** bootstrap 90% interval. */
   scoreCI: z.tuple([z.number(), z.number()]),
+  /** P(this vessel ranks first) across paired resamples; null when not computed. */
+  topRankShare: z.number().min(0).max(1).nullable().default(null),
+  /**
+   * Whether the TOP of the ranking survives redrawing the uncertain inputs. Carried on the
+   * rank-1 candidate only: it describes the order, not the vessel.
+   */
+  separation: z
+    .object({
+      runnerUpMmsi: z.number().int(),
+      winShare: z.number().min(0).max(1),
+      meanMargin: z.number(),
+      distinguishable: z.boolean(),
+      iterations: z.number().int().nonnegative(),
+      consideredCount: z.number().int().nonnegative(),
+      verdict: z.string(),
+    })
+    .nullable()
+    .default(null),
   tier: z.enum(TIERS),
   rank: z.number().int().positive(),
   features: z.array(FeatureContribution),

@@ -28,6 +28,16 @@ interface Candidate {
   excluded: { reason: string; at: string } | null;
 }
 
+interface Separation {
+  runnerUpMmsi: number;
+  winShare: number;
+  meanMargin: number;
+  distinguishable: boolean;
+  iterations: number;
+  consideredCount: number;
+  verdict: string;
+}
+
 interface Response {
   items: Candidate[];
   summary: {
@@ -35,6 +45,8 @@ interface Response {
     insufficientEvidence: number;
     excluded: number;
     topTier: string | null;
+    /** Null when it was not computed — after a reweight, or with a single candidate. */
+    separation: Separation | null;
   };
   disclaimer: string;
 }
@@ -87,6 +99,37 @@ export function CandidateRanking({ investigationId }: { investigationId: string 
         <p className="field-hint">
           Scores are UNCALIBRATED weighted evidence, not probabilities: too few validated incidents
           exist to fit a calibration. A score of 70 does not mean a 70% chance.
+        </p>
+      ) : null}
+
+      {/*
+       * Above the table, deliberately. A list sorted by score invites the reader to act on
+       * its top row, so whether that row is actually ahead of the second belongs BEFORE the
+       * order, not in a column inside it.
+       */}
+      {summary?.separation ? (
+        <div
+          className={summary.separation.distinguishable ? 'panel-note' : 'panel-error'}
+          role={summary.separation.distinguishable ? undefined : 'alert'}
+        >
+          <strong>
+            {summary.separation.distinguishable
+              ? 'The top of this ranking is stable'
+              : 'The top two candidates are not separable'}
+          </strong>
+          <p>{summary.separation.verdict}</p>
+          <p className="muted mono">
+            {Math.round(summary.separation.winShare * 100)}% of {summary.separation.iterations}{' '}
+            paired draws · mean margin {summary.separation.meanMargin} points ·{' '}
+            {summary.separation.consideredCount} candidates resampled
+          </p>
+        </div>
+      ) : items.length > 1 ? (
+        // Not measured is not the same as clean, and must not read as clean.
+        <p className="field-hint">
+          Whether the top two candidates are separable has not been measured for this ranking. That
+          is the case after re-ranking under custom weights, which clears the figure rather than
+          carrying over one measured for a different order. Re-run correlation to restore it.
         </p>
       ) : null}
 

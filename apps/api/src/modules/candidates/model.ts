@@ -39,6 +39,32 @@ const CandidateVesselSchema = new Schema(
      * quieter version of the incoherence it fixes.
      */
     scoreCiBoundaryEffect: { type: String, default: null },
+    /**
+     * P(this vessel ranks first) across paired resamples of the whole field. Null beyond the
+     * front of the field, and null after a reweight -- see `separation`.
+     */
+    topRankShare: { type: Number, default: null },
+    /**
+     * Stored on the RANK-1 candidate only, because it is a property of the ranking rather
+     * than of any one vessel: whether the top of the order survives redrawing the uncertain
+     * inputs. Null means it was not computed, which is not the same as "not separable" and
+     * is rendered differently.
+     */
+    separation: {
+      type: new Schema(
+        {
+          runnerUpMmsi: { type: Number, required: true },
+          winShare: { type: Number, required: true },
+          meanMargin: { type: Number, required: true },
+          distinguishable: { type: Boolean, required: true },
+          iterations: { type: Number, required: true },
+          consideredCount: { type: Number, required: true },
+          verdict: { type: String, required: true },
+        },
+        { _id: false },
+      ),
+      default: null,
+    },
     tier: { type: String, enum: TIERS, required: true },
     rank: { type: Number, required: true },
     features: { type: [FeatureContributionSchema], required: true },

@@ -63,7 +63,7 @@ function positionalErrorDeg(seconds: number): number {
   return metres / 111_320; // degrees, near enough at these latitudes
 }
 
-function mulberry32(seed: number): () => number {
+export function mulberry32(seed: number): () => number {
   let a = seed >>> 0;
   return () => {
     a = (a + 0x6d2b79f5) >>> 0;
@@ -73,11 +73,73 @@ function mulberry32(seed: number): () => number {
   };
 }
 
-function gaussian(rand: () => number): number {
+export function gaussian(rand: () => number): number {
   // Box-Muller
   const u = Math.max(rand(), 1e-12);
   const v = rand();
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+/**
+ * Which of a candidate's fixes may be moved, decided once and reused across every draw.
+ *
+ * Extracted so that `bootstrapCi` (one candidate, marginal interval) and `rankSeparation`
+ * (the whole field, paired draws) classify fixes by exactly the same rule. Two functions
+ * deciding separately what counts as an observation is precisely the divergence that would
+ * let one of them jitter a real one.
+ */
+export interface PerturbationPlan {
+  perturbable: boolean[];
+  medianIntervalSec: number;
+  perturbableCount: number;
+  realCount: number;
+}
+
+export function perturbationPlan(candidate: CandidateInput): PerturbationPlan {
+  const intervals: number[] = [];
+  for (let i = 1; i < candidate.fixes.length; i++) {
+    intervals.push(
+      (Date.parse(candidate.fixes[i]!.t) - Date.parse(candidate.fixes[i - 1]!.t)) / 1000,
+    );
+  }
+  intervals.sort((a, b) => a - b);
+  const medianIntervalSec = intervals.length ? intervals[Math.floor(intervals.length / 2)]! : 60;
+
+  const perturbable = candidate.fixes.map((f, i) =>
+    isInterpolated(f, i > 0 ? candidate.fixes[i - 1]!.t : null, medianIntervalSec),
+  );
+  const perturbableCount = perturbable.filter(Boolean).length;
+
+  return {
+    perturbable,
+    medianIntervalSec,
+    perturbableCount,
+    realCount: candidate.fixes.length - perturbableCount,
+  };
+}
+
+/** One draw of a candidate's positions. Real fixes are returned untouched, by identity. */
+export function perturbFixes(
+  candidate: CandidateInput,
+  plan: PerturbationPlan,
+  rand: () => number,
+): CandidateInput['fixes'] {
+  return candidate.fixes.map((f, i) => {
+    if (!plan.perturbable[i]) return f; // a real observation is never moved
+    const gapSec =
+      i > 0
+        ? (Date.parse(f.t) - Date.parse(candidate.fixes[i - 1]!.t)) / 1000
+        : plan.medianIntervalSec;
+    const sigma = positionalErrorDeg(gapSec);
+    return { ...f, lon: f.lon + gaussian(rand) * sigma, lat: f.lat + gaussian(rand) * sigma };
+  });
+}
+
+/** A LineString through a drawn set of fixes, or null when there are too few to make one. */
+export function trackLineFrom(fixes: CandidateInput['fixes']) {
+  return fixes.length >= 2
+    ? { type: 'LineString' as const, coordinates: fixes.map((f) => [f.lon, f.lat]) }
+    : null;
 }
 
 export function bootstrapCi(
@@ -89,42 +151,14 @@ export function bootstrapCi(
   const rand = mulberry32(seed);
 
   // Classify each fix once: real observations are immutable, interpolated ones may be jittered.
-  const intervals: number[] = [];
-  for (let i = 1; i < candidate.fixes.length; i++) {
-    intervals.push(
-      (Date.parse(candidate.fixes[i]!.t) - Date.parse(candidate.fixes[i - 1]!.t)) / 1000,
-    );
-  }
-  intervals.sort((a, b) => a - b);
-  const medianIntervalSec = intervals.length ? intervals[Math.floor(intervals.length / 2)]! : 60;
-
-  const perturbable: boolean[] = candidate.fixes.map((f, i) =>
-    isInterpolated(f, i > 0 ? candidate.fixes[i - 1]!.t : null, medianIntervalSec),
-  );
-  const perturbableCount = perturbable.filter(Boolean).length;
-  const realCount = candidate.fixes.length - perturbableCount;
+  const { perturbableCount, realCount, ...plan } = perturbationPlan(candidate);
+  const fullPlan = { ...plan, perturbableCount, realCount };
 
   const scores: number[] = [];
 
   for (let iter = 0; iter < iterations; iter++) {
-    const fixes = candidate.fixes.map((f, i) => {
-      if (!perturbable[i]) return f; // a real observation is never moved
-      const gapSec =
-        i > 0
-          ? (Date.parse(f.t) - Date.parse(candidate.fixes[i - 1]!.t)) / 1000
-          : medianIntervalSec;
-      const sigma = positionalErrorDeg(gapSec);
-      return {
-        ...f,
-        lon: f.lon + gaussian(rand) * sigma,
-        lat: f.lat + gaussian(rand) * sigma,
-      };
-    });
-
-    const trackLine =
-      fixes.length >= 2
-        ? { type: 'LineString' as const, coordinates: fixes.map((f) => [f.lon, f.lat]) }
-        : null;
+    const fixes = perturbFixes(candidate, fullPlan, rand);
+    const trackLine = trackLineFrom(fixes);
 
     // Resample the drift ensemble by jittering the origin zone's extent: a different draw
     // of particles yields a slightly different support polygon.
@@ -178,7 +212,7 @@ export function bootstrapCi(
   };
 }
 
-function scaleAboutCentroid(
+export function scaleAboutCentroid(
   polygon: { type: 'Polygon'; coordinates: number[][][] },
   factor: number,
 ): { type: 'Polygon'; coordinates: number[][][] } {

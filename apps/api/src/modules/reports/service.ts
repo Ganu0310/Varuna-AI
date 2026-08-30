@@ -193,6 +193,37 @@ function buildUncertainty(
     text: detectorLimitationText(),
   });
 
+  /*
+   * The most decision-relevant sentence in the dossier, when it applies.
+   *
+   * A reader who acts on a ranking acts on its top row. If redrawing the uncertain inputs
+   * reorders the top two, that is a limitation of the analysis, not a detail -- and it has
+   * to appear in the section a reader turns to for exactly this.
+   */
+  const sep = (candidates.find((c) => c.rank === 1) ?? candidates[0])?.separation as
+    | { winShare: number; meanMargin: number; distinguishable: boolean; verdict: string }
+    | null
+    | undefined;
+
+  if (sep && !sep.distinguishable) {
+    s.push({ topic: 'Rank separation', severity: 'LIMITATION', text: sep.verdict });
+  } else if (sep && sep.meanMargin < 2) {
+    s.push({ topic: 'Rank separation', severity: 'CAVEAT', text: sep.verdict });
+  } else if (!sep && candidates.length > 1) {
+    // Absence of the measurement is itself worth stating: a reader must not read a missing
+    // separation figure as a clean one.
+    s.push({
+      topic: 'Rank separation',
+      severity: 'CAVEAT',
+      text:
+        'Whether the top two candidates are separable was not measured for this ranking. ' +
+        'That is the case after re-ranking under custom weights, which clears the figure ' +
+        'rather than carrying forward one measured for a different ordering. Re-run ' +
+        'correlation to restore it. Until then, treat the gap between the first and second ' +
+        'candidate as unquantified.',
+    });
+  }
+
   const atBoundary = candidates.filter((c) => c.scoreCiBoundaryEffect);
   if (atBoundary.length > 0) {
     s.push({

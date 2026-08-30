@@ -18,6 +18,7 @@ import {
   type ScoringContext,
 } from '../attribution/features.js';
 import { bootstrapCi, calibrationState } from '../attribution/bootstrap.js';
+import { rankSeparation, type RankSeparation } from '../attribution/separation.js';
 import { CandidateVesselModel } from './model.js';
 
 /**
@@ -54,6 +55,8 @@ export interface CorrelateResult {
   sourcesQueried?: Array<{ source: string; recordCount: number; bboxCovered: boolean }>;
   message?: string;
   calibration: ReturnType<typeof calibrationState>;
+  /** Whether the top of the ranking survives redrawing the uncertain inputs. */
+  separation: RankSeparation;
 }
 
 /** Envelope radius: 15 km around a real drift support, 40 km when the origin is degraded. */
@@ -95,6 +98,18 @@ export async function correlate(input: CorrelateInput): Promise<CorrelateResult>
       candidateIds: [],
       candidateCount: 0,
       insufficientCount: 0,
+      // There is no ranking, so there is nothing to separate. Stated in the same shape as a
+      // real result so a client never has to branch on the field being absent.
+      separation: {
+        iterations: 0,
+        consideredCount: 0,
+        topRankShare: [],
+        leader: null,
+        verdict:
+          'No ranking was produced, so no separation between candidates can be measured. ' +
+          'This reflects an absence of AIS observation, not an absence of vessels.',
+        note: 'No paired resampling was run.',
+      },
       sourcesQueried: [{ source: 'LOCAL_ARCHIVE', recordCount: 0, bboxCovered: false }],
       message:
         'No AIS positions exist for this area and time window, so no vessel could be ' +
@@ -131,6 +146,20 @@ export async function correlate(input: CorrelateInput): Promise<CorrelateResult>
   const ranked = rankCandidates(candidates, ctx);
   const calibration = calibrationState(0);
 
+  /*
+   * Is the top of this ranking real, or did the estimates just land that way?
+   *
+   * Run once over the whole field rather than per candidate, because it is the one question
+   * a per-candidate interval cannot answer: the origin zone is a single shared input, so its
+   * uncertainty has to be drawn once and applied to everyone at the same time.
+   */
+  const separation = rankSeparation(
+    ranked.map((r) => candidates.find((c) => c.mmsi === r.mmsi)!),
+    ctx,
+    300,
+  );
+  const shareByMmsi = new Map(separation.topRankShare.map((t) => [t.mmsi, t.share]));
+
   await progress(85, 'PERSISTING', 'Recording candidates');
 
   // Replace any previous ranking for this detection: a re-run supersedes rather than
@@ -159,6 +188,19 @@ export async function correlate(input: CorrelateInput): Promise<CorrelateResult>
       score: r.score,
       scoreCI: ci ? ci.ci : [r.score, r.score],
       scoreCiBoundaryEffect: ci?.boundaryEffect ?? null,
+      // Zero draws is a measured zero -- this vessel never came first. Only a candidate
+      // outside the resampled field has no answer at all, and that is null.
+      topRankShare: i < separation.consideredCount ? (shareByMmsi.get(r.mmsi) ?? 0) : null,
+      // Carried on rank 1 alone: it describes the ORDER, not this vessel.
+      separation:
+        i === 0 && separation.leader
+          ? {
+              ...separation.leader,
+              iterations: separation.iterations,
+              consideredCount: separation.consideredCount,
+              verdict: separation.verdict,
+            }
+          : null,
       tier: r.tier,
       rank: i + 1,
       features: r.features.map((f) => ({
@@ -195,6 +237,7 @@ export async function correlate(input: CorrelateInput): Promise<CorrelateResult>
     candidateIds,
     candidateCount: ranked.length,
     insufficientCount: ranked.filter((r) => r.tier === 'INSUFFICIENT_EVIDENCE').length,
+    separation,
     sourcesQueried: [{ source: cov.source, recordCount: cov.recordCount, bboxCovered: true }],
     calibration,
   };
@@ -263,6 +306,20 @@ export async function reweight(
     doc.rank = i + 1;
     doc.features = features as never;
     doc.weightProfileId = profileId;
+    /*
+     * Separation is CLEARED, not recarried and not recomputed.
+     *
+     * Not recarried: it was measured for a different ordering, and a verdict saying "the top
+     * two are clearly separated" sitting above a top two the analyst has just rearranged
+     * would be the most misleading thing on the screen.
+     *
+     * Not recomputed: reweighting deliberately re-scores from the stored feature
+     * contributions and never touches the tracks or the origin zone -- that is what makes it
+     * fast enough to feel like a slider. The inputs a paired resample needs are not here.
+     * Re-running correlation restores it.
+     */
+    doc.topRankShare = null;
+    doc.separation = null;
     await doc.save();
   }
 
@@ -281,7 +338,9 @@ export async function reweight(
     note:
       'Re-ranked under a non-default weight profile. The profile is recorded on every ' +
       'candidate and appears in the report, because a ranking depends on the priors used ' +
-      'to produce it.',
+      'to produce it. Rank-separation figures are cleared rather than carried over: they ' +
+      'were measured for the previous ordering, and re-running correlation is what restores ' +
+      'them.',
   };
 }
 

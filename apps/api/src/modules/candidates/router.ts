@@ -43,6 +43,16 @@ candidatesRouter.get(
           // can see that a decision was made rather than that a vessel never existed.
           excluded,
           topTier: items[0]?.tier ?? null,
+          /*
+           * Whether the top of this ranking survived redrawing the uncertain inputs.
+           *
+           * Surfaced in the SUMMARY rather than left on the rank-1 row, because it is the
+           * one thing a reader should see before the table itself: a list sorted by score
+           * invites acting on its order, and this says whether that order is real. Null
+           * means it was not computed -- after a reweight, or with a single candidate --
+           * which is not the same as "not separable" and must render differently.
+           */
+          separation: items[0]?.separation ?? null,
         },
         // Restated on every response: this is a ranking of leads, not a finding of guilt.
         disclaimer:

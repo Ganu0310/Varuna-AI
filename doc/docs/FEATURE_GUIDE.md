@@ -726,7 +726,63 @@ estimate. The interval is widened to include the point estimate, the raw percent
 is kept as `percentileCi`, and `scoreCiBoundaryEffect` records the explanation — which the
 dossier's Uncertainty section then surfaces.
 
-### 10.6 Reading the evidence
+### 10.6 Is the top candidate actually ahead of the second?
+
+A ranked list invites a reader to act on its top row. Until now nothing said whether that
+row was really first, or whether the estimates simply landed that way.
+
+The per-candidate intervals in §10.5 cannot answer it, for a reason worth stating: they are
+drawn **independently**, each candidate with its own seed and its own origin-zone jitter.
+That is right for a marginal interval on one vessel. But there is only ONE origin zone, and
+its uncertainty is common-mode — when the release zone is drawn further north it moves north
+for every vessel at once. Comparing two independently-drawn intervals treats one shared
+cause as two separate accidents.
+
+So separation is measured with a **paired** resample of the whole field:
+
+| | |
+|---|---|
+| Drawn **once per iteration, shared** | The origin zone. There is one release zone; its uncertainty moves every vessel together. |
+| Drawn **per vessel, independent** | Interpolated positions. A reporting gap on one ship says nothing about the gap on another. |
+| Never drawn | Real AIS fixes. Same hard rule as everywhere else. |
+
+Each iteration scores every candidate against the same drawn zone and records the resulting
+**order**. Out of 300 draws over the ten highest-scoring candidates come three numbers:
+
+- **`winShare`** — how often the leader outscores the runner-up *in the same draw*. The
+  decision-relevant one.
+- **`meanMargin`** — the mean score gap. A 97% win share on a 0.4-point margin is stable and
+  still thin, and is reported as exactly that.
+- **`topRankShare`** — per candidate, how often it came first at all.
+
+A leader is called **distinguishable** at a win share of **0.9**. That is a convention, not
+a measurement — the same status as the twelve weights — set to match the one-sided reading
+of the 5th/95th interval already used for scores, so a reader is not holding two different
+notions of "confident" while reading one dossier.
+
+The verdict appears **above** the ranking table, not as a column inside it, because it is
+what a reader needs before the order rather than after it. Three outcomes:
+
+| Outcome | What it says |
+|---|---|
+| Not separable | *"The order of the top two is an artefact of where the estimates happened to land… Both belong in any follow-up, or neither does."* |
+| Stable but thin | The order holds, the gap does not. Called out separately because it reads as decisive and is not. |
+| Stable | The order is reproducible under the uncertainty — **a statement about the ORDER, not about responsibility.** |
+
+**A reweight clears it.** Re-ranking under custom weights (§10.8) sets the figure to null
+rather than carrying forward one measured for a different ordering — a verdict saying "the
+top two are clearly separated" sitting above a top two the analyst has just rearranged would
+be the most misleading thing on the screen. It cannot simply be recomputed either: reweight
+deliberately re-scores from the stored feature contributions and never touches the tracks or
+the origin zone, which is what makes it fast enough to feel like a slider. The inputs a
+paired resample needs are not there. Re-running correlation restores it.
+
+Not computed is rendered differently from not separable, in the panel and in the dossier.
+A missing measurement must never read as a clean one.
+
+---
+
+### 10.7 Reading the evidence
 
 Click **Evidence** on any candidate:
 
@@ -739,7 +795,7 @@ Click **Evidence** on any candidate:
 - A `STRONG` tier adds an inline statement that a strong evidential association is not a
   determination of responsibility.
 
-### 10.7 Weight sensitivity
+### 10.8 Weight sensitivity
 
 **Where:** Candidates tab → *Weight sensitivity* (collapsed by default).
 
@@ -760,7 +816,7 @@ Two things it is careful about:
 
 Only the *weighting* is recomputed. The underlying measurements are untouched.
 
-### 10.8 Excluding a candidate
+### 10.9 Excluding a candidate
 
 `POST /candidates/:id/exclude` with a **required reason** (`422` without one). The vessel drops
 out of the ranking but **stays counted** in the summary, and the panel says *"N candidate(s)
@@ -910,6 +966,9 @@ softened between runs:
 | Any detection with look-alike risk > 0.4 | `CAVEAT` | Names the count. |
 | Always | `LIMITATION` | The detector paragraph, with its **measured** IoU and false-positive rates (§7.1) — it stays a `LIMITATION` even once measured, because knowing the false-positive rate quantifies it rather than removing it. |
 | Any boundary-effect CI | `CAVEAT` | Explains why the interval sits below the point estimate. |
+| Top two not separable | `LIMITATION` | The paired resample reorders the top two (§10.6). |
+| Separable but margin < 2 points | `CAVEAT` | The order is stable; the gap is not large. |
+| Separation not computed | `CAVEAT` | After a reweight. Absence of the measurement is stated, so it cannot read as a clean result. |
 
 ### 13.3 The Provenance appendix
 

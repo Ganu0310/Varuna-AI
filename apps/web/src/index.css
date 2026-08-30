@@ -330,6 +330,21 @@ button:disabled {
   color: var(--status-danger);
 }
 
+/*
+ * The quiet sibling of `.panel-error`, for a result that is reassuring rather than alarming
+ * — "the top of this ranking is stable". It shares the panel's shape so the two read as one
+ * pair of answers to the same question, and differs only in colour: a stable ranking is not
+ * an alert, and rendering it in the danger colour would train the eye to ignore the ones
+ * that are.
+ */
+.panel-note {
+  margin-top: var(--space-7);
+  padding: var(--space-7);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-md);
+  max-width: 62ch;
+}
+
 :focus-visible {
   outline: 2px solid var(--border-focus);
   outline-offset: 2px;
