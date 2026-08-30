@@ -51,6 +51,11 @@ process.env.JWT_REFRESH_SECRET ??= 'y'.repeat(48);
 process.env.ML_SERVICE_URL ??= 'http://localhost:8000';
 process.env.ML_SERVICE_TOKEN ??= 'spec-only-token';
 process.env.PUBLIC_APP_URL ??= 'http://localhost:5173';
+// TITILER_URL is required with no default, and env.ts reports a bad configuration by
+// calling process.exit(1) rather than throwing -- which no try/catch here can intercept.
+// Omitting it killed the script the moment it imported the app to enumerate routes, so
+// coverage was never actually measured anywhere without a .env file, CI included.
+process.env.TITILER_URL ??= 'http://localhost:8080';
 
 const { openApiDocument } = await import('../apps/api/src/openapi.ts');
 const current = JSON.stringify(openApiDocument(), null, 2) + '\n';
