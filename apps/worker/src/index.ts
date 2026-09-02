@@ -4,11 +4,13 @@ import pino from 'pino';
 import { JOB_QUEUES, type QueueName } from '@varuna/shared';
 import { connectMongo, disconnectMongo } from '@varuna/api/src/db/connection.js';
 import { bootstrapDatabase } from '@varuna/api/src/db/bootstrap.js';
+import { getQueue } from '@varuna/api/src/queue/queues.js';
 import { processIngest, type IngestJobData } from './processors/ingest.js';
 import { processDrift, type DriftJobData } from './processors/drift.js';
 import { processCorrelate, type CorrelateJobData } from './processors/correlate.js';
 import { processAisImport, type AisImportJobData } from './processors/aisImport.js';
 import { processReport, type ReportJobData } from './processors/report.js';
+import { processSweep, type SweepTickJobData } from './processors/sweep.js';
 
 /**
  * BullMQ consumers. The worker runs from the same image as the API with a different
@@ -60,14 +62,29 @@ async function main() {
   register<Awaited<ReturnType<typeof processReport>>>('report', (job) =>
     processReport(job as unknown as Parameters<typeof processReport>[0]),
   );
+  register<Awaited<ReturnType<typeof processSweep>>>('sweep', (job) =>
+    processSweep(job as unknown as Parameters<typeof processSweep>[0]),
+  );
+
+  // The first BullMQ repeatable job in this codebase — see
+  // `apps/api/src/modules/sweep/service.ts` for why Discover is a scheduled sweep and not a
+  // live per-request search. `jobId` is the repeat key BullMQ dedupes on, so re-registering
+  // this on every worker restart is safe: it either creates the schedule or confirms it
+  // already matches, never duplicates it.
+  await getQueue('sweep').add(
+    'SWEEP_TICK',
+    { triggeredBy: 'SCHEDULE' } satisfies SweepTickJobData,
+    { repeat: { pattern: '0 6 * * *' }, jobId: 'sweep-scheduler' },
+  );
 
   logger.info(
     {
-      registered: ['ingest', 'drift', 'scoring', 'ais-import', 'report'],
+      registered: ['ingest', 'drift', 'scoring', 'ais-import', 'report', 'sweep'],
       // `inference` stays unregistered ON PURPOSE. Detection currently runs inside the
       // ingest job; a separate inference queue belongs with the learned segmentation model,
       // and a stub processor here would mark work complete without doing it.
       pending: ['inference'],
+      sweepSchedule: '0 6 * * * (UTC, daily)',
     },
     'varuna-worker ready',
   );
@@ -89,4 +106,11 @@ main().catch((err) => {
   process.exit(1);
 });
 
-export type { IngestJobData, DriftJobData, CorrelateJobData, AisImportJobData, ReportJobData };
+export type {
+  IngestJobData,
+  DriftJobData,
+  CorrelateJobData,
+  AisImportJobData,
+  ReportJobData,
+  SweepTickJobData,
+};

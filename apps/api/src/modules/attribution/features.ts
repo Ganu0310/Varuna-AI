@@ -379,6 +379,75 @@ function vesselTypePrior(c: CandidateInput): FeatureResult {
   return measured('vessel_type_prior', prior, prior, `AIS ship type ${t} (${label}).`);
 }
 
+/**
+ * F6b · Vessel Type Risk (Gross Tonnage / Ship Class weighting).
+ */
+function vesselTypeRisk(c: CandidateInput): FeatureResult {
+  if (c.shipType === null) {
+    return measured(
+      'vessel_type_risk',
+      0.5,
+      0.5,
+      'Unclassified ship type — assigned neutral baseline risk 0.50.',
+    );
+  }
+  const t = c.shipType;
+  let risk = 0.5;
+  let label = 'Unclassified / Other';
+  if (t >= 80 && t <= 89) {
+    risk = 1.0;
+    label = 'Oil / Chemical Tanker (High Spill Risk)';
+  } else if (t >= 70 && t <= 79) {
+    risk = 0.7;
+    label = 'Cargo / Bulk Carrier (Medium-High Spill Risk)';
+  } else if ((t >= 30 && t <= 39) || (t >= 50 && t <= 59)) {
+    risk = 0.35;
+    label = 'Fishing / Tug / Workboat (Medium-Low Spill Risk)';
+  } else if (t >= 60 && t <= 69) {
+    risk = 0.3;
+    label = 'Passenger / Cruise (Low Spill Risk)';
+  }
+  return measured('vessel_type_risk', risk, risk, `AIS Ship Type ${t} (${label}).`);
+}
+
+/**
+ * F5b · AIS Dark Period Anomaly Score (> 30 min transponder silence in release window).
+ */
+function aisDarkPeriodAnomaly(c: CandidateInput, ctx: ScoringContext): FeatureResult {
+  if (c.gaps.length === 0) {
+    return measured(
+      'ais_dark_period_anomaly',
+      0,
+      0,
+      'Continuous AIS transponder transmission — zero dark period anomaly.',
+    );
+  }
+  const start = Date.parse(ctx.releaseEarliest);
+  const end = Date.parse(ctx.releaseLatest);
+  const inWindowGaps = c.gaps.filter(
+    (g) => Date.parse(g.endAt) >= start && Date.parse(g.startAt) <= end,
+  );
+  if (inWindowGaps.length === 0) {
+    return measured(
+      'ais_dark_period_anomaly',
+      0,
+      0,
+      'No transponder gaps occurred during the release window.',
+    );
+  }
+  const longest = Math.max(...inWindowGaps.map((g) => g.durationMin));
+  const normalized = longest >= 30 ? Math.min(1.0, longest / 90) : longest / 60;
+  return measured(
+    'ais_dark_period_anomaly',
+    longest,
+    normalized,
+    longest >= 30
+      ? `Anomalous AIS transponder gap of ${longest.toFixed(0)} min detected inside release window.`
+      : `Minor AIS gap of ${longest.toFixed(0)} min in release window (below 30 min threshold).`,
+    inWindowGaps.map((g) => ({ kind: 'gap', id: `${c.mmsi}:${g.startAt}`, at: g.startAt })),
+  );
+}
+
 /** F8 · How much origin-zone probability mass sits on the track? */
 function originDensityAtTrack(c: CandidateInput, ctx: ScoringContext): FeatureResult {
   if (!c.trackLine) return missing('origin_density_at_track', 'No reconstructed track.');
@@ -507,6 +576,8 @@ export function scoreCandidate(c: CandidateInput, ctx: ScoringContext): Candidat
     trackIntersection(c, ctx),
     headingAlignment(c, ctx),
     aisDarkPeriod(c, ctx),
+    vesselTypeRisk(c),
+    aisDarkPeriodAnomaly(c, ctx),
     speedConsistency(c, ctx),
     vesselTypePrior(c),
     originDensityAtTrack(c, ctx),
@@ -533,7 +604,7 @@ export function scoreCandidate(c: CandidateInput, ctx: ScoringContext): Candidat
     // The floor is absolute: a high score from too little evidence is not a strong case.
     tier = 'INSUFFICIENT_EVIDENCE';
     insufficientReason =
-      `Only ${measuredFeatures.length} of 12 features could be measured ` +
+      `Only ${measuredFeatures.length} of ${ATTRIBUTION_FEATURES.length} features could be measured ` +
       `(minimum ${MIN_MEASURED_FEATURES}). The score is withheld rather than ranked.`;
   } else if (score >= TIER_THRESHOLDS.STRONG) {
     tier = 'STRONG';

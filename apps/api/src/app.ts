@@ -18,7 +18,7 @@ import { healthRouter } from './modules/health/router.js';
 import { authRouter } from './modules/auth/router.js';
 import { catalogueRouter } from './modules/catalogue/router.js';
 import { investigationsRouter } from './modules/investigations/router.js';
-import { scenesRouter } from './modules/scenes/router.js';
+import { scenesRouter, sceneInspectRouter } from './modules/scenes/router.js';
 import { detectionsRouter } from './modules/detections/router.js';
 import { aisRouter } from './modules/ais/router.js';
 import { candidatesRouter } from './modules/candidates/router.js';
@@ -26,6 +26,8 @@ import { originRouter } from './modules/origin/router.js';
 import { reportsRouter } from './modules/reports/router.js';
 import { jobsRouter } from './modules/jobs/router.js';
 import { adminRouter } from './modules/admin/router.js';
+import { systemRouter } from './modules/system/router.js';
+import { discoverRouter } from './modules/discover/router.js';
 import { publicRouter } from './modules/public/router.js';
 import { openApiDocument } from './openapi.js';
 
@@ -52,6 +54,8 @@ export const ROUTE_MOUNTS: ReadonlyArray<readonly [string, Router]> = [
   ['/api/v1/catalogue', catalogueRouter],
   ['/api/v1/investigations', investigationsRouter],
   ['/api/v1/investigations', scenesRouter],
+  // Reading a file is not scoped to a case: it is what an analyst does BEFORE there is one.
+  ['/api/v1/scenes', sceneInspectRouter],
   ['/api/v1/detections', detectionsRouter],
   ['/api/v1/investigations', aisRouter],
   ['/api/v1', aisRouter],
@@ -62,6 +66,8 @@ export const ROUTE_MOUNTS: ReadonlyArray<readonly [string, Router]> = [
   ['/api/v1/investigations', reportsRouter],
   ['/api/v1/jobs', jobsRouter],
   ['/api/v1/admin', adminRouter],
+  ['/api/v1/system', systemRouter],
+  ['/api/v1/discover', discoverRouter],
   // Unauthenticated by design; the router itself is the security boundary. See its header.
   ['/api/v1/public', publicRouter],
 ] as const;

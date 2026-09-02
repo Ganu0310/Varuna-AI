@@ -52,7 +52,24 @@ export interface RenderPdfResult {
   renderedAt: string;
 }
 
-export async function renderReportPdf(input: RenderPdfInput): Promise<RenderPdfResult> {
+/**
+ * Common to both renders below: launch, authenticate as the report-scoped user, open a
+ * route, and refuse to print if anything on the page failed to load. What differs between
+ * the technical dossier and the plain-language brief is only the route, the filename, and
+ * which heading proves the page is actually finished rendering — everything about WHY a
+ * silent partial render must never become a PDF applies equally to both documents.
+ */
+async function printRoute(
+  input: RenderPdfInput,
+  opts: {
+    /** Appended to `appUrl` — e.g. `/investigations/{id}/report`. */
+    path: string;
+    /** Distinguishes the two documents on disk: `''` for the dossier, `'plain-'` for the brief. */
+    filenamePrefix: string;
+    /** The LAST heading the page renders — proof the whole document, not a partial one, loaded. */
+    waitForHeadings: RegExp[];
+  },
+): Promise<RenderPdfResult> {
   const { investigationId, userId, appUrl, outputDir } = input;
 
   const token = await signReportToken({ sub: userId, investigationId });
@@ -61,9 +78,9 @@ export async function renderReportPdf(input: RenderPdfInput): Promise<RenderPdfR
   try {
     browser = await chromium.launch();
     const context = await browser.newContext({
-      // The report route is specified to print in LIGHT theme (05_FRONTEND §5.5.10): the
+      // Both report routes are specified to print in LIGHT theme (05_FRONTEND §5.5.10): the
       // workspace's dark palette costs a great deal of toner and reads badly photocopied,
-      // which is what happens to a document that reaches a court file.
+      // which is what happens to a document that reaches a court file or a news desk.
       colorScheme: 'light',
       viewport: { width: 1240, height: 1754 },
     });
@@ -82,7 +99,7 @@ export async function renderReportPdf(input: RenderPdfInput): Promise<RenderPdfR
 
     const page = await context.newPage();
 
-    // A render that silently swallowed a failed request would produce a dossier with a
+    // A render that silently swallowed a failed request would produce a document with a
     // section quietly missing, which is the one output this system must never emit. Collect
     // failures and refuse afterwards rather than printing a plausible-looking partial.
     const failures: string[] = [];
@@ -91,21 +108,19 @@ export async function renderReportPdf(input: RenderPdfInput): Promise<RenderPdfR
       if (r.status() >= 400) failures.push(`${r.status()} ${r.url()}`);
     });
 
-    await input.onProgress?.(30, 'Opening dossier');
-    await page.goto(`${appUrl}/investigations/${investigationId}/report`, {
-      waitUntil: 'networkidle',
-      timeout: 60_000,
-    });
+    await input.onProgress?.(30, `Opening ${opts.path}`);
+    await page.goto(`${appUrl}${opts.path}`, { waitUntil: 'networkidle', timeout: 60_000 });
 
-    // Wait for the sections that may not be omitted, not for a timer. If they are not on the
-    // page there is nothing worth printing.
-    await page.getByRole('heading', { name: /uncertainty/i }).waitFor({ timeout: 30_000 });
-    await page.getByRole('heading', { name: /provenance/i }).waitFor({ timeout: 30_000 });
+    // Wait for content that may not be omitted, not for a timer. If it is not on the page
+    // there is nothing worth printing.
+    for (const heading of opts.waitForHeadings) {
+      await page.getByRole('heading', { name: heading }).waitFor({ timeout: 30_000 });
+    }
 
     if (failures.length > 0) {
       throw new Error(
-        `dossier render had ${failures.length} failed request(s), refusing to print a ` +
-          `partial report: ${failures.slice(0, 5).join('; ')}`,
+        `render had ${failures.length} failed request(s), refusing to print a partial ` +
+          `document: ${failures.slice(0, 5).join('; ')}`,
       );
     }
 
@@ -114,7 +129,7 @@ export async function renderReportPdf(input: RenderPdfInput): Promise<RenderPdfR
 
     await mkdir(outputDir, { recursive: true });
     const renderedAt = new Date().toISOString();
-    const name = `${investigationId}-${renderedAt.replace(/[:.]/g, '-')}.pdf`;
+    const name = `${investigationId}-${opts.filenamePrefix}${renderedAt.replace(/[:.]/g, '-')}.pdf`;
     const path = join(outputDir, name);
     await writeFile(path, buffer);
 
@@ -127,4 +142,29 @@ export async function renderReportPdf(input: RenderPdfInput): Promise<RenderPdfR
   } finally {
     await browser?.close();
   }
+}
+
+export function renderReportPdf(input: RenderPdfInput): Promise<RenderPdfResult> {
+  return printRoute(input, {
+    path: `/investigations/${input.investigationId}/report`,
+    filenamePrefix: '',
+    // UNCERTAINTY and PROVENANCE are the two sections that may never be omitted; both being
+    // present is the actual guarantee this render exists to protect.
+    waitForHeadings: [/uncertainty/i, /provenance/i],
+  });
+}
+
+/**
+ * The plain-language brief, rendered the same way and printed to its own file — see
+ * `apps/web/src/features/reports/PlainReportPage.tsx` for what the route contains and why it
+ * exists as a document in its own right rather than a section appended to the dossier.
+ */
+export function renderPlainReportPdf(input: RenderPdfInput): Promise<RenderPdfResult> {
+  return printRoute(input, {
+    path: `/investigations/${input.investigationId}/report/plain`,
+    filenamePrefix: 'plain-',
+    // The last heading the page renders, so waiting for it proves the whole narrative —
+    // headline through to the closing caveats — actually loaded before printing.
+    waitForHeadings: [/in short/i],
+  });
 }

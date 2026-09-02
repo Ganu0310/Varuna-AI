@@ -39,6 +39,8 @@ export const FEATURE_LABELS: Record<string, string> = {
   track_intersection: 'Track intersection',
   heading_alignment: 'Heading alignment',
   ais_dark_period: 'AIS dark period',
+  vessel_type_risk: 'Vessel type risk',
+  ais_dark_period_anomaly: 'AIS dark period anomaly',
   speed_consistency: 'Speed consistency',
   vessel_type_prior: 'Vessel type prior',
   origin_density_at_track: 'Origin density at track',
@@ -78,7 +80,7 @@ export function EvidenceWaterfall({
           ) : null}
         </span>
         <span className="muted">
-          {measuredCount} of 12 features measured
+          {measuredCount} of 14 features measured
           <MethodologyNote id="review.immutability" />
         </span>
       </header>

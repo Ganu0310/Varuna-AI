@@ -8,8 +8,14 @@ import { formatUtc } from '../../lib/format.ts';
 /**
  * `/admin` — 06_BACKEND §6.4.10.
  *
- * Users and roles, live provider health, quota consumption and the audit log. Every one of
- * these endpoints existed with no route to reach it.
+ * Users and roles, live provider health, quota consumption, every investigation on the
+ * instance, the rendered dossiers, and the audit log. Every one of these endpoints existed
+ * with no route to reach it.
+ *
+ * The investigation and dossier tables are here rather than in the analyst workspace because
+ * they answer an operator's question, not an analyst's: not "which case shall I open?" but
+ * "which cases are stuck, which have lost their owner, and which dossiers no longer belong
+ * to a case at all?"
  *
  * The audit log is read-only here by design. It is append-only server-side and there is
  * deliberately no delete: a log an administrator can edit is not evidence of anything.
@@ -51,7 +57,50 @@ interface AuditEntry {
   requestId: string | null;
 }
 
+interface AdminInvestigation {
+  _id: string;
+  name: string | null;
+  status: string | null;
+  createdAt: string | null;
+  ownerId: string | null;
+  ownerEmail: string | null;
+  ownerMissing: boolean;
+  memberCount: number;
+  counts: {
+    scenes: number;
+    detections: number;
+    origins: number;
+    candidates: number;
+    reports: number;
+  };
+}
+
+interface RenderedReport {
+  filename: string;
+  investigationId: string;
+  renderedAt: string | null;
+  sizeBytes: number;
+  investigationExists: boolean;
+  orphaned: boolean;
+}
+
 const ROLES = ['viewer', 'analyst', 'lead', 'admin'] as const;
+
+/**
+ * Where a case stopped, from its per-stage counts.
+ *
+ * The status field alone cannot answer this: `IN_PROGRESS` covers both a case waiting on an
+ * analyst and one whose ingest died three stages ago. The counts can, because each stage
+ * only produces rows once the previous one has.
+ */
+function stalledAt(c: AdminInvestigation['counts']): string {
+  if (c.scenes === 0) return 'Not started — no scene ingested';
+  if (c.detections === 0) return 'Awaiting detection';
+  if (c.origins === 0) return 'Awaiting back-track';
+  if (c.candidates === 0) return 'Awaiting AIS correlation';
+  if (c.reports === 0) return 'Ready to report';
+  return 'Complete';
+}
 
 export function AdminPage() {
   const me = useMe();
@@ -75,6 +124,15 @@ export function AdminPage() {
   const auditLog = useQuery({
     queryKey: ['admin', 'audit'],
     queryFn: () => api.get<{ items: AuditEntry[] }>('/admin/audit?limit=50'),
+  });
+  const investigations = useQuery({
+    queryKey: ['admin', 'investigations'],
+    queryFn: () => api.get<{ items: AdminInvestigation[]; note: string }>('/admin/investigations'),
+  });
+  const reports = useQuery({
+    queryKey: ['admin', 'reports'],
+    queryFn: () =>
+      api.get<{ items: RenderedReport[]; orphaned: number; note: string }>('/admin/reports'),
   });
 
   const setRole = useMutation({
@@ -244,6 +302,120 @@ export function AdminPage() {
             </tbody>
           </table>
         </div>
+      </section>
+
+      <section className="card">
+        <h2>Investigations</h2>
+        <p className="muted">
+          {investigations.data?.note ??
+            'Every investigation on this instance, with per-stage counts so a stalled case ' +
+              'shows where it stalled.'}
+        </p>
+        <div className="table-scroll">
+          <table className="data-table list-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Owner</th>
+                <th className="nowrap">Scenes</th>
+                <th className="nowrap">Detections</th>
+                <th className="nowrap">Origins</th>
+                <th className="nowrap">Candidates</th>
+                <th className="nowrap">Reports</th>
+                <th>Progress</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(investigations.data?.items ?? []).map((i) => (
+                <tr key={i._id}>
+                  <td>
+                    <a href={`/investigations/${i._id}`}>{i.name ?? '(untitled)'}</a>
+                    <div className="mono muted">{i._id.slice(-8)}</div>
+                  </td>
+                  <td className="mono">{i.status ?? '—'}</td>
+                  <td>
+                    {i.ownerMissing ? (
+                      // A creator who was deleted. Nobody inherits the case, so it needs
+                      // reassigning before it can be handed to an analyst.
+                      <span className="panel-error">owner deleted</span>
+                    ) : (
+                      (i.ownerEmail ?? '—')
+                    )}
+                    <div className="muted">
+                      {i.memberCount} member{i.memberCount === 1 ? '' : 's'}
+                    </div>
+                  </td>
+                  <td className="mono">{i.counts.scenes}</td>
+                  <td className="mono">{i.counts.detections}</td>
+                  <td className="mono">{i.counts.origins}</td>
+                  <td className="mono">{i.counts.candidates}</td>
+                  <td className="mono">{i.counts.reports}</td>
+                  <td className="muted">{stalledAt(i.counts)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {(investigations.data?.items ?? []).length === 0 ? (
+          <p className="muted">No investigations exist yet.</p>
+        ) : null}
+      </section>
+
+      <section className="card">
+        <h2>Rendered dossiers</h2>
+        <p className="muted">
+          {reports.data?.note ?? 'Every PDF dossier rendered on this instance.'}
+        </p>
+        <div className="table-scroll">
+          <table className="data-table list-table">
+            <thead>
+              <tr>
+                <th className="nowrap">Rendered (UTC)</th>
+                <th>Investigation</th>
+                <th className="nowrap">Size</th>
+                <th>State</th>
+                <th className="nowrap">Download</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(reports.data?.items ?? []).map((r) => (
+                <tr key={r.filename}>
+                  <td className="mono nowrap">
+                    {r.renderedAt ? formatUtc(r.renderedAt) : 'unknown'}
+                  </td>
+                  <td className="mono">
+                    {r.investigationExists ? (
+                      <a href={`/investigations/${r.investigationId}`}>
+                        {r.investigationId.slice(-8)}
+                      </a>
+                    ) : (
+                      r.investigationId.slice(-8)
+                    )}
+                  </td>
+                  <td className="mono nowrap">{Math.round(r.sizeBytes / 1024)} kB</td>
+                  <td>
+                    {r.orphaned ? (
+                      // The file outlived its case. It is real rendered evidence that no
+                      // scoped route can return, which is exactly why it is listed here.
+                      <span className="panel-error">orphaned — case deleted</span>
+                    ) : (
+                      <span className="muted">linked</span>
+                    )}
+                  </td>
+                  <td className="nowrap">
+                    <a href={`/api/v1/admin/reports/${encodeURIComponent(r.filename)}`} download>
+                      PDF
+                    </a>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {(reports.data?.items ?? []).length === 0 ? (
+          <p className="muted">No dossiers have been rendered yet.</p>
+        ) : null}
       </section>
 
       <section className="card">

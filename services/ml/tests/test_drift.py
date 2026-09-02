@@ -10,7 +10,7 @@ transport/computation, never observation content).
 from __future__ import annotations
 
 import math
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import numpy as np
 import pytest
@@ -24,9 +24,15 @@ from varuna_ml.drift.kde import (
     origin_field,
 )
 
-T0 = datetime(2025, 9, 21, 20, 0, tzinfo=timezone.utc)
+T0 = datetime(2025, 9, 21, 20, 0, tzinfo=UTC)
 
-SQUARE = [(144.60, 13.40), (144.62, 13.40), (144.62, 13.42), (144.60, 13.42), (144.60, 13.40)]
+SQUARE = [
+    (144.60, 13.40),
+    (144.62, 13.40),
+    (144.62, 13.42),
+    (144.60, 13.42),
+    (144.60, 13.40),
+]
 
 
 def uniform_field(
@@ -59,7 +65,7 @@ def test_particles_are_seeded_inside_the_slick():
     poly = Polygon(SQUARE)
     lon, lat = seed_particles(SQUARE, 300, np.random.default_rng(1))
     assert len(lon) == 300
-    inside = sum(poly.contains(Point(x, y)) for x, y in zip(lon, lat))
+    inside = sum(poly.contains(Point(x, y)) for x, y in zip(lon, lat, strict=True))
     # Uniform in the polygon, not clustered on the centroid.
     assert inside == 300
     assert lon.std() > 0.002
@@ -72,9 +78,15 @@ def test_backward_advection_moves_particles_upstream_by_the_analytic_distance():
     """A 0.5 m/s eastward current for 10 h must place the origin 18 km WEST."""
     currents = uniform_field(0.5, 0.0)
     r = backtrack(
-        SQUARE, T0, currents, None,
-        particle_count=200, horizon_hours=10, time_step_minutes=15,
-        horizontal_diffusivity=0.0, seed=7,
+        SQUARE,
+        T0,
+        currents,
+        None,
+        particle_count=200,
+        horizon_hours=10,
+        time_step_minutes=15,
+        horizontal_diffusivity=0.0,
+        seed=7,
     )
     final = r.frames[-1]
     mean_dlon = float(np.mean(final["lon"])) - float(np.mean(r.lon0))
@@ -89,16 +101,32 @@ def test_backward_advection_moves_particles_upstream_by_the_analytic_distance():
 
 def test_northward_current_backtracks_south():
     currents = uniform_field(0.0, 0.3)
-    r = backtrack(SQUARE, T0, currents, None, particle_count=200, horizon_hours=6,
-                  horizontal_diffusivity=0.0, seed=3)
+    r = backtrack(
+        SQUARE,
+        T0,
+        currents,
+        None,
+        particle_count=200,
+        horizon_hours=6,
+        horizontal_diffusivity=0.0,
+        seed=3,
+    )
     dlat = float(np.mean(r.frames[-1]["lat"])) - float(np.mean(r.lat0))
     expected = -math.degrees(0.3 * 6 * 3600 / 6_371_008.8)
     assert dlat == pytest.approx(expected, rel=0.02)
 
 
 def test_zero_forcing_leaves_particles_where_they_started():
-    r = backtrack(SQUARE, T0, uniform_field(0.0, 0.0), None, particle_count=100,
-                  horizon_hours=12, horizontal_diffusivity=0.0, seed=5)
+    r = backtrack(
+        SQUARE,
+        T0,
+        uniform_field(0.0, 0.0),
+        None,
+        particle_count=100,
+        horizon_hours=12,
+        horizontal_diffusivity=0.0,
+        seed=5,
+    )
     assert float(np.mean(r.frames[-1]["lon"])) == pytest.approx(float(np.mean(r.lon0)), abs=1e-9)
     assert float(np.mean(r.frames[-1]["lat"])) == pytest.approx(float(np.mean(r.lat0)), abs=1e-9)
 
@@ -110,9 +138,17 @@ def test_diffusive_spread_matches_the_random_walk_law():
     """Spread must grow as sqrt(2*K_h*t) — the defining property of the diffusion term."""
     kh = 10.0
     hours = 24
-    r = backtrack(SQUARE, T0, uniform_field(0.0, 0.0), None, particle_count=4000,
-                  horizon_hours=hours, time_step_minutes=15,
-                  horizontal_diffusivity=kh, seed=11)
+    r = backtrack(
+        SQUARE,
+        T0,
+        uniform_field(0.0, 0.0),
+        None,
+        particle_count=4000,
+        horizon_hours=hours,
+        time_step_minutes=15,
+        horizontal_diffusivity=kh,
+        seed=11,
+    )
 
     lat = r.frames[-1]["lat"]
     spread_deg = float(np.std(lat)) - float(np.std(r.lat0))
@@ -138,9 +174,17 @@ def test_more_particles_do_not_change_the_centre_of_mass():
 def test_wind_adds_drift_within_the_sampled_coefficient_range():
     """With no current, displacement must lie between 2% and 4% of the wind run."""
     winds = uniform_field(10.0, 0.0, kind="WIND")
-    r = backtrack(SQUARE, T0, uniform_field(0.0, 0.0), winds, particle_count=500,
-                  horizon_hours=10, horizontal_diffusivity=0.0,
-                  deflection_range_deg=(0.0, 0.0), seed=13)
+    r = backtrack(
+        SQUARE,
+        T0,
+        uniform_field(0.0, 0.0),
+        winds,
+        particle_count=500,
+        horizon_hours=10,
+        horizontal_diffusivity=0.0,
+        deflection_range_deg=(0.0, 0.0),
+        seed=13,
+    )
 
     dlon = float(np.mean(r.frames[-1]["lon"])) - float(np.mean(r.lon0))
     coslat = math.cos(math.radians(13.41))
@@ -160,13 +204,29 @@ def test_ekman_deflection_is_hemisphere_correct():
     # zero rather than extrapolating, which would make this test vacuous.
     winds = uniform_field(10.0, 0.0, kind="WIND", span_hemispheres=True)
     still = uniform_field(0.0, 0.0, span_hemispheres=True)
-    north = backtrack(SQUARE, T0, still, winds, particle_count=400,
-                      horizon_hours=10, horizontal_diffusivity=0.0,
-                      deflection_range_deg=(20.0, 20.0), seed=17)
+    north = backtrack(
+        SQUARE,
+        T0,
+        still,
+        winds,
+        particle_count=400,
+        horizon_hours=10,
+        horizontal_diffusivity=0.0,
+        deflection_range_deg=(20.0, 20.0),
+        seed=17,
+    )
     south_square = [(x, -y) for x, y in SQUARE]
-    south = backtrack(south_square, T0, still, winds, particle_count=400,
-                      horizon_hours=10, horizontal_diffusivity=0.0,
-                      deflection_range_deg=(20.0, 20.0), seed=17)
+    south = backtrack(
+        south_square,
+        T0,
+        still,
+        winds,
+        particle_count=400,
+        horizon_hours=10,
+        horizontal_diffusivity=0.0,
+        deflection_range_deg=(20.0, 20.0),
+        seed=17,
+    )
 
     dlat_n = float(np.mean(north.frames[-1]["lat"])) - float(np.mean(north.lat0))
     dlat_s = float(np.mean(south.frames[-1]["lat"])) - float(np.mean(south.lat0))
@@ -177,18 +237,43 @@ def test_ekman_deflection_is_hemisphere_correct():
 def test_sampled_coefficients_produce_spread_that_fixed_ones_would_not():
     """The ensemble spread IS the uncertainty statement; fixing alpha would fake precision."""
     winds = uniform_field(10.0, 0.0, kind="WIND")
-    sampled = backtrack(SQUARE, T0, uniform_field(0.0, 0.0), winds, particle_count=800,
-                        horizon_hours=12, horizontal_diffusivity=0.0,
-                        wind_drift_range=(0.02, 0.04), seed=19)
-    fixed = backtrack(SQUARE, T0, uniform_field(0.0, 0.0), winds, particle_count=800,
-                      horizon_hours=12, horizontal_diffusivity=0.0,
-                      wind_drift_range=(0.03, 0.03), deflection_range_deg=(0.0, 0.0), seed=19)
+    sampled = backtrack(
+        SQUARE,
+        T0,
+        uniform_field(0.0, 0.0),
+        winds,
+        particle_count=800,
+        horizon_hours=12,
+        horizontal_diffusivity=0.0,
+        wind_drift_range=(0.02, 0.04),
+        seed=19,
+    )
+    fixed = backtrack(
+        SQUARE,
+        T0,
+        uniform_field(0.0, 0.0),
+        winds,
+        particle_count=800,
+        horizon_hours=12,
+        horizontal_diffusivity=0.0,
+        wind_drift_range=(0.03, 0.03),
+        deflection_range_deg=(0.0, 0.0),
+        seed=19,
+    )
     assert float(np.std(sampled.frames[-1]["lon"])) > float(np.std(fixed.frames[-1]["lon"]))
 
 
 def test_no_wind_field_means_no_wind_drift():
-    r = backtrack(SQUARE, T0, uniform_field(0.0, 0.0), None, particle_count=100,
-                  horizon_hours=10, horizontal_diffusivity=0.0, seed=23)
+    r = backtrack(
+        SQUARE,
+        T0,
+        uniform_field(0.0, 0.0),
+        None,
+        particle_count=100,
+        horizon_hours=10,
+        horizontal_diffusivity=0.0,
+        seed=23,
+    )
     assert r.wind_used is False
     assert r.params["windDriftCoefficientRange"] == [0.0, 0.0]
 
@@ -197,8 +282,15 @@ def test_no_wind_field_means_no_wind_drift():
 
 
 def test_density_grid_is_a_normalised_probability_surface():
-    r = backtrack(SQUARE, T0, uniform_field(0.3, 0.0), None, particle_count=2000,
-                  horizon_hours=12, seed=29)
+    r = backtrack(
+        SQUARE,
+        T0,
+        uniform_field(0.3, 0.0),
+        None,
+        particle_count=2000,
+        horizon_hours=12,
+        seed=29,
+    )
     grid, lats, lons = density_grid(r.frames[-1]["lon"], r.frames[-1]["lat"])
     assert grid.sum() == pytest.approx(1.0, abs=1e-6)
     assert (grid >= 0).all()
@@ -206,8 +298,15 @@ def test_density_grid_is_a_normalised_probability_surface():
 
 
 def test_the_90_percent_region_contains_the_50_percent_region():
-    r = backtrack(SQUARE, T0, uniform_field(0.3, 0.1), None, particle_count=3000,
-                  horizon_hours=12, seed=31)
+    r = backtrack(
+        SQUARE,
+        T0,
+        uniform_field(0.3, 0.1),
+        None,
+        particle_count=3000,
+        horizon_hours=12,
+        seed=31,
+    )
     field = origin_field(r.frames[-1])
     assert field.support50 and field.support90
 
@@ -221,15 +320,25 @@ def test_the_90_percent_region_contains_the_50_percent_region():
 
 def test_contours_are_right_hand_wound():
     """A clockwise ring is read by MongoDB as the whole globe minus the intended area."""
-    r = backtrack(SQUARE, T0, uniform_field(0.2, 0.0), None, particle_count=2000,
-                  horizon_hours=8, seed=37)
+    r = backtrack(
+        SQUARE,
+        T0,
+        uniform_field(0.2, 0.0),
+        None,
+        particle_count=2000,
+        horizon_hours=8,
+        seed=37,
+    )
     field = origin_field(r.frames[-1])
     for ring in (field.support50, field.support90):
         assert ring is not None
-        area = sum(
-            ring[i][0] * ring[i + 1][1] - ring[i + 1][0] * ring[i][1]
-            for i in range(len(ring) - 1)
-        ) / 2
+        area = (
+            sum(
+                ring[i][0] * ring[i + 1][1] - ring[i + 1][0] * ring[i][1]
+                for i in range(len(ring) - 1)
+            )
+            / 2
+        )
         assert area > 0, "exterior ring must be counter-clockwise"
 
 
@@ -276,8 +385,11 @@ def test_window_never_extends_past_the_observation():
 
 
 def test_forcing_unavailable_carries_what_was_tried_and_what_it_means():
-    e = ForcingUnavailable("CURRENTS", [{"provider": "HYCOM", "outcome": "OUT_OF_COVERAGE"}],
-                           "Back-tracking cannot run; the origin degrades to proximity.")
+    e = ForcingUnavailable(
+        "CURRENTS",
+        [{"provider": "HYCOM", "outcome": "OUT_OF_COVERAGE"}],
+        "Back-tracking cannot run; the origin degrades to proximity.",
+    )
     assert e.attempted[0]["provider"] == "HYCOM"
     assert "degrades" in e.consequence
 
@@ -289,8 +401,16 @@ def test_particles_outside_the_forcing_grid_get_zero_not_extrapolation():
     nothing, which would place an origin outside the data that supports it.
     """
     far_south = [(x, -y) for x, y in SQUARE]  # the default grid covers 12N..15N only
-    r = backtrack(far_south, T0, uniform_field(2.0, 2.0), None, particle_count=100,
-                  horizon_hours=12, horizontal_diffusivity=0.0, seed=41)
+    r = backtrack(
+        far_south,
+        T0,
+        uniform_field(2.0, 2.0),
+        None,
+        particle_count=100,
+        horizon_hours=12,
+        horizontal_diffusivity=0.0,
+        seed=41,
+    )
     assert float(np.mean(r.frames[-1]["lon"])) == pytest.approx(float(np.mean(r.lon0)), abs=1e-9)
 
 
@@ -312,17 +432,34 @@ def test_fill_values_never_become_velocities():
     # A patch of unmasked fill values, as the bug produced.
     u[0, 10:20, 10:20] = np.nan  # correctly handled: NaN, not -30000
 
-    f = ForcingField(kind="CURRENTS", u=u, v=v, times=[T0], lats=lats, lons=lons,
-                     provider="TEST", dataset_id="fill", resolution_deg=0.1,
-                     temporal_resolution_h=1.0)
+    f = ForcingField(
+        kind="CURRENTS",
+        u=u,
+        v=v,
+        times=[T0],
+        lats=lats,
+        lons=lons,
+        provider="TEST",
+        dataset_id="fill",
+        resolution_deg=0.1,
+        temporal_resolution_h=1.0,
+    )
 
     # A NaN cell samples as zero velocity (no water here), not as a huge number.
     su, sv = f.sample(T0, np.array([13.5]), np.array([144.5]))
     assert abs(float(su[0])) < 1.0
     assert abs(float(sv[0])) < 1.0
 
-    r = backtrack(SQUARE, T0, f, None, particle_count=100, horizon_hours=24,
-                  horizontal_diffusivity=0.0, seed=47)
+    r = backtrack(
+        SQUARE,
+        T0,
+        f,
+        None,
+        particle_count=100,
+        horizon_hours=24,
+        horizontal_diffusivity=0.0,
+        seed=47,
+    )
     # Nothing may travel further than a plausible ocean current could carry it.
     max_dlat = float(np.max(np.abs(r.frames[-1]["lat"] - r.lat0)))
     assert max_dlat < 1.0, "a fill value leaked in and became a velocity"
@@ -333,7 +470,116 @@ def test_median_speed_ignores_masked_cells():
     lons = np.linspace(143.0, 146.0, 11)
     u = np.full((1, 11, 11), 0.3)
     u[0, :5, :] = np.nan
-    f = ForcingField(kind="CURRENTS", u=u, v=np.zeros_like(u), times=[T0], lats=lats,
-                     lons=lons, provider="TEST", dataset_id="masked",
-                     resolution_deg=0.3, temporal_resolution_h=1.0)
+    f = ForcingField(
+        kind="CURRENTS",
+        u=u,
+        v=np.zeros_like(u),
+        times=[T0],
+        lats=lats,
+        lons=lons,
+        provider="TEST",
+        dataset_id="masked",
+        resolution_deg=0.3,
+        temporal_resolution_h=1.0,
+    )
     assert f.median_speed() == pytest.approx(0.3, abs=1e-6)
+
+
+# ── coastal cells: partial land masking ───────────────────────────────
+
+
+def test_one_land_corner_does_not_zero_the_whole_cell():
+    """Regression: a slick beside a coast lost its current field entirely.
+
+    Ocean models mask land as NaN. Interpolating four corners arithmetically and cleaning
+    the result afterwards lets ONE land corner turn the whole cell NaN, which then became 0
+    — a dead calm exactly where a harbour discharge happens and exactly where the current
+    matters. Measured on the real Guam CMEMS field: three wet corners carrying -0.08 to
+    -0.15 m/s, one dry, sampled velocity 0.000.
+
+    The weights must be renormalised over the finite corners instead.
+    """
+    lats = np.array([13.0, 13.1, 13.2])
+    lons = np.array([144.0, 144.1, 144.2])
+    u = np.full((1, 3, 3), -0.15)
+    v = np.zeros_like(u)
+    u[0, 0, 0] = np.nan  # one land corner of the cell we sample inside
+
+    f = ForcingField(
+        kind="CURRENTS",
+        u=u,
+        v=v,
+        times=[T0],
+        lats=lats,
+        lons=lons,
+        provider="TEST",
+        dataset_id="coastal",
+        resolution_deg=0.1,
+        temporal_resolution_h=1.0,
+    )
+
+    su, _ = f.sample(T0, np.array([13.05]), np.array([144.05]))
+    assert float(su[0]) == pytest.approx(
+        -0.15, abs=1e-9
+    ), "three wet corners at -0.15 m/s must give -0.15 m/s, not 0"
+
+
+def test_an_entirely_dry_cell_still_samples_as_zero():
+    """The one case where zero IS the measurement: no water in any corner."""
+    lats = np.array([13.0, 13.1, 13.2])
+    lons = np.array([144.0, 144.1, 144.2])
+    u = np.full((1, 3, 3), np.nan)
+    f = ForcingField(
+        kind="CURRENTS",
+        u=u,
+        v=np.full_like(u, np.nan),
+        times=[T0],
+        lats=lats,
+        lons=lons,
+        provider="TEST",
+        dataset_id="all-land",
+        resolution_deg=0.1,
+        temporal_resolution_h=1.0,
+    )
+    su, sv = f.sample(T0, np.array([13.05]), np.array([144.05]))
+    assert float(su[0]) == 0.0 and float(sv[0]) == 0.0
+
+
+def test_a_coastal_slick_actually_drifts():
+    """End-to-end guard on the same bug: a back-track over a partly-masked field must move.
+
+    Without the renormalisation the origin lands on top of the slick and the run is still
+    labelled LAGRANGIAN_BACKTRACK — a drift result with no drift in it, which is the most
+    misleading output this module can produce.
+    """
+    lats = np.linspace(13.0, 14.0, 21)
+    lons = np.linspace(144.0, 145.0, 21)
+    u = np.full((1, len(lats), len(lons)), -0.15)
+    v = np.zeros_like(u)
+    u[0, ::3, ::3] = np.nan  # a scattered coast through the domain
+    f = ForcingField(
+        kind="CURRENTS",
+        u=u,
+        v=v,
+        times=[T0],
+        lats=lats,
+        lons=lons,
+        provider="TEST",
+        dataset_id="scattered-coast",
+        resolution_deg=0.05,
+        temporal_resolution_h=1.0,
+    )
+
+    r = backtrack(
+        SQUARE,
+        T0,
+        f,
+        None,
+        particle_count=200,
+        horizon_hours=12,
+        horizontal_diffusivity=0.0,
+        seed=11,
+    )
+    moved_deg = float(np.mean(r.frames[-1]["lon"]) - np.mean(r.lon0))
+    # 0.15 m/s eastward-recovered over 12 h backwards = ~6.5 km east ~ +0.06 deg at 13N.
+    assert moved_deg > 0.04, f"particles barely moved ({moved_deg:.4f} deg) over a masked field"

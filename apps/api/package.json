@@ -15,7 +15,10 @@
     "test:watch": "vitest",
     "lint": "eslint src",
     "ais:import": "tsx src/modules/ais/import-cli.ts",
-    "attribute": "tsx src/modules/attribution/pipeline-cli.ts"
+    "attribute": "tsx src/modules/attribution/pipeline-cli.ts",
+    "admin:grant": "tsx src/modules/auth/admin-cli.ts",
+    "investigations:seed": "tsx src/modules/investigations/seed-cli.ts",
+    "scenes:backfill": "tsx src/modules/scenes/backfill-cli.ts"
   },
   "dependencies": {
     "@asteasolutions/zod-to-openapi": "^7.3.0",

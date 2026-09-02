@@ -159,6 +159,17 @@ const DATA: ReportData = {
     },
   ],
   uncertainty: { statements: [], overall: 'A ranking of investigative leads.' },
+  plainSummary: {
+    headline: 'Satellite images show what looks like an oil spill.',
+    howThisWasFound: 'How this finding was made.',
+    whatWasSeen: 'What was seen.',
+    whereAndWhen: 'Where and when.',
+    possibleOrigin: 'Possible origin.',
+    vesselsIntro: 'One ship was close enough to be worth checking.',
+    vessels: [{ mmsi: 368278840, rank: 1, assessment: 'This is worth investigating further.' }],
+    whatWeDontKnow: ['This report is a starting point, not a finished investigation.'],
+    bottomLine: 'In short: this is a list of leads, not a determination of responsibility.',
+  },
   provenanceAppendix: { records: [], lineageNote: 'note' },
   manifest: {
     pipelineVersion: 'varuna-1.0.0',

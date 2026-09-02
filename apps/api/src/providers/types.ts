@@ -31,7 +31,31 @@ export interface CatalogueItem {
   assets: Record<string, string>;
   /** Whether the provider already applied radiometric/terrain correction (MPC RTC). */
   preprocessed: boolean;
+  /**
+   * Whether THIS pipeline can actually ingest the product, decided at SEARCH time.
+   *
+   * The chain has three search providers and one ingestible one: `/ingest` resolves product
+   * ids against the Planetary Computer `sentinel-1-rtc` collection, so a CDSE or ASF record
+   * is a real acquisition this system cannot read. Discovering that only when the job fails
+   * produces `ML_SERVICE unavailable: HTTP_404` after a queue round trip — which reads like
+   * an outage and is a provider mismatch.
+   *
+   * Deciding it here means the catalogue, the scene picker, the verified scenario and the
+   * backfill CLI all consult one rule instead of each re-deriving it slightly differently.
+   */
+  ingestible: boolean;
+  /** Why not, when `ingestible` is false. Null when it is true. */
+  ingestibleReason: string | null;
 }
+
+/**
+ * What a provider client returns: everything except ingestibility.
+ *
+ * A provider knows what it holds; it does not know what THIS pipeline can read. Keeping the
+ * two apart in the type system means a new provider client physically cannot forget to set
+ * the flag — it is not theirs to set — and the rule stays in `decideIngestible` alone.
+ */
+export type ProviderCatalogueItem = Omit<CatalogueItem, 'ingestible' | 'ingestibleReason'>;
 
 export type ProviderOutcome =
   'OK' | 'NO_RESULTS' | 'CIRCUIT_OPEN' | 'QUOTA_EXHAUSTED' | 'NOT_CONFIGURED' | 'TIMEOUT' | 'ERROR';
@@ -65,5 +89,5 @@ export interface CatalogueSearchResult {
 export interface SatelliteCatalogueProvider {
   readonly name: string;
   isConfigured(): boolean;
-  search(params: CatalogueSearchParams): Promise<CatalogueItem[]>;
+  search(params: CatalogueSearchParams): Promise<ProviderCatalogueItem[]>;
 }

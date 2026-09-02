@@ -11,3 +11,4 @@ export { SpillDetectionModel } from '../modules/detections/model.js';
 export { VesselModel, VesselTrackModel } from '../modules/ais/model.js';
 export { OriginEstimateModel } from '../modules/origin/model.js';
 export { CandidateVesselModel } from '../modules/candidates/model.js';
+export { SweepStateModel, SweepOverpassModel } from '../modules/sweep/model.js';

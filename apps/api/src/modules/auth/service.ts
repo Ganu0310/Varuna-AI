@@ -20,7 +20,7 @@ import type { PublicUser } from './schema.js';
  * ambient const enum, which `isolatedModules` forbids importing as a value. Asserted in
  * auth.test.ts against the `$argon2id$` prefix of a produced hash.
  */
-const ARGON_OPTS = {
+export const ARGON_OPTS = {
   algorithm: 2,
   memoryCost: 19456,
   timeCost: 2,

@@ -21,8 +21,9 @@ def test_root_identifies_service():
 
 
 def test_provenance_has_no_fabricated_source_type():
-    from varuna_ml.provenance import SourceType
     import typing
+
+    from varuna_ml.provenance import SourceType
 
     members = set(typing.get_args(SourceType))
     for forbidden in {"MOCK", "SYNTHETIC", "FAKE", "DEMO", "TEST", "PLACEHOLDER"}:

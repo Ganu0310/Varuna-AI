@@ -2,7 +2,11 @@ import type { Polygon } from 'geojson';
 import { env } from '../env.js';
 import { ProviderClient } from './ProviderClient.js';
 import { aoiOverlapPct, bboxOf } from './geoUtil.js';
-import type { CatalogueItem, CatalogueSearchParams, SatelliteCatalogueProvider } from './types.js';
+import type {
+  ProviderCatalogueItem,
+  CatalogueSearchParams,
+  SatelliteCatalogueProvider,
+} from './types.js';
 
 /**
  * Microsoft Planetary Computer — 11_API_KEYS A2, 10_DATASETS §10.3.1.
@@ -39,7 +43,7 @@ export class PlanetaryComputerClient extends ProviderClient implements Satellite
     return true;
   }
 
-  async search(params: CatalogueSearchParams): Promise<CatalogueItem[]> {
+  async search(params: CatalogueSearchParams): Promise<ProviderCatalogueItem[]> {
     const collections = this.collectionsFor(params.platforms);
     if (collections.length === 0) return [];
 
@@ -76,7 +80,7 @@ export class PlanetaryComputerClient extends ProviderClient implements Satellite
 
     return (res.features ?? [])
       .map((f) => this.toCatalogueItem(f, params.aoi))
-      .filter((i): i is CatalogueItem => i !== null);
+      .filter((i): i is ProviderCatalogueItem => i !== null);
   }
 
   private collectionsFor(platforms?: string[]): string[] {
@@ -96,7 +100,7 @@ export class PlanetaryComputerClient extends ProviderClient implements Satellite
     return [...out];
   }
 
-  private toCatalogueItem(item: StacItem, aoi: Polygon): CatalogueItem | null {
+  private toCatalogueItem(item: StacItem, aoi: Polygon): ProviderCatalogueItem | null {
     const p = item.properties ?? {};
     const acquiredAt = (p.datetime ?? p.start_datetime) as string | undefined;
     // A scene with no acquisition time cannot be correlated in time — reject rather than

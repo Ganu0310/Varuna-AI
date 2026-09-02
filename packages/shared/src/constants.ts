@@ -166,6 +166,71 @@ export function trainingClassFor(id: RejectionCategory): SarClass | null {
   return REJECTION_CATEGORIES.find((c) => c.id === id)?.sarClass ?? null;
 }
 
+// ── Detection triage (07_AIML §9, 08_APP_FLOW §8.2) ──────────────────
+/*
+ * Triage ORDERS THE REVIEW QUEUE. It never adjudicates one.
+ *
+ * There is no AUTO_CONFIRMED and no AUTO_REJECTED, and that omission is the whole design.
+ * On the 66-scene held-out split the shipped detector fired on 68.2% of look-alike scenes,
+ * and on those false positives its own look-alike warning channel averaged 0.259 — barely
+ * above what it assigns a true slick. `tuning.py` then swept the look-alike risk gate across
+ * 0.2-1.0 on 384 development scenes: the best configuration removed 8.5 points of false
+ * positives in development and transferred as EXACTLY ZERO improvement on the held-out split.
+ * Across every configuration swept, mean risk on false positives stayed in the 0.15-0.29
+ * band. The conclusion recorded in 07_AIML §9 is that the look-alike problem is "not
+ * reachable by thresholds, area gates, shape gates or risk gates on a classical detector".
+ *
+ * A status set by a threshold would therefore be a coin flip wearing a label, on a system
+ * whose output can be used to accuse a vessel operator. Worse, it would poison the fix: the
+ * remedy the evidence points at is labelled negatives from human rejections, and
+ * `labels.ts` only counts a detection a human actually looked at. Auto-adjudication would
+ * both feed the detector its own output and shrink the supply of real labels.
+ *
+ * So triage answers a different, answerable question — WHERE IS AN ANALYST'S ATTENTION WORTH
+ * MOST? — out of three physical measurements that do not depend on the broken classifier.
+ */
+export const TRIAGE_WEIGHTS = {
+  /** How much this would matter if real. Area is an operational fact, not a judgement. */
+  significance: 0.45,
+  /** How adjudicable it is: contrast against local sea background, in dB. */
+  interpretability: 0.35,
+  /** How answerable it is: a linear slick can be matched to a track; a blob cannot. */
+  attributability: 0.2,
+} as const;
+
+/** Saturation points for the three components. Beyond these, more does not mean more urgent. */
+export const TRIAGE_SCALES = {
+  /** km². Below the floor a detection is barely above the detector's own minimum area. */
+  areaFloorKm2: 0.05,
+  areaSaturationKm2: 10,
+  /** dB below local background. 07_AIML §7.2.11: ~10 dB is unambiguous separation. */
+  contrastSaturationDb: 10,
+  /** Elongation ratio. Mirrors the confidence model's shape term, which saturates at 4. */
+  elongationSaturation: 4,
+} as const;
+
+export const TRIAGE_PRIORITY_THRESHOLDS = { HIGH: 0.6, MEDIUM: 0.35 } as const;
+export const TRIAGE_PRIORITIES = ['HIGH', 'MEDIUM', 'LOW'] as const;
+export type TriagePriority = (typeof TRIAGE_PRIORITIES)[number];
+
+/**
+ * Speculative precompute — the actual latency win.
+ *
+ * Back-tracking and correlation are enqueued at ingest so the dossier is already built when
+ * the analyst opens the case. The detection stays UNREVIEWED throughout: computing an origin
+ * is not the same act as accepting a detection, and only the second one needs a human.
+ *
+ * The cap exists because a drift run is a 5,000-particle ensemble behind an external OPeNDAP
+ * fetch. Spending that on every dark patch in a busy scene would delay the detections an
+ * analyst is most likely to open, which is the opposite of the point.
+ */
+export const TRIAGE_PRECOMPUTE = {
+  /** Below this score, wait for a human to ask. */
+  minScore: 0.15,
+  /** Highest-scoring N detections per scene. */
+  maxPerScene: 5,
+} as const;
+
 // ── Drift defaults (02_TRD §2.8.3, 07_AIML §7.3) ─────────────────────
 export const DRIFT_DEFAULTS = {
   particleCount: 5_000,
@@ -191,14 +256,16 @@ export const ATTRIBUTION_FEATURES = [
   { key: 'temporal_alignment', unit: 'fraction', defaultWeight: 0.16, family: 'temporal' },
   { key: 'track_intersection', unit: 'km', defaultWeight: 0.13, family: 'spatial' },
   { key: 'heading_alignment', unit: 'degrees', defaultWeight: 0.1, family: 'kinematic' },
-  { key: 'ais_dark_period', unit: 'minutes', defaultWeight: 0.1, family: 'behavioural' },
-  { key: 'speed_consistency', unit: '0-1', defaultWeight: 0.08, family: 'kinematic' },
-  { key: 'vessel_type_prior', unit: '0-1', defaultWeight: 0.07, family: 'behavioural' },
-  { key: 'origin_density_at_track', unit: 'normalised', defaultWeight: 0.07, family: 'spatial' },
-  { key: 'draught_change', unit: 'metres', defaultWeight: 0.05, family: 'behavioural' },
-  { key: 'slick_axis_continuity', unit: '0-1', defaultWeight: 0.03, family: 'kinematic' },
-  { key: 'manoeuvre_anomaly', unit: '0-1', defaultWeight: 0.02, family: 'kinematic' },
-  { key: 'prior_incident_history', unit: 'count', defaultWeight: 0.01, family: 'behavioural' },
+  { key: 'ais_dark_period', unit: 'minutes', defaultWeight: 0.08, family: 'behavioural' },
+  { key: 'vessel_type_risk', unit: '0-1', defaultWeight: 0.08, family: 'behavioural' },
+  { key: 'ais_dark_period_anomaly', unit: '0-1', defaultWeight: 0.08, family: 'behavioural' },
+  { key: 'speed_consistency', unit: '0-1', defaultWeight: 0.06, family: 'kinematic' },
+  { key: 'vessel_type_prior', unit: '0-1', defaultWeight: 0.04, family: 'behavioural' },
+  { key: 'origin_density_at_track', unit: 'normalised', defaultWeight: 0.04, family: 'spatial' },
+  { key: 'draught_change', unit: 'metres', defaultWeight: 0.02, family: 'behavioural' },
+  { key: 'slick_axis_continuity', unit: '0-1', defaultWeight: 0.015, family: 'kinematic' },
+  { key: 'manoeuvre_anomaly', unit: '0-1', defaultWeight: 0.01, family: 'kinematic' },
+  { key: 'prior_incident_history', unit: 'count', defaultWeight: 0.005, family: 'behavioural' },
 ] as const;
 export type AttributionFeatureKey = (typeof ATTRIBUTION_FEATURES)[number]['key'];
 export const DEFAULT_WEIGHT_PROFILE_ID = 'DEFAULT_V1';
@@ -253,6 +320,10 @@ export const JOB_QUEUES = {
   'ais-import': { retries: 3, backoffBaseMs: 30_000, concurrency: 8 },
   scoring: { retries: 3, backoffBaseMs: 5_000, concurrency: 8 },
   report: { retries: 2, backoffBaseMs: 15_000, concurrency: 2 },
+  // Concurrency 1: a sweep tick fans out into many INGEST enqueues itself (one per scene per
+  // watch region), so the tick job's own body is cheap orchestration — running two ticks at
+  // once would only double-enqueue the same work, never finish it faster (06_BACKEND §6.4.10).
+  sweep: { retries: 1, backoffBaseMs: 60_000, concurrency: 1 },
 } as const;
 export type QueueName = keyof typeof JOB_QUEUES;
 
@@ -263,6 +334,7 @@ export const JOB_KINDS = [
   'AIS_IMPORT',
   'SCORING',
   'REPORT',
+  'SWEEP_TICK',
 ] as const;
 export type JobKind = (typeof JOB_KINDS)[number];
 

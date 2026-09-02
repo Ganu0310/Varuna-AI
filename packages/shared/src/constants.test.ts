@@ -8,8 +8,8 @@ import {
 } from './constants.js';
 
 describe('attribution feature set — 07_AIML §7.6', () => {
-  it('has exactly twelve features', () => {
-    expect(ATTRIBUTION_FEATURES).toHaveLength(12);
+  it('has exactly fourteen features', () => {
+    expect(ATTRIBUTION_FEATURES).toHaveLength(14);
   });
 
   it('default weights sum to 1.00', () => {

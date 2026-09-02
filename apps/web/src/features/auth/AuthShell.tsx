@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import { VarunaMark } from '../../components/VarunaMark.tsx';
+import { useTheme } from '../../lib/theme.ts';
 
 /**
  * The shell around `/login` and `/register` — 04_UIUX §4.5, 05_FRONTEND §5.5.1.
@@ -13,13 +15,30 @@ import type { ReactNode } from 'react';
  * stops being true, this text has to change with it.
  */
 export function AuthShell({ children }: { children: ReactNode }) {
+  // The toggle belongs here as well as in the chrome: this is the one screen someone
+  // sees before they have an account, and a projector in a lit room needs the light
+  // palette at the login form, not after it.
+  const { theme, toggle } = useTheme();
+
   return (
     <main className="auth-shell">
+      <button
+        className="btn-ghost icon-btn auth-theme-toggle"
+        onClick={toggle}
+        aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+        title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+      >
+        {theme === 'dark' ? '☼' : '☾'}
+      </button>
       <section className="auth-brand" aria-labelledby="brand-title">
+        <VarunaMark size={112} />
         <p className="auth-eyebrow mono">SIH26143</p>
         <h1 id="brand-title" className="auth-wordmark">
           VARUNA
         </h1>
+        <p className="auth-expansion">
+          Vessel Attribution through Remote-sensing &amp; Unified Navigational Analytics
+        </p>
         <p className="auth-tagline">
           Attributing marine oil spills to vessels, from satellite radar and AIS.
         </p>

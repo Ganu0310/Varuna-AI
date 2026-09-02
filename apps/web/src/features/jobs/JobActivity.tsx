@@ -27,7 +27,10 @@ interface Job {
   attempts: number;
   createdAt: string;
   completedAt?: string | null;
-  failedReason?: string | null;
+  /** The API's field is `failureReason` (see apps/api/src/modules/jobs/model.ts). This
+   * interface named it `failedReason`, so the verbatim cause never rendered — the panel
+   * fell through to `error.message` and usually showed nothing at all. */
+  failureReason?: string | null;
   error?: { message?: string; consequence?: string } | null;
 }
 
@@ -73,7 +76,7 @@ export function JobActivity({ investigationId }: { investigationId: string }) {
       {items.map((j) => {
         const active = ACTIVE.has(j.status);
         const pct = Math.max(0, Math.min(100, j.progress?.pct ?? 0));
-        const reason = j.failedReason ?? j.error?.message ?? null;
+        const reason = j.failureReason ?? j.error?.message ?? null;
         return (
           <li key={j._id} className={`job job-${j.status.toLowerCase()}`}>
             <div className="job-head">

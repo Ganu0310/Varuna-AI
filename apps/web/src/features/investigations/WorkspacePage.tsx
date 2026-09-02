@@ -1,6 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { useInvestigation, useScenes, useDetections, type Detection } from '../../api/hooks.ts';
+import {
+  useInvestigation,
+  useScenes,
+  useDetections,
+  useMe,
+  type Detection,
+} from '../../api/hooks.ts';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client.ts';
 import { MapRoot } from '../../map/MapRoot.tsx';
@@ -12,6 +18,7 @@ import { DetectionsPanel } from '../detections/DetectionsPanel.tsx';
 import { OriginPanel } from '../origin/OriginPanel.tsx';
 import { JobActivity } from '../jobs/JobActivity.tsx';
 import { CommentThread } from './CommentThread.tsx';
+import { DeleteInvestigation, canDeleteInvestigation } from './DeleteInvestigation.tsx';
 import { PipelineProgress } from './PipelineProgress.tsx';
 import { InvestigationViews } from '../../components/Breadcrumbs.tsx';
 import { TeamPanel } from './TeamPanel.tsx';
@@ -70,6 +77,7 @@ export function WorkspacePage() {
   const [tab, setTab] = useState<Tab>('scenes');
 
   const { data: inv, isLoading, isError, error } = useInvestigation(id);
+  const me = useMe();
   const scenes = useScenes(id);
   const detections = useDetections(id);
   const addLayer = useLayerStore((s) => s.addLayer);
@@ -419,6 +427,24 @@ export function WorkspacePage() {
         {/* The same switcher every sibling view shows, so the set is learnable rather than
             four different link rows. */}
         <InvestigationViews investigationId={id!} current="workspace" />
+
+        {/* Last in the rail, under everything else, because it is the one control here that
+            ends the session rather than changing what it shows. */}
+        {canDeleteInvestigation(inv, me.data?.user) ? (
+          <div className="ws-danger">
+            <DeleteInvestigation
+              investigationId={id!}
+              name={inv.name}
+              counts={{
+                scenes: scenes.data?.items.length ?? 0,
+                detections: detections.data?.items.length ?? 0,
+                origins: origin.data?.origin ? 1 : 0,
+                candidates: candidates.data?.items.length ?? 0,
+              }}
+              redirectTo="/investigations"
+            />
+          </div>
+        ) : null}
 
         <LayerStackControl />
       </aside>

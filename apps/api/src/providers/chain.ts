@@ -4,9 +4,9 @@ import { PlanetaryComputerClient } from './planetaryComputer.js';
 import { CdseClient } from './cdse.js';
 import { AsfClient } from './asf.js';
 import type {
-  CatalogueItem,
   CatalogueSearchParams,
   CatalogueSearchResult,
+  ProviderCatalogueItem,
   ProviderStatus,
   SatelliteCatalogueProvider,
 } from './types.js';
@@ -42,6 +42,41 @@ export const SATELLITE_DOWNLOAD_CHAIN: SatelliteCatalogueProvider[] = [
 
 export const ALL_SATELLITE_PROVIDERS = [cdse, planetaryComputer, asf];
 
+/** The one collection `/ingest` can resolve a product id against. */
+export const INGESTIBLE_COLLECTION = 'sentinel-1-rtc';
+
+/**
+ * Decide ingestibility once, from the item itself.
+ *
+ * Terrain correction is the real requirement — it is what lets ingest window a scene in
+ * seconds instead of running SNAP — and the RTC collection is where those products live.
+ * Both are checked, because a future provider serving RTC under another collection name
+ * should be reported honestly rather than silently accepted or silently dropped.
+ */
+export function decideIngestible(item: ProviderCatalogueItem): {
+  ingestible: boolean;
+  ingestibleReason: string | null;
+} {
+  if (item.collection === INGESTIBLE_COLLECTION && item.preprocessed) {
+    return { ingestible: true, ingestibleReason: null };
+  }
+  if (!item.preprocessed) {
+    return {
+      ingestible: false,
+      ingestibleReason:
+        `${item.provider} serves this as raw ${item.collection}, which needs SNAP ` +
+        'radiometric and terrain correction before it can be read. Look for the same ' +
+        'overpass as a Planetary Computer RTC product.',
+    };
+  }
+  return {
+    ingestible: false,
+    ingestibleReason:
+      `Collection "${item.collection}" is not "${INGESTIBLE_COLLECTION}", which is the one ` +
+      'ingest resolves product ids against.',
+  };
+}
+
 /**
  * Query every configured provider in the chain **in parallel**, then merge.
  *
@@ -54,62 +89,64 @@ export async function searchCatalogue(
   chain: SatelliteCatalogueProvider[] = SATELLITE_CATALOGUE_CHAIN,
 ): Promise<CatalogueSearchResult> {
   const settled = await Promise.all(
-    chain.map(async (provider): Promise<{ status: ProviderStatus; items: CatalogueItem[] }> => {
-      const started = Date.now();
+    chain.map(
+      async (provider): Promise<{ status: ProviderStatus; items: ProviderCatalogueItem[] }> => {
+        const started = Date.now();
 
-      if (!provider.isConfigured()) {
-        return {
-          status: {
-            provider: provider.name,
-            status: 'NOT_CONFIGURED',
-            count: 0,
-            latencyMs: null,
-            reason: `No credentials configured for ${provider.name}.`,
-          },
-          items: [],
-        };
-      }
-
-      try {
-        const items = await provider.search(params);
-        return {
-          status: {
-            provider: provider.name,
-            // Zero results is OK, not an error — it is a real statement about coverage.
-            status: items.length === 0 ? 'NO_RESULTS' : 'OK',
-            count: items.length,
-            latencyMs: Date.now() - started,
-          },
-          items,
-        };
-      } catch (err) {
-        const latencyMs = Date.now() - started;
-        if (err instanceof ProviderUnavailable) {
+        if (!provider.isConfigured()) {
           return {
             status: {
               provider: provider.name,
-              status: mapReason(err.reason),
+              status: 'NOT_CONFIGURED',
               count: 0,
-              latencyMs,
-              reason: err.detail ?? err.reason,
-              ...(err.retryAt ? { retryAt: String(err.retryAt) } : {}),
+              latencyMs: null,
+              reason: `No credentials configured for ${provider.name}.`,
             },
             items: [],
           };
         }
-        logger.error({ err, provider: provider.name }, 'unexpected catalogue provider error');
-        return {
-          status: {
-            provider: provider.name,
-            status: 'ERROR',
-            count: 0,
-            latencyMs,
-            reason: err instanceof Error ? err.message : String(err),
-          },
-          items: [],
-        };
-      }
-    }),
+
+        try {
+          const items = await provider.search(params);
+          return {
+            status: {
+              provider: provider.name,
+              // Zero results is OK, not an error — it is a real statement about coverage.
+              status: items.length === 0 ? 'NO_RESULTS' : 'OK',
+              count: items.length,
+              latencyMs: Date.now() - started,
+            },
+            items,
+          };
+        } catch (err) {
+          const latencyMs = Date.now() - started;
+          if (err instanceof ProviderUnavailable) {
+            return {
+              status: {
+                provider: provider.name,
+                status: mapReason(err.reason),
+                count: 0,
+                latencyMs,
+                reason: err.detail ?? err.reason,
+                ...(err.retryAt ? { retryAt: String(err.retryAt) } : {}),
+              },
+              items: [],
+            };
+          }
+          logger.error({ err, provider: provider.name }, 'unexpected catalogue provider error');
+          return {
+            status: {
+              provider: provider.name,
+              status: 'ERROR',
+              count: 0,
+              latencyMs,
+              reason: err instanceof Error ? err.message : String(err),
+            },
+            items: [],
+          };
+        }
+      },
+    ),
   );
 
   const providerStatus = settled.map((s) => s.status);
@@ -134,7 +171,11 @@ export async function searchCatalogue(
   }
 
   items.sort((a, b) => a.acquiredAt.localeCompare(b.acquiredAt));
-  return { items, providerStatus };
+  // Stamped after the merge so it reflects the record that actually survived deduplication:
+  // the same overpass listed by CDSE and by Planetary Computer collapses to the RTC one, and
+  // it is that one's ingestibility the caller needs.
+  const stamped = items.map((i) => ({ ...i, ...decideIngestible(i) }));
+  return { items: stamped, providerStatus };
 }
 
 /**
@@ -143,11 +184,11 @@ export async function searchCatalogue(
  * (RTC) item wins, because it removes ~10 minutes of SNAP work per scene.
  */
 function dedupeByProductId(
-  items: CatalogueItem[],
+  items: ProviderCatalogueItem[],
   chain: SatelliteCatalogueProvider[],
-): CatalogueItem[] {
+): ProviderCatalogueItem[] {
   const rank = new Map(chain.map((p, i) => [p.name, i]));
-  const best = new Map<string, CatalogueItem>();
+  const best = new Map<string, ProviderCatalogueItem>();
 
   for (const item of items) {
     const key = normaliseProductId(item.productId);

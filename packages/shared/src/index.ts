@@ -8,6 +8,7 @@
 export * from './units.js';
 export * from './constants.js';
 export * from './geo/known-answers.js';
+export * from './watchRegions.js';
 
 export * from './schemas/provenance.js';
 export * from './schemas/geojson.js';

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { VarunaMark } from '../../components/VarunaMark.tsx';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client.ts';
 import { formatUtc } from '../../lib/format.ts';
@@ -56,6 +57,7 @@ export function LandingPage() {
   return (
     <main className="landing">
       <header className="landing-hero">
+        <VarunaMark size={104} />
         <p className="landing-eyebrow">SIH26143 · Smart India Hackathon 2026</p>
         <h1>
           Which vessel spilled this oil?

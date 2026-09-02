@@ -13,9 +13,35 @@ export const ForcingRef = z
     datasetId: z.string(),
     resolutionDeg: z.number().positive(),
     temporalResolutionH: z.number().positive(),
+    /** Temporal/spatial extent of the field that was actually read, for the provenance panel. */
+    coverage: z.string().optional(),
+    variables: z.array(z.string()).optional(),
+    depthLayer: z.string().optional(),
+    retrievalRoute: z.string().optional(),
+    processingMethod: z.string().optional(),
+    medianSpeedMs: z.number().optional(),
     provenanceId: z.string(),
   })
   .nullable();
+
+/**
+ * Per-term forcing status.
+ *
+ * `UNKNOWN` wind is never silently replaced with a constant or a climatological mean — the
+ * drift run sets the wind-drift coefficient to zero and labels itself degraded, which
+ * under-displaces a wind-driven slick in a direction the report states.
+ */
+export const CurrentStatus = z.enum(['OBSERVED', 'UNAVAILABLE']);
+export const WindStatus = z.enum(['OBSERVED', 'UNKNOWN', 'NOT_ATTEMPTED']);
+
+/** One provider the chain touched, and what came back. */
+export const ProviderAttempt = z.object({
+  provider: z.string(),
+  outcome: z.string(),
+  datasetId: z.string().optional(),
+  covers: z.string().optional(),
+  detail: z.string().optional(),
+});
 
 export const ReleaseWindow = z.object({
   earliest: z.string().datetime(),
@@ -39,6 +65,10 @@ export const OriginEstimate = z.object({
   method: OriginMethod,
   status: OriginStatus,
   degradationReason: z.string().nullable().default(null),
+  currentStatus: CurrentStatus.default('UNAVAILABLE'),
+  windStatus: WindStatus.default('UNKNOWN'),
+  windStatusReason: z.string().nullable().default(null),
+  providerAttempts: z.array(ProviderAttempt).default([]),
   forcing: z.object({
     currents: ForcingRef,
     winds: ForcingRef,

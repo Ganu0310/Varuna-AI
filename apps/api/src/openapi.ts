@@ -9,6 +9,7 @@ import { LoginBody, PublicUser, RegisterBody } from './modules/auth/schema.js';
 import { CatalogueSearchQuery } from './modules/catalogue/schema.js';
 import { ReviewBody } from './modules/detections/schema.js';
 import { TrainingLabelQuery } from './modules/admin/schema.js';
+import { DiscoverDetectionsQuery, TriggerSweepBody } from './modules/discover/schema.js';
 import {
   AddMemberBody,
   CreateInvestigationBody,
@@ -266,6 +267,225 @@ function buildRegistry(): OpenAPIRegistry {
     },
   });
 
+  /**
+   * The two operator-upload routes are documented together because they are one interaction:
+   * `inspect` says what a file claims about itself, `upload` accepts it on those terms.
+   */
+  r.registerPath({
+    method: 'post',
+    path: '/api/v1/investigations/{id}/scenes/inspect',
+    tags: ['scenes'],
+    summary:
+      'Read a GeoTIFF header and report what the file says about itself — coordinate system, ' +
+      'size, pixel spacing, a preview footprint, and every acquisition time it states, each ' +
+      'with its source and how far it can be trusted. Nothing is stored or queued. Send the ' +
+      'whole file or only its leading bytes; a mission product identifier in `originalName` ' +
+      'is read too.',
+    request: {
+      params: z.object({ id: z.string() }),
+      body: {
+        content: {
+          'multipart/form-data': {
+            schema: z.object({
+              scene: z.string().openapi({ type: 'string', format: 'binary' }),
+              originalName: z.string().optional(),
+              totalBytes: z.string().optional(),
+            }),
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: 'What the file states, plus how its extent sits against the AOI',
+        content: {
+          'application/json': {
+            schema: z.object({
+              acceptable: z.boolean(),
+              rejectionReason: z.string().nullable(),
+              partial: z.boolean(),
+              metadata: z.unknown(),
+              aoi: z.unknown().nullable(),
+              note: z.string(),
+            }),
+          },
+        },
+      },
+      400: problem,
+      403: problem,
+      404: problem,
+    },
+  });
+
+  /**
+   * Discover — browsing what the scheduled sweep already found, and asking it to look now.
+   * See `apps/api/src/modules/discover/service.ts` for why these reads deliberately cross
+   * investigation boundaries.
+   */
+  r.registerPath({
+    method: 'get',
+    path: '/api/v1/discover/overpasses',
+    tags: ['discover'],
+    summary:
+      'Every satellite acquisition the sweep saw over the watch regions in a period — ' +
+      'readable or not. An overpass that produced no detection is still evidence the sky was ' +
+      'watched, and `ingestibleReason` carries the reason the provider itself gave for why ' +
+      'a product cannot be analysed (raw GRD needing SNAP correction, typically). ' +
+      'Pre-computed by the ' +
+      'sweep; this never queries a provider.',
+    request: { query: DiscoverDetectionsQuery },
+    responses: {
+      200: {
+        description: 'Acquisitions in the period, newest first',
+        content: {
+          'application/json': {
+            schema: z.object({
+              items: z.array(
+                z.object({
+                  _id: z.string(),
+                  regionId: z.string(),
+                  productId: z.string(),
+                  provider: z.string(),
+                  collection: z.string(),
+                  acquiredAt: z.string(),
+                  platform: z.string().nullable(),
+                  footprint: z.unknown().nullable(),
+                  ingestible: z.boolean(),
+                  ingestibleReason: z.string().nullable(),
+                }),
+              ),
+            }),
+          },
+        },
+      },
+      400: problem,
+      403: problem,
+    },
+  });
+
+  r.registerPath({
+    method: 'post',
+    path: '/api/v1/discover/sweep',
+    tags: ['discover'],
+    summary:
+      'Run a sweep now for one watch region, or all of them. A manual sweep re-searches a ' +
+      'wide window rather than the incremental gap a scheduled tick uses, because someone ' +
+      'pressing this is asking what is out there, not what changed since last night. The job ' +
+      'key is stable per scope, so a second press while one is running is reported as ' +
+      '`deduplicated` instead of starting a second sweep.',
+    request: {
+      body: { content: { 'application/json': { schema: TriggerSweepBody } } },
+    },
+    responses: {
+      202: {
+        description: 'Sweep queued',
+        content: {
+          'application/json': {
+            schema: z.object({
+              jobId: z.string(),
+              deduplicated: z.boolean(),
+              regionId: z.string().nullable(),
+            }),
+          },
+        },
+      },
+      200: { description: 'A sweep with this scope is already running; the same job is returned' },
+      403: problem,
+      404: problem,
+      429: problem,
+    },
+  });
+
+  r.registerPath({
+    method: 'post',
+    path: '/api/v1/scenes/inspect',
+    tags: ['scenes'],
+    summary:
+      'The same header read, before any investigation exists. Used by the new-investigation ' +
+      'form to derive an area of interest and a time window from the scene itself. Nothing ' +
+      'is stored or queued, and the response omits the AOI comparison because there is no ' +
+      'AOI yet.',
+    request: {
+      body: {
+        content: {
+          'multipart/form-data': {
+            schema: z.object({
+              scene: z.string().openapi({ type: 'string', format: 'binary' }),
+              originalName: z.string().optional(),
+              totalBytes: z.string().optional(),
+            }),
+          },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: 'What the file states about itself',
+        content: {
+          'application/json': {
+            schema: z.object({
+              acceptable: z.boolean(),
+              rejectionReason: z.string().nullable(),
+              partial: z.boolean(),
+              metadata: z.unknown(),
+              note: z.string(),
+            }),
+          },
+        },
+      },
+      400: problem,
+      403: problem,
+      413: problem,
+    },
+  });
+
+  r.registerPath({
+    method: 'post',
+    path: '/api/v1/investigations/{id}/scenes/upload',
+    tags: ['scenes'],
+    summary:
+      'Accept an operator-supplied SAR GeoTIFF. Refused unless it is genuinely georeferenced. ' +
+      '`acquiredAt` may be omitted when the file states it unambiguously (a mission product ' +
+      'identifier, or a metadata key meaning acquisition rather than production); a weak ' +
+      'signal such as TIFFTAG_DATETIME is never adopted, and the 400 lists what was found. ' +
+      'The resulting scene is recorded as OPERATOR_SUPPLIED everywhere it appears.',
+    request: {
+      params: z.object({ id: z.string() }),
+      body: {
+        content: {
+          'multipart/form-data': {
+            schema: z.object({
+              scene: z.string().openapi({ type: 'string', format: 'binary' }),
+              acquiredAt: z.string().optional(),
+            }),
+          },
+        },
+      },
+    },
+    responses: {
+      200: { description: 'These exact bytes were already held; no duplicate work queued' },
+      202: {
+        description: 'Stored and queued for ingest and detection',
+        content: {
+          'application/json': {
+            schema: z.object({
+              jobId: z.string(),
+              productId: z.string(),
+              checksum: z.string(),
+              acquiredAt: z.string(),
+              acquiredAtSource: z.string().nullable(),
+              extracted: z.unknown(),
+              provenanceNotice: z.string(),
+            }),
+          },
+        },
+      },
+      400: problem,
+      403: problem,
+      422: problem,
+    },
+  });
+
   r.registerPath({
     method: 'get',
     path: '/api/v1/detections/rejection-categories',
@@ -334,6 +554,103 @@ function buildRegistry(): OpenAPIRegistry {
       422: {
         description:
           'A REJECT without a note or without a category, or an EDIT without a geometry.',
+        content: { 'application/problem+json': { schema: ProblemDetails } },
+      },
+    },
+  });
+
+  /**
+   * Discover — browse a small, named list of watch regions a scheduled sweep already ran
+   * detection over, and start an investigation from what it found. The read routes
+   * deliberately cross the ordinary investigation-membership boundary (see the module
+   * header in modules/discover/service.ts); documented here so that is visible in the
+   * public contract rather than only in source comments.
+   */
+  r.registerPath({
+    method: 'get',
+    path: '/api/v1/discover/regions',
+    tags: ['discover'],
+    summary: 'The fixed list of watch regions the sweep covers, each with its real AOI.',
+    responses: {
+      200: {
+        description: 'The watch regions',
+        content: { 'application/json': { schema: z.object({ items: z.array(z.unknown()) }) } },
+      },
+    },
+  });
+
+  r.registerPath({
+    method: 'get',
+    path: '/api/v1/discover/detections',
+    tags: ['discover'],
+    summary:
+      'Detections lying INSIDE a watch region whose scene was acquired within [from, to] ' +
+      '(at most 90 days apart), optionally narrowed to one region. Selected by geography, not ' +
+      'by which pipeline ingested the scene, and always filtered to investigations the caller ' +
+      'may read. Nothing here triggers new provider work. outsidePeriod counts visible ' +
+      'findings in the same regions that fall outside the window, so an empty list can say ' +
+      'whether the period is the reason.',
+    request: {
+      query: z.object({
+        from: z.string().datetime(),
+        to: z.string().datetime(),
+        regionId: z.string().optional(),
+      }),
+    },
+    responses: {
+      200: {
+        description: 'Detections in the window, and a count of those outside it',
+        content: {
+          'application/json': {
+            schema: z.object({
+              items: z.array(z.unknown()),
+              outsidePeriod: z.object({
+                count: z.number(),
+                earliest: z.string().nullable(),
+                latest: z.string().nullable(),
+              }),
+            }),
+          },
+        },
+      },
+      400: problem,
+    },
+  });
+
+  r.registerPath({
+    method: 'post',
+    path: '/api/v1/discover/detections/{id}/adopt',
+    tags: ['discover'],
+    summary:
+      'Move a Discover-found scene — and every detection on it, not only the one clicked — ' +
+      'onto a real investigation. Creates a new investigation by default (the primary "start ' +
+      'investigating" action); pass investigationId to adopt into an existing one instead.',
+    request: {
+      params: z.object({ id: z.string() }),
+      body: {
+        content: {
+          'application/json': { schema: z.object({ investigationId: z.string().optional() }) },
+        },
+      },
+    },
+    responses: {
+      200: {
+        description: 'Adopted into an existing investigation',
+        content: {
+          'application/json': {
+            schema: z.object({
+              investigationId: z.string(),
+              created: z.boolean(),
+              adoptedDetectionCount: z.number().int(),
+            }),
+          },
+        },
+      },
+      201: { description: 'Adopted into a newly-created investigation' },
+      400: problem,
+      404: problem,
+      409: {
+        description: 'This scene is already attached to the target investigation.',
         content: { 'application/problem+json': { schema: ProblemDetails } },
       },
     },

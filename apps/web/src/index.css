@@ -402,6 +402,11 @@ button:disabled {
   color: var(--status-danger);
   border-color: var(--status-danger);
 }
+.token-accent {
+  color: var(--accent-200);
+  background: var(--accent-900);
+  border-color: var(--accent-700);
+}
 
 .catalogue-table {
   font-size: 12px;
@@ -735,6 +740,288 @@ button:disabled {
   border-radius: var(--r-md);
   padding: var(--space-4);
   backdrop-filter: blur(6px);
+}
+
+/* ── discover ──────────────────────────────────────────────────────────
+   Same two-region shape as the workspace (rail + map), one column narrower: there is no
+   third evidence panel here because the rail itself IS the interaction — a list of cards,
+   not a map click target (see the page's own header comment for why). */
+.discover {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  height: calc(100vh - 56px);
+  overflow: hidden;
+}
+.discover-rail {
+  overflow-y: auto;
+  padding: var(--space-5);
+  background: var(--surface-1);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+/* Flex children shrink below their content by default, and this rail's content is taller
+   than the viewport — so every block was being squashed to a fraction of its height and
+   overflowing on top of the next one, which is why the empty state painted over the coverage
+   list. Keeping natural height is what makes the rail's own `overflow-y: auto` do the
+   scrolling instead. */
+.discover-rail > * {
+  flex-shrink: 0;
+}
+.discover-rail h1 {
+  font-size: 18px;
+  margin: 0;
+}
+.discover-map {
+  position: relative;
+  min-width: 0;
+}
+
+.discover-time-filter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.discover-time-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* The rail is a stack of unrelated controls and lists; without headings it reads as one
+   undifferentiated column. These are the labels that make it scannable. */
+.discover-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.discover-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-tertiary);
+  margin: 0;
+}
+
+/* A region is a choice between four places, not a chip in a filter bar. Each row carries
+   what the last sweep saw there, so the choice can be made on evidence rather than on the
+   name alone — which is why these are stacked rows with two lines, not wrapped pills. */
+.discover-region-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.discover-region {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  width: 100%;
+  padding: 8px 10px;
+  min-height: 0;
+  text-align: left;
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-md);
+  color: var(--ink-secondary);
+  font: inherit;
+  cursor: pointer;
+}
+.discover-region:hover {
+  border-color: var(--border-default);
+}
+.discover-region.on {
+  background: var(--accent-900);
+  border-color: var(--accent-700);
+  color: var(--accent-200);
+}
+.discover-region-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-primary);
+}
+.discover-region.on .discover-region-label {
+  color: var(--accent-200);
+}
+.discover-region-meta {
+  font-size: 11px;
+  color: var(--ink-tertiary);
+}
+.discover-region-note {
+  margin: 0;
+}
+/* A toggle, not a plain button: `.btn-ghost` reads as body text with no border, which is
+   right for an action but wrong for a filter someone needs to see is currently ON. */
+.discover-preset {
+  font-size: 12px;
+  padding: 5px 10px;
+  min-height: 0;
+  background: var(--surface-2);
+  border: 1px solid var(--border-default);
+  color: var(--ink-secondary);
+}
+.discover-preset.on {
+  background: var(--accent-900);
+  border-color: var(--accent-700);
+  color: var(--accent-200);
+}
+/* Two datetime inputs plus an arrow are wider than this rail, and a `datetime-local` has a
+   large intrinsic minimum width that ignores the container — left unwrapped it pushed the
+   whole rail sideways and clipped every label in it. Wrapping plus `min-width: 0` lets them
+   size down to the rail instead of the rail sizing up to them. */
+.discover-time-custom {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.discover-time-custom input[type='datetime-local'] {
+  font: inherit;
+  font-size: 12px;
+  background: var(--surface-inset);
+  color: var(--ink-primary);
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  padding: 5px 8px;
+  color-scheme: dark;
+  flex: 1 1 140px;
+  min-width: 0;
+}
+/* The rail scrolls vertically only. Anything wide enough to need horizontal room is a bug in
+   that thing's own sizing, not a reason to move the whole panel. */
+.discover-rail {
+  overflow-x: hidden;
+}
+
+/* No `flex: 1` here. The rail is a flex column that scrolls as a whole, and letting this
+   block grow made it shrink its own content instead — the empty state overflowed its box and
+   painted straight over the coverage list below it. */
+.discover-results {
+  min-height: 0;
+}
+.discover-card-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.discover-card {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.discover-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.discover-card-meta {
+  display: flex;
+  gap: var(--space-5);
+  margin: 0;
+  font-size: 11px;
+}
+.discover-card-meta dt {
+  color: var(--ink-tertiary);
+  display: inline;
+}
+.discover-card-meta dd {
+  display: inline;
+  margin: 0 0 0 4px;
+}
+/* Full, untruncated: this is what an evaluator uses to find the same scene — the same
+   reasoning the dossier's own product-id cells follow (`.rp-id`). */
+.discover-card-product {
+  word-break: break-all;
+  margin: 0;
+}
+
+/* The manual sweep trigger and its progress line. */
+.discover-sweep {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+}
+.discover-sweep .field-hint,
+.discover-sweep .scene-read-warn,
+.discover-sweep .form-error {
+  margin: 0;
+}
+
+/* Imagery coverage — what the sweep saw, distinct from what it found. */
+.discover-coverage {
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-subtle);
+}
+.discover-coverage h2 {
+  font-size: 13px;
+  margin: 0 0 var(--space-2);
+}
+.discover-coverage-list {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.discover-overpass {
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  background: var(--surface-2);
+  padding: var(--space-3);
+}
+/* Selected = its footprint is the one drawn on the map, so the link between the row and the
+   shape has to be unmistakable. */
+.discover-overpass.on {
+  border-color: var(--accent-600);
+  background: var(--surface-3);
+}
+.discover-overpass-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  padding: 0;
+  min-height: 0;
+  background: none;
+  border: 0;
+  color: var(--ink-primary);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  text-align: left;
+}
+.discover-overpass-tokens {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.discover-overpass-meta {
+  margin: 4px 0 0;
+  font-size: 11px;
+}
+.discover-overpass .field-hint {
+  margin: 4px 0 0;
 }
 
 /* ── time scrubber ─────────────────────────────────────────────────── */
@@ -1181,6 +1468,97 @@ button:disabled {
   }
 }
 
+/* ── plain-language summary ──────────────────────────────────────────────
+   Same base as the dossier (`.report`: light theme, A4 width, print reset) — a non-technical
+   reader should not also have to fight a dark theme meant for a screen — but the content is
+   narrative rather than tabular, so it gets its own type scale: bigger, looser, no monospace
+   except where a real identifier (an MMSI) has to stay copy-pasteable. */
+.report-plain {
+  font-size: 12pt;
+  line-height: 1.7;
+}
+.pr-lede {
+  font-size: 13.5pt;
+  font-weight: 600;
+  line-height: 1.5;
+  margin: var(--space-3) 0 var(--space-5);
+  color: var(--ink-primary);
+}
+.pr-prose p,
+.pr-prose-p {
+  max-width: 66ch;
+  margin: 0;
+}
+.pr-technical-pointer {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-subtle);
+  font-size: 10pt;
+  color: var(--ink-secondary);
+  max-width: 66ch;
+}
+
+.pr-vessels {
+  list-style: none;
+  margin: var(--space-4) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  counter-reset: none;
+}
+.pr-vessel {
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  padding: var(--space-4) var(--space-5);
+  background: var(--surface-2);
+}
+.pr-vessel-head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+  margin-bottom: var(--space-2);
+}
+.pr-vessel-rank {
+  font-weight: 700;
+  color: var(--ink-tertiary);
+}
+.pr-vessel p {
+  margin: 0;
+  max-width: 66ch;
+}
+
+/* The one section with no toggle, same rule as the dossier's Uncertainty & Limitations —
+   listed rather than run together, because each entry is meant to be read on its own, not
+   skimmed as one paragraph. */
+.pr-dontknow-list {
+  margin: var(--space-4) 0 0;
+  padding-left: 1.2em;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.pr-dontknow-list li {
+  max-width: 66ch;
+  padding-left: 4px;
+}
+
+.pr-bottomline {
+  border: 1px solid var(--border-default);
+  border-left: 4px solid var(--accent-500);
+  background: var(--surface-2);
+  padding: var(--space-5);
+}
+.pr-bottomline h2 {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: var(--space-3);
+}
+.pr-bottomline > p:first-of-type {
+  font-weight: 600;
+  max-width: 66ch;
+}
+
 /* ── scene records (workspace panel) ──────────────────────────────────────
    A side panel is too narrow for a wide table whose cells include an
    untruncatable identifier. These render one scene per card instead, so the
@@ -1398,6 +1776,10 @@ input[type='range'] {
 /* A download is an action with a consequence — a file lands on disk — so it gets a
    real button rather than the ghost style, which reads as body text and gave no
    sign it could be clicked. */
+/* Reaches an `<a>` now as well as a `<button>` — the plain-language summary link uses this
+   class too, so it reads as the same control rather than a smaller underlined link sitting
+   next to properly-padded buttons. Everything the bare `button` reset above gives a
+   `<button>` for free is restated explicitly here, because an anchor gets none of it. */
 .btn-download {
   display: inline-flex;
   align-items: center;
@@ -1406,6 +1788,11 @@ input[type='range'] {
   border: 1px solid var(--border-default);
   color: var(--ink-primary);
   font-size: 13px;
+  font: inherit;
+  padding: var(--space-3) var(--space-5);
+  border-radius: var(--r-sm);
+  text-decoration: none;
+  cursor: pointer;
 }
 .btn-download:hover:not(:disabled) {
   border-color: var(--accent-600);
@@ -2343,4 +2730,962 @@ button,
   color: var(--oil-400);
   font-size: 12.5px !important;
   line-height: 1.55;
+}
+
+/* What the picked file said about itself, before it is uploaded.
+   Bordered and inset rather than inline, because it is a report ABOUT the input above it —
+   run as ordinary form text it read as more instructions to follow. */
+.scene-read {
+  margin: var(--space-2, 8px) 0 var(--space-3, 12px);
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--status-ok);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+/* A refused file is not a lesser version of an accepted one — it is a different outcome, and
+   the panel changes colour rather than only wording. */
+.scene-read-refused {
+  border-left-color: var(--status-danger);
+}
+.scene-read-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3, 12px);
+  font-size: 13.5px;
+}
+.scene-read-kv {
+  font-size: 12px;
+}
+.scene-read-kv dd {
+  text-align: right;
+}
+.scene-read-refusal {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--status-danger);
+}
+.scene-read-warn {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--status-warn);
+}
+.scene-read-adopted {
+  color: var(--status-ok) !important;
+}
+.scene-read-candidates-list {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.scene-read-candidates-list li {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  gap: 6px 8px;
+}
+/* The note spans the full row: it is the sentence the analyst actually decides on, so it is
+   not squeezed into the last column beside the button. */
+.scene-read-candidates-list li .field-hint {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+/* ── starting an investigation from the scene ──────────────────────────
+   A drop target, and then a plain statement of what the file put in the fields below it. */
+.scene-drop {
+  margin-top: var(--space-3, 12px);
+  padding: 14px;
+  border: 1px dashed var(--border-default);
+  border-radius: 6px;
+  background: var(--surface-inset);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition:
+    border-color 120ms ease,
+    background 120ms ease;
+}
+.scene-drop.over {
+  border-color: var(--status-ok);
+  border-style: solid;
+  background: var(--surface-3);
+}
+.scene-drop input[type='file'] {
+  font: inherit;
+  color: var(--ink-secondary);
+}
+.scene-drop input[type='file']::file-selector-button {
+  font: inherit;
+  margin-right: 10px;
+  padding: 6px 12px;
+  min-height: 32px;
+  background: var(--surface-3);
+  color: var(--ink-primary);
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  cursor: pointer;
+}
+.scene-drop input[type='file']::file-selector-button:hover {
+  background: var(--surface-4);
+}
+
+.scene-derived {
+  margin-top: var(--space-3, 12px);
+  padding: 12px 14px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.scene-derived h3 {
+  margin: 0;
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-tertiary);
+}
+/* The token is a fixed column so AREA and WINDOW line up and the eye can scan the two
+   answers without re-finding the left edge each time. */
+.scene-derived-row {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  gap: 10px;
+  align-items: start;
+}
+.scene-derived-row p {
+  margin: 0 0 4px;
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+.scene-derived-row p:last-child {
+  margin-bottom: 0;
+}
+.scene-manual-time {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+}
+/* A button that has to sit inside a sentence — "file.tif · 32.0 MB · remove". A real button
+   for the keyboard and the screen reader, styled as the link it reads as. */
+.link-button {
+  font: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  min-height: 0;
+  color: var(--accent-400);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.link-button:disabled {
+  color: var(--ink-tertiary);
+  cursor: default;
+}
+
+.scene-manual-time input[type='datetime-local'] {
+  font: inherit;
+  background: var(--surface-inset);
+  color: var(--ink-primary);
+  border: 1px solid var(--border-default);
+  border-radius: 4px;
+  padding: 7px 10px;
+  min-height: 32px;
+  color-scheme: dark;
+  align-self: flex-start;
+}
+.scene-read-source {
+  font-size: 12px;
+  color: var(--ink-secondary);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Left rail shell, operations dashboard, capability matrix
+   The rail replaced a top strip that could no longer hold eight
+   destinations without truncating, and it leaves the full width to the
+   map — the only view that genuinely needs it.
+   ══════════════════════════════════════════════════════════════════════ */
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 232px 1fr;
+  min-height: 100vh;
+}
+.app-shell.rail-collapsed {
+  grid-template-columns: 64px 1fr;
+}
+
+.rail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: var(--surface-1);
+  border-right: 1px solid var(--border-subtle);
+  padding: 12px 10px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+.rail-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px 12px;
+}
+/* Collapsed, the brand and the toggle were competing for 44px and both came out cramped.
+   Stacking them gives each its own row and keeps the logo at a readable size. */
+.rail-collapsed .rail-head {
+  flex-direction: column;
+  gap: 6px;
+  padding: 4px 0 12px;
+}
+.rail-collapsed .rail-brand {
+  justify-content: center;
+}
+.rail-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--ink-primary);
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  min-width: 0;
+}
+.rail-mark {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--accent-600);
+  color: var(--ink-inverse);
+  font-size: 15px;
+}
+.rail-wordmark {
+  white-space: nowrap;
+  overflow: hidden;
+}
+.rail-collapsed .rail-wordmark,
+.rail-collapsed .rail-label {
+  display: none;
+}
+.rail-toggle {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid var(--border-default);
+  border-radius: 6px;
+  color: var(--ink-secondary);
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+  line-height: 1;
+}
+.rail-toggle:hover {
+  border-color: var(--border-strong);
+  color: var(--ink-primary);
+}
+.rail-collapsed .rail-toggle {
+  margin-left: 0;
+}
+
+.rail-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.rail-nav a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: var(--ink-secondary);
+  text-decoration: none;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.rail-nav a:hover {
+  background: var(--surface-2);
+  color: var(--ink-primary);
+}
+.rail-nav a.active {
+  background: var(--surface-3);
+  color: var(--ink-primary);
+  /* A left edge rather than a fill: it reads as "you are here" without competing with the
+     accent colour used for interactive controls. */
+  box-shadow: inset 2px 0 0 var(--accent-400);
+}
+.rail-icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+}
+.nav-icon {
+  display: block;
+}
+/* Collapsed, the icon IS the target, so it gets the whole row and sits dead centre —
+   previously it kept the expanded layout's left inset and drifted off-axis. */
+.rail-collapsed .rail-nav a {
+  justify-content: center;
+  padding: 9px 0;
+  gap: 0;
+}
+
+.rail-status {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  border: 1px solid var(--border-default);
+  color: var(--ink-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rail-status-dot {
+  flex: 0 0 auto;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+/* Collapsed there is no room for a word, so the dot carries the state and the link's title
+   spells it out. A truncated "DEGRA…" would be worse than a colour with a tooltip. */
+.rail-collapsed .rail-status-text {
+  display: none;
+}
+.rail-collapsed .rail-status {
+  padding: 8px 0;
+}
+
+.shell-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.shell-main > .top-bar {
+  justify-content: flex-end;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.icon-btn {
+  padding: 4px 8px;
+  font-size: 15px;
+  line-height: 1;
+}
+
+/* ── status colours, shared by rail pill, badges and tokens ───────────── */
+.status-available,
+.token-live {
+  border-color: var(--status-ok) !important;
+  color: var(--status-ok) !important;
+}
+.status-degraded {
+  border-color: var(--status-warn) !important;
+  color: var(--status-warn) !important;
+}
+.status-unavailable {
+  border-color: var(--status-danger) !important;
+  color: var(--status-danger) !important;
+}
+.status-optional,
+.status-unknown {
+  border-color: var(--border-default) !important;
+  color: var(--ink-tertiary) !important;
+}
+
+.status-badge {
+  align-self: center;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border-default);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+}
+
+/* ── dashboard ───────────────────────────────────────────────────────── */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.stat-tile {
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 16px;
+}
+.stat-value {
+  font-family: var(--font-display);
+  font-size: 30px;
+  line-height: 1.1;
+  color: var(--ink-primary);
+}
+.stat-label {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--ink-secondary);
+  display: block;
+}
+
+.dash-cols {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+.card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.dash-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+.dash-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 0;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 13px;
+}
+.dash-list li:first-child {
+  border-top: 0;
+}
+
+.impaired-strip .impaired-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+.impaired-strip .impaired-list li {
+  padding: 6px 0;
+  font-size: 13px;
+  border-top: 1px solid var(--border-subtle);
+}
+.impaired-strip .impaired-list li:first-child {
+  border-top: 0;
+}
+
+.job-running,
+.job-queued,
+.job-retrying {
+  border-color: var(--status-info) !important;
+  color: var(--status-info) !important;
+}
+.job-completed {
+  border-color: var(--status-ok) !important;
+  color: var(--status-ok) !important;
+}
+.job-failed,
+.job-cancelled {
+  border-color: var(--status-danger) !important;
+  color: var(--status-danger) !important;
+}
+
+/* ── capability matrix ───────────────────────────────────────────────── */
+.capability-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+.capability .capability-reason {
+  font-size: 13px;
+  color: var(--ink-secondary);
+}
+.capability-consequence {
+  border-left: 2px solid var(--border-strong);
+  padding-left: 12px;
+  margin: 12px 0;
+}
+.capability-consequence .label {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-tertiary);
+}
+.capability-consequence p {
+  margin: 4px 0 0;
+  font-size: 13px;
+}
+.provider-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.provider-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 6px 0;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 12px;
+}
+.provider-name {
+  color: var(--ink-primary);
+}
+.provider-role {
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.provider-note {
+  flex-basis: 100%;
+  font-size: 11px;
+}
+
+@media (max-width: 720px) {
+  .app-shell,
+  .app-shell.rail-collapsed {
+    grid-template-columns: 64px 1fr;
+  }
+  .rail-wordmark,
+  .rail-label {
+    display: none;
+  }
+}
+
+/* ── verified scenario card ──────────────────────────────────────────── */
+.scenario-card {
+  display: grid;
+  grid-template-columns: 1fr minmax(240px, 300px);
+  gap: 24px;
+  align-items: start;
+}
+.scenario-kicker {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: var(--accent-400);
+}
+.scenario-body h2 {
+  margin: 6px 0 8px;
+}
+.stage-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+.chip {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-default);
+  color: var(--ink-tertiary);
+}
+/* Filled = the button does it for you; outlined = you drive it. The distinction is the
+   honest scope of the demo, so it is encoded visually rather than only in a tooltip. */
+.chip-auto {
+  border-color: var(--accent-600);
+  color: var(--accent-400);
+}
+.scenario-action {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.scenario-note {
+  font-size: 12px;
+  margin: 0;
+}
+.scenario-result {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 12px;
+}
+.scenario-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.scenario-steps li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 6px 0;
+  font-size: 13px;
+}
+.step-ok {
+  border-color: var(--status-ok) !important;
+  color: var(--status-ok) !important;
+}
+.step-reused {
+  border-color: var(--status-info) !important;
+  color: var(--status-info) !important;
+}
+.step-failed {
+  border-color: var(--status-danger) !important;
+  color: var(--status-danger) !important;
+}
+.scenario-next {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.scenario-next ol {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
+
+@media (max-width: 860px) {
+  .scenario-card {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── the mark, and the auth screens ──────────────────────────────────── */
+.varuna-mark {
+  display: block;
+  flex: 0 0 auto;
+}
+.rail-brand .varuna-mark {
+  height: 28px;
+  width: auto;
+}
+/* The rail's letter tile is gone; the mark carries its own shape. */
+.rail-mark {
+  display: none;
+}
+.auth-brand .varuna-mark {
+  margin-bottom: var(--space-2);
+  /* A soft halo so the navy shield keeps its edge against the light surface too. */
+  filter: drop-shadow(0 6px 18px rgba(14, 111, 134, 0.22));
+}
+.auth-expansion {
+  margin: 0;
+  max-width: 40ch;
+  font-family: var(--font-display);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  line-height: 1.5;
+  color: var(--accent-400);
+  text-transform: uppercase;
+}
+.auth-shell {
+  position: relative;
+}
+.auth-theme-toggle {
+  position: absolute;
+  top: var(--space-5);
+  right: var(--space-5);
+  z-index: 2;
+}
+@media (max-width: 900px) {
+  .auth-brand .varuna-mark {
+    height: 72px;
+    width: auto;
+  }
+  .auth-expansion {
+    display: none;
+  }
+}
+
+/* ── scene picker ────────────────────────────────────────────────────── */
+.scene-picker select {
+  width: 100%;
+  font-size: 13px;
+}
+.scene-picker-id {
+  font-size: 11px;
+  word-break: break-all;
+  margin: 0;
+}
+.row-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.scene-picker-other ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 12px;
+}
+.by-product-id summary {
+  cursor: pointer;
+  font-size: 13px;
+  padding: 6px 0;
+}
+
+/* ── investigation cards ─────────────────────────────────────────────── */
+.list-filters {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 12px 0 16px;
+}
+.list-filters input[type='search'] {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.inv-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 14px;
+}
+.inv-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.inv-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.inv-name {
+  font-family: var(--font-display);
+  font-size: 16px;
+  text-decoration: none;
+}
+.inv-ref {
+  margin: -6px 0 0;
+  font-size: 11px;
+}
+
+/* The pipeline strip. A reached stage is filled; an unreached one stays outlined, so the
+   point at which a case stopped is visible at a glance across a whole grid of them. */
+.inv-stages {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+.inv-stage {
+  text-align: center;
+  padding: 6px 4px;
+  border-radius: 6px;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-1);
+}
+.inv-stage.reached {
+  border-color: var(--accent-600);
+  background: var(--surface-3);
+}
+.inv-stage-n {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 17px;
+  color: var(--ink-tertiary);
+}
+.inv-stage.reached .inv-stage-n {
+  color: var(--accent-400);
+}
+.inv-stage-label {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--ink-tertiary);
+}
+.inv-next {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-secondary);
+}
+.inv-next.done {
+  color: var(--status-ok);
+}
+.inv-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+.inv-meta dt {
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-tertiary);
+}
+.inv-meta dd {
+  margin: 0;
+  font-size: 12px;
+}
+
+/* ── deleting an investigation ─────────────────────────────────────────
+   Inline rather than a modal overlay. The confirmation has to be read to be worth asking
+   for, and it belongs beside the case it is about — a centred dialog detaches the question
+   from the card that answers "which one?". */
+.inv-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+.ws-danger {
+  margin-top: var(--space-4, 16px);
+  padding-top: var(--space-3, 12px);
+  border-top: 1px solid var(--border-subtle);
+}
+.inv-delete {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--status-danger);
+  border-radius: 6px;
+  text-align: left;
+}
+.inv-delete-q {
+  margin: 0;
+  font-size: 13.5px;
+}
+/* The sentence that says nothing is destroyed is the point of the dialog, so it is set as
+   readable prose rather than as a footnote under the buttons. */
+.inv-delete-body {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--ink-secondary);
+}
+.inv-delete-error {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--status-danger);
+}
+.inv-delete-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ── modal dialog ────────────────────────────────────────────────────── */
+.modal-backdrop {
+  position: fixed;
+  /* Explicit edges as well as `inset`: the shorthand is fine everywhere current, but these
+     four are what actually pin the overlay to the viewport and they cost nothing. */
+  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1000;
+  display: flex;
+  /* Flex rather than grid centring, with `margin: auto` on the panel below. When the panel
+     is TALLER than the space available, grid's `place-items: center` overflows it equally in
+     both directions and the top — the heading and the close button — goes off-screen where
+     it cannot be reached. Flex with auto margins keeps it clamped inside instead. */
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 24px;
+  /* Dimmed rather than opaque: keeping the workspace faintly visible preserves the sense of
+     where the dialog came from. */
+  background: rgba(3, 6, 10, 0.62);
+  backdrop-filter: blur(2px);
+}
+.modal-panel {
+  width: min(920px, 100%);
+  max-height: 86vh;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-1);
+  border: 1px solid var(--border-default);
+  border-radius: 12px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+  outline: none;
+}
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.modal-head h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.modal-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.modal-body {
+  overflow-y: auto;
+  padding: 16px 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+/* The review renders its own card; inside the dialog that second frame is noise. */
+.modal-body > .card {
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  background: transparent;
+}
+@media (max-width: 720px) {
+  .modal-backdrop {
+    padding: 0;
+  }
+  .modal-panel {
+    max-height: 100%;
+    height: 100%;
+    border-radius: 0;
+  }
 }

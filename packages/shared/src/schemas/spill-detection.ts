@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { GeoPoint, GeoPolygon, GeoMultiPolygon } from './geojson.js';
 import { Provenance } from './provenance.js';
-import { REJECTION_CATEGORY_IDS } from '../constants.js';
+import { REJECTION_CATEGORY_IDS, TRIAGE_PRIORITIES } from '../constants.js';
 
 /** 02_TRD §2.4.3, 07_AIML §7.2.10 / §7.2.11. */
 
@@ -41,11 +41,51 @@ export const DetectionModelInfo = z.object({
   overlap: z.number().nonnegative(),
 });
 
-export const ReviewStatus = z.enum(['UNREVIEWED', 'CONFIRMED', 'REJECTED', 'EDITED']);
+export const ReviewStatus = z.enum([
+  'UNREVIEWED',
+  'AUTO_CONFIRMED',
+  'AUTO_REJECTED',
+  'CONFIRMED',
+  'REJECTED',
+  'EDITED',
+]);
+
+/**
+ * Queue ordering, not a verdict — see TRIAGE_WEIGHTS in constants.ts for why this is a
+ * separate field from `reviewStatus` and can never write to it.
+ *
+ * `components` and `reasons` are stored rather than recomputed on read so the ordering an
+ * analyst saw remains reconstructible after a weight change, and so the numbers behind a
+ * priority are auditable next to the detection they ranked.
+ */
+export const TriagePriorityEnum = z.enum(TRIAGE_PRIORITIES);
+
+export const DetectionTriage = z.object({
+  score: z.number().min(0).max(1),
+  priority: TriagePriorityEnum,
+  components: z.object({
+    significance: z.number().min(0).max(1),
+    interpretability: z.number().min(0).max(1),
+    attributability: z.number().min(0).max(1),
+  }),
+  /** The measurements the components were derived from, kept for explainability. */
+  inputs: z.object({
+    areaKm2: z.number().nonnegative(),
+    contrastDb: z.number().nullable(),
+    elongationRatio: z.number().nonnegative(),
+  }),
+  reasons: z.array(z.string()),
+  /** Whether drift + correlation were speculatively enqueued for this detection. */
+  precomputeRequested: z.boolean(),
+  assessedAt: z.string().datetime(),
+  /** Weight-set identifier, so a re-ranked queue is distinguishable from a re-scored one. */
+  policyVersion: z.string(),
+});
+export type DetectionTriage = z.infer<typeof DetectionTriage>;
 
 export const ReviewEntry = z.object({
   userId: z.string(),
-  action: z.enum(['CONFIRM', 'REJECT', 'EDIT', 'REOPEN']),
+  action: z.enum(['CONFIRM', 'REJECT', 'EDIT', 'REOPEN', 'AUTO_CONFIRM', 'AUTO_REJECT']),
   at: z.string().datetime(),
   note: z.string().optional(),
   /**
@@ -78,6 +118,8 @@ export const SpillDetection = z.object({
   maskKey: z.string(),
   probabilityKey: z.string(),
   reviewStatus: ReviewStatus.default('UNREVIEWED'),
+  /** Absent on detections written before triage existed; they simply sort last. */
+  triage: DetectionTriage.optional(),
   reviewHistory: z.array(ReviewEntry).default([]),
   provenance: Provenance,
 });

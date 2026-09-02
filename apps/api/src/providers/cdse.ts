@@ -3,7 +3,11 @@ import { env } from '../env.js';
 import { redisConnection } from '../queue/connection.js';
 import { ProviderClient, ProviderHttpError } from './ProviderClient.js';
 import { aoiOverlapPct, bboxOf } from './geoUtil.js';
-import type { CatalogueItem, CatalogueSearchParams, SatelliteCatalogueProvider } from './types.js';
+import type {
+  ProviderCatalogueItem,
+  CatalogueSearchParams,
+  SatelliteCatalogueProvider,
+} from './types.js';
 
 /**
  * Copernicus Data Space Ecosystem — 11_API_KEYS A1, 10_DATASETS §10.3.1.
@@ -63,7 +67,7 @@ export class CdseClient extends ProviderClient implements SatelliteCatalogueProv
     return json.access_token;
   }
 
-  async search(params: CatalogueSearchParams): Promise<CatalogueItem[]> {
+  async search(params: CatalogueSearchParams): Promise<ProviderCatalogueItem[]> {
     const collection = this.collectionFor(params.platforms);
     const wkt = polygonToWkt(params.aoi);
 
@@ -96,7 +100,7 @@ export class CdseClient extends ProviderClient implements SatelliteCatalogueProv
 
     return (res.value ?? [])
       .map((p) => this.toCatalogueItem(p, params.aoi, collection))
-      .filter((i): i is CatalogueItem => i !== null);
+      .filter((i): i is ProviderCatalogueItem => i !== null);
   }
 
   private collectionFor(platforms?: string[]): string {
@@ -106,7 +110,11 @@ export class CdseClient extends ProviderClient implements SatelliteCatalogueProv
     return 'SENTINEL-1';
   }
 
-  private toCatalogueItem(p: ODataProduct, aoi: Polygon, collection: string): CatalogueItem | null {
+  private toCatalogueItem(
+    p: ODataProduct,
+    aoi: Polygon,
+    collection: string,
+  ): ProviderCatalogueItem | null {
     const acquiredAt = p.ContentDate?.Start;
     if (!acquiredAt) return null; // no acquisition time ⇒ unusable, never defaulted
 

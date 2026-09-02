@@ -11,6 +11,15 @@ Degradation ladder (07_AIML 7.3.6), applied here and reported verbatim to the ca
 A degraded run widens the honest uncertainty downstream. It never adjusts the tier
 thresholds to compensate, because that would hide the degradation behind a number that still
 looks confident.
+
+The response reports `currentStatus` and `windStatus` alongside the overall `status`, because
+the two forcing terms fail independently and the consequence differs. `windStatus` is one of:
+
+    OBSERVED       a real ERA5 field was used; provenance names the route and the hours
+    UNKNOWN        no wind field was available; alpha = 0 and the run says so
+    NOT_ATTEMPTED  there was no trajectory to apply wind to (no currents either)
+
+`UNKNOWN` is never silently replaced by a constant or a climatological mean.
 """
 
 from __future__ import annotations
@@ -51,7 +60,18 @@ class BacktrackRequest(BaseModel):
 
 
 @router.post("/backtrack")
-async def run_backtrack(req: BacktrackRequest) -> dict:
+# BLOCKING BY DESIGN, AND DECLARED AS SUCH.
+#
+# This handler is a plain `def`, not `async def`, and that is load-bearing. Everything it does
+# is synchronous and slow — provider reads, GDAL, CMEMS, particle integration — and none of it
+# awaits. An `async def` handler runs ON the event loop, so a single one of these stalls the
+# entire service: while one drift run waited ~50 s for CMEMS, every other request queued behind
+# it, `/health` included. The worker then reported `fetch failed` on unrelated jobs, which reads
+# like a network fault and was really self-inflicted head-of-line blocking.
+#
+# Declared `def`, Starlette runs it in its threadpool instead, so slow work occupies one thread
+# and the loop stays free to answer everything else.
+def run_backtrack(req: BacktrackRequest) -> dict:
     settings = get_settings()
     geom = shape(req.geometry)
     observed_at = datetime.fromisoformat(req.observedAt.replace("Z", "+00:00"))
@@ -68,6 +88,7 @@ async def run_backtrack(req: BacktrackRequest) -> dict:
     attempted: list[dict] = []
     currents = None
     winds = None
+    wind_reason: str | None = None
 
     try:
         currents = fetch_currents(
@@ -76,10 +97,11 @@ async def run_backtrack(req: BacktrackRequest) -> dict:
             observed_at,
             cmems_username=settings.cmems_username,
             cmems_password=settings.cmems_password,
+            timeout_s=settings.forcing_timeout_seconds,
+            retries=settings.forcing_retries,
+            attempted=attempted,
         )
-        attempted.append({"provider": currents.provider, "outcome": "OK"})
     except ForcingUnavailable as e:
-        attempted.extend(e.attempted)
         # No current field means no back-tracking is possible. We return a proximity-based
         # origin and say plainly that it is NOT a drift result, rather than substituting a
         # climatological or nearest-in-time field that would look like one.
@@ -88,7 +110,13 @@ async def run_backtrack(req: BacktrackRequest) -> dict:
             "status": "DEGRADED",
             "method": "FOOTPRINT_PROXIMITY",
             "degradationReason": e.consequence,
-            "attempted": attempted,
+            "currentStatus": "UNAVAILABLE",
+            "windStatus": "NOT_ATTEMPTED",
+            "windStatusReason": (
+                "Wind was not requested: without a current field there is no trajectory to "
+                "apply it to."
+            ),
+            "attempted": e.attempted,
             "frames": [],
             "support50": None,
             "support90": _ring(buffered),
@@ -114,10 +142,18 @@ async def run_backtrack(req: BacktrackRequest) -> dict:
         }
 
     try:
-        winds = fetch_winds(bbox, start, observed_at, cds_key=settings.cdsapi_key)
-        attempted.append({"provider": winds.provider, "outcome": "OK"})
+        winds = fetch_winds(
+            bbox,
+            start,
+            observed_at,
+            cds_key=settings.cdsapi_key,
+            cds_url=settings.cdsapi_url,
+            local_path=settings.era5_local_path,
+            timeout_s=settings.forcing_timeout_seconds,
+            retries=settings.forcing_retries,
+            attempted=attempted,
+        )
     except ForcingUnavailable as e:
-        attempted.extend(e.attempted)
         wind_reason = e.consequence
 
     result = backtrack(
@@ -156,6 +192,13 @@ async def run_backtrack(req: BacktrackRequest) -> dict:
         "status": "OK" if winds else "DEGRADED",
         "method": "LAGRANGIAN_BACKTRACK",
         "degradationReason": None if winds else wind_reason,
+        # Reported separately from `status` because they degrade independently and an
+        # analyst needs to know WHICH forcing term is missing: a run without wind
+        # under-displaces a wind-driven slick, which is a different error from having no
+        # current field at all.
+        "currentStatus": "OBSERVED",
+        "windStatus": "OBSERVED" if winds else "UNKNOWN",
+        "windStatusReason": None if winds else wind_reason,
         "attempted": attempted,
         "frames": frames_out,
         "support50": _polygon(final.support50),
@@ -174,8 +217,8 @@ async def run_backtrack(req: BacktrackRequest) -> dict:
         ),
         "medianDriftSpeedMs": round(result.median_drift_speed_ms, 4),
         "forcing": {
-            "currents": currents.provenance if currents else None,
-            "winds": winds.provenance if winds else None,
+            "currents": _forcing_summary(currents),
+            "winds": _forcing_summary(winds),
         },
         "params": result.params,
         "provenance": derived(
@@ -184,6 +227,25 @@ async def run_backtrack(req: BacktrackRequest) -> dict:
             dataset_id="lagrangian-backtrack-v1",
         ).model_dump(),
     }
+
+
+def _forcing_summary(field) -> dict | None:
+    """Provenance plus the grid metadata the caller must not have to guess.
+
+    The API used to store `resolutionDeg: 0.08` and `temporalResolutionH: 3` for currents
+    regardless of which provider actually answered - HYCOM's numbers, hard-coded. When CMEMS
+    answers, the truth is 1/12 degree and hourly, and a provenance record that says otherwise
+    is a provenance record that is wrong.
+    """
+    if field is None:
+        return None
+    out = dict(field.provenance)
+    out.setdefault("resolutionDeg", field.resolution_deg)
+    out.setdefault("temporalResolutionH", field.temporal_resolution_h)
+    out["providerName"] = field.provider
+    out["medianSpeedMs"] = round(field.median_speed(), 4)
+    out["timeStepCount"] = len(field.times)
+    return out
 
 
 def _polygon(ring: list[list[float]] | None) -> dict | None:

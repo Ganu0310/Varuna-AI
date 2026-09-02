@@ -5,7 +5,7 @@ import {
 } from '@varuna/api/src/modules/reports/service.js';
 import { toCsv, toGeoJson, toManifest } from '@varuna/api/src/modules/reports/exports.js';
 import { env } from '@varuna/api/src/env.js';
-import { renderReportPdf } from './renderPdf.js';
+import { renderReportPdf, renderPlainReportPdf } from './renderPdf.js';
 
 /**
  * `report` queue processor.
@@ -37,29 +37,50 @@ export async function processReport(job: Job<ReportJobData>) {
   const csv = toCsv(data);
   const manifest = toManifest(data);
 
-  // The PDF last, because it is the only step that can fail for reasons outside this
-  // service — a browser that will not start, a web app that is not being served. The
-  // exports above are already complete by then, so a print failure costs the PDF and not
-  // the whole report.
+  // The PDFs last, because rendering is the only step that can fail for reasons outside this
+  // service — a browser that will not start, a web app that is not being served. The exports
+  // above are already complete by then, so a print failure costs a PDF and not the whole
+  // report. The two documents are rendered and reported on independently: the plain-language
+  // brief is not a section of the dossier, so one failing must never hide whether the other
+  // succeeded.
   let pdf: Awaited<ReturnType<typeof renderReportPdf>> | null = null;
   let pdfUnavailableReason: string | null = null;
+  let plainPdf: Awaited<ReturnType<typeof renderPlainReportPdf>> | null = null;
+  let plainPdfUnavailableReason: string | null = null;
 
   if (job.data.skipPdf) {
     pdfUnavailableReason = 'skipped by request';
+    plainPdfUnavailableReason = 'skipped by request';
   } else {
+    const renderInput = {
+      investigationId: job.data.investigationId,
+      userId: job.data.userId,
+      appUrl: env.PUBLIC_APP_URL,
+      outputDir: env.REPORTS_DIR,
+    };
     try {
       pdf = await renderReportPdf({
-        investigationId: job.data.investigationId,
-        userId: job.data.userId,
-        appUrl: env.PUBLIC_APP_URL,
-        outputDir: env.REPORTS_DIR,
+        ...renderInput,
         onProgress: (pct, message) =>
-          job.updateProgress({ pct: 70 + Math.round(pct * 0.25), stage: 'RENDERING', message }),
+          job.updateProgress({ pct: 70 + Math.round(pct * 0.15), stage: 'RENDERING', message }),
       });
     } catch (e) {
       // Named, never swallowed. "No PDF" and "a PDF that is missing its uncertainty
       // section" must not look the same to whoever reads this job's result.
       pdfUnavailableReason = e instanceof Error ? e.message : String(e);
+    }
+    try {
+      plainPdf = await renderPlainReportPdf({
+        ...renderInput,
+        onProgress: (pct, message) =>
+          job.updateProgress({
+            pct: 85 + Math.round(pct * 0.15),
+            stage: 'RENDERING_PLAIN',
+            message,
+          }),
+      });
+    } catch (e) {
+      plainPdfUnavailableReason = e instanceof Error ? e.message : String(e);
     }
   }
 
@@ -74,10 +95,14 @@ export async function processReport(job: Job<ReportJobData>) {
       csvBytes: csv.length,
       manifestBytes: JSON.stringify(manifest).length,
       pdfBytes: pdf?.bytes ?? null,
+      plainPdfBytes: plainPdf?.bytes ?? null,
     },
     pdf: pdf
       ? { path: pdf.path, sha256: pdf.sha256, renderedAt: pdf.renderedAt }
       : { path: null, unavailableReason: pdfUnavailableReason },
+    plainPdf: plainPdf
+      ? { path: plainPdf.path, sha256: plainPdf.sha256, renderedAt: plainPdf.renderedAt }
+      : { path: null, unavailableReason: plainPdfUnavailableReason },
     uncertaintyStatementCount: data.uncertainty.statements.length,
     provenanceRecordCount: data.provenanceAppendix.records.length,
   };

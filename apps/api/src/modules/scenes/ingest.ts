@@ -8,6 +8,10 @@ import { geodesicPolygonAreaKm2 } from '../../geo/geodesy.js';
 import { recordProvenance } from '../provenance/service.js';
 import { SatelliteSceneModel } from './model.js';
 import { SpillDetectionModel } from '../detections/model.js';
+import { assessTriage, selectForPrecompute, type TriageAssessment } from '../detections/triage.js';
+import { evaluateAutoReview } from '../detections/autoReview.js';
+import { enqueue } from '../../queue/producer.js';
+import { audit } from '../audit/service.js';
 
 /**
  * Ingest orchestration — Phase 4 (IMPLEMENTATION_PLAN §14.6).
@@ -129,12 +133,21 @@ export type SceneSource =
       bucket: string;
       key: string;
       /**
-       * Supplied by the uploader, never read from the file. `TIFFTAG_DATETIME` is when the
-       * file was WRITTEN — for a re-exported product, the day someone opened it in a GIS.
-       * Every AIS query is a window around this instant, so taking it from the file would
+       * The observation instant. Either the uploader stated it, or the FILE stated it
+       * unambiguously — a mission product identifier, or a metadata key that means
+       * acquisition rather than production. Never `TIFFTAG_DATETIME`, which is when the file
+       * was WRITTEN: for a re-exported product, the day someone opened it in a GIS. Every AIS
+       * query is a window around this instant, so a value inferred from a weak signal would
        * search the wrong day and rank vessels that were nowhere near the spill.
        */
       acquiredAt: string;
+      /**
+       * Which of those two it was, kept beside the value. A dossier that rests on this
+       * instant should be able to say whether a person asserted it or the file did.
+       */
+      acquiredAtSource?: string | null;
+      /** Read off a mission product identifier, when the file carries one. */
+      platform?: string | null;
       uploadedBy?: string;
       originalName?: string;
       checksum?: string;
@@ -155,6 +168,11 @@ export interface IngestSceneOutput {
   productId: string;
   detectionIds: string[];
   detectionCount: number;
+  /**
+   * Detections for which back-tracking was queued without anyone asking. Reported so the job
+   * result states what the pipeline did on its own initiative rather than leaving it implicit.
+   */
+  precomputedDetectionIds: string[];
   seconds: number;
 }
 
@@ -176,6 +194,10 @@ export async function ingestAndDetect(input: IngestSceneInput): Promise<IngestSc
       key: source.key,
       productId: input.productId,
       acquiredAt: source.acquiredAt,
+      // Only ever set when the file's own name follows a mission product convention. The ML
+      // service falls back to OPERATOR_SUPPLIED when it is absent, which is the truthful
+      // answer for a file that does not say what took it.
+      platform: source.platform ?? undefined,
       uploadedBy: source.uploadedBy,
       originalName: source.originalName,
       checksum: source.checksum,
@@ -205,7 +227,9 @@ export async function ingestAndDetect(input: IngestSceneInput): Promise<IngestSc
   });
 
   const scene = await SatelliteSceneModel.findOneAndUpdate(
-    { productId: ing.product_id },
+    // Scoped to the investigation: matching on productId alone moved an existing scene to
+    // whichever investigation ingested it last, rather than creating its own record.
+    { productId: ing.product_id, investigationId: new Types.ObjectId(input.investigationId) },
     {
       $set: {
         investigationId: new Types.ObjectId(input.investigationId),
@@ -269,18 +293,38 @@ export async function ingestAndDetect(input: IngestSceneInput): Promise<IngestSc
   // Detections are DERIVED from the scene: their provenance points at the scene's record,
   // so the lineage chain from a candidate vessel back to a provider product is unbroken.
   const detectionIds: string[] = [];
+  const triaged: Array<{ id: string; triage: TriageAssessment }> = [];
   for (const d of det.detections) {
     if (!d.geometry || d.geometry.type !== 'Polygon') continue;
 
     const geometry = rewindPolygon(d.geometry);
+    // Hoisted out of the document literal because triage ranks on it: the queue must be
+    // ordered by the same geodesic area that becomes evidence, not the pixel-count estimate.
+    const areaKm2 = geodesicPolygonAreaKm2(geometry) as number;
+
+    const triage = assessTriage({
+      areaKm2,
+      elongationRatio: d.morphology.elongationRatio,
+      // The detector reports contrast against the local sea background; it is the only
+      // direct physical measurement of the observation available on this path.
+      contrastDb: Number.isFinite(d.backscatter?.contrastDb) ? d.backscatter.contrastDb : null,
+      lookAlikeRisk: Number.isFinite(d.lookAlikeRisk) ? d.lookAlikeRisk : null,
+    });
+
+    const autoReview = evaluateAutoReview({
+      overallConfidence: d.confidence,
+      lookAlikeRisk: d.lookAlikeRisk,
+      areaKm2,
+    });
+
     const doc = await SpillDetectionModel.create({
       sceneId: scene._id,
       investigationId: new Types.ObjectId(input.investigationId),
       geometry,
-      // Recompute area geodesically on our side rather than trusting the pixel-count
-      // figure, so the number that becomes evidence comes from the same routine as every
-      // other measurement in the system (02_TRD TR-3).
-      areaKm2: geodesicPolygonAreaKm2(geometry) as number,
+      // Recomputed geodesically on our side rather than trusting the pixel-count figure, so
+      // the number that becomes evidence comes from the same routine as every other
+      // measurement in the system (02_TRD TR-3).
+      areaKm2,
       perimeterKm: d.perimeterKm,
       morphology: {
         majorAxisKm: d.morphology.majorAxisKm,
@@ -308,7 +352,13 @@ export async function ingestAndDetect(input: IngestSceneInput): Promise<IngestSc
       classCounts: { sea_surface: 0, oil_spill: 0, look_alike: 0, ship: 0, land: 0 },
       maskKey: cogKey,
       probabilityKey: cogKey,
-      reviewStatus: 'UNREVIEWED',
+      reviewStatus: autoReview.status,
+      triage: {
+        ...triage,
+        inputs: { ...triage.inputs, areaKm2 },
+        precomputeRequested: autoReview.autoTriggerPipeline,
+        assessedAt: new Date(),
+      },
       provenance: {
         sourceType: 'DERIVED',
         provider: 'VARUNA',
@@ -320,13 +370,38 @@ export async function ingestAndDetect(input: IngestSceneInput): Promise<IngestSc
       },
     });
     detectionIds.push(String(doc._id));
+    triaged.push({ id: String(doc._id), triage });
+
+    if (autoReview.autoTriggerPipeline) {
+      await enqueue({
+        queue: 'drift',
+        kind: 'DRIFT',
+        jobKey: `drift:${input.investigationId}:${doc._id}`,
+        payload: {
+          investigationId: input.investigationId,
+          detectionId: String(doc._id),
+          horizonHours: 24,
+          particleCount: 5000,
+          chainScoring: true,
+        },
+        investigationId: input.investigationId,
+      });
+    }
   }
+
+  // ── 3 · speculative precompute ────────────────────────────────────
+  const precomputed = await precomputeOrigins(input.investigationId, triaged);
 
   await progress(100, 'COMPLETE');
   const seconds = Math.round((Date.now() - started) / 100) / 10;
 
   logger.info(
-    { productId: ing.product_id, detections: detectionIds.length, seconds },
+    {
+      productId: ing.product_id,
+      detections: detectionIds.length,
+      precomputed: precomputed.length,
+      seconds,
+    },
     'ingest + detection complete',
   );
 
@@ -335,6 +410,80 @@ export async function ingestAndDetect(input: IngestSceneInput): Promise<IngestSc
     productId: ing.product_id,
     detectionIds,
     detectionCount: detectionIds.length,
+    precomputedDetectionIds: precomputed,
     seconds,
   };
+}
+
+/**
+ * Enqueue back-tracking for the detections most likely to be opened first — 08_APP_FLOW §8.2.
+ *
+ * This is the whole latency win, and it is deliberately the ONLY thing the pipeline does on
+ * its own. Computing where a slick drifted from is not the same act as deciding the slick is
+ * real: the first is arithmetic over ocean currents, the second is an accusation. So the work
+ * runs ahead of the analyst and the verdict waits for them — every detection here is still
+ * UNREVIEWED when the job is queued, and still UNREVIEWED when it finishes.
+ *
+ * Correlation is not enqueued here. It needs an `originEstimateId` that does not exist until
+ * back-tracking has finished, so the drift processor chains it (see processors/drift.ts).
+ *
+ * A failure to enqueue is logged and swallowed. Precompute is an optimisation; a Redis blip
+ * must not fail an ingest that has already written a scene, its provenance and its detections.
+ */
+async function precomputeOrigins(
+  investigationId: string,
+  triaged: Array<{ id: string; triage: TriageAssessment }>,
+): Promise<string[]> {
+  const selected = selectForPrecompute(triaged);
+  if (selected.length === 0) return [];
+
+  const queued: string[] = [];
+  for (const detectionId of selected) {
+    try {
+      // The same key the analyst-triggered route uses, so a later manual "run back-tracking"
+      // on this detection deduplicates against the speculative run instead of repeating it.
+      await enqueue({
+        queue: 'drift',
+        kind: 'DRIFT',
+        jobKey: `drift:${investigationId}:${detectionId}`,
+        payload: {
+          investigationId,
+          detectionId,
+          horizonHours: 24,
+          particleCount: 5000,
+          // Chain correlation once an origin exists, so the dossier is complete on arrival.
+          chainScoring: true,
+        },
+        investigationId,
+      });
+      queued.push(detectionId);
+    } catch (err) {
+      logger.error(
+        { err, detectionId, investigationId },
+        'speculative drift enqueue failed — the detection is unaffected and can be run manually',
+      );
+    }
+  }
+
+  if (queued.length > 0) {
+    await SpillDetectionModel.updateMany(
+      { _id: { $in: queued.map((id) => new Types.ObjectId(id)) } },
+      { $set: { 'triage.precomputeRequested': true } },
+    );
+
+    // One entry for the scene rather than one per detection: the useful question later is
+    // "what did the system decide to compute without being asked?", and that is a list.
+    await audit({
+      action: 'ORIGIN_PRECOMPUTE_ENQUEUED',
+      entityType: 'Investigation',
+      entityId: investigationId,
+      after: {
+        detectionIds: queued,
+        consideredCount: triaged.length,
+        note: 'Speculative back-tracking. No detection review status was changed.',
+      },
+    });
+  }
+
+  return queued;
 }

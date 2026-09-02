@@ -1,5 +1,5 @@
 import { Schema, model, type InferSchemaType } from 'mongoose';
-import { REJECTION_CATEGORY_IDS } from '@varuna/shared';
+import { REJECTION_CATEGORY_IDS, TRIAGE_PRIORITIES } from '@varuna/shared';
 import { PointSchema, PolygonSchema } from '../../db/schemas/geojson.js';
 import { provenancePlugin } from '../../db/plugins/provenance.js';
 
@@ -34,10 +34,45 @@ const ConfidenceSchema = new Schema(
   { _id: false },
 );
 
+/**
+ * Triage — queue ordering, never a verdict (detections/triage.ts).
+ *
+ * `components`, `inputs` and `reasons` are stored rather than recomputed on read, so the
+ * ordering an analyst actually saw stays reconstructible after the weights change, and so the
+ * numbers behind a priority sit next to the detection they ranked.
+ */
+const TriageSchema = new Schema(
+  {
+    score: { type: Number, required: true, min: 0, max: 1 },
+    priority: { type: String, enum: TRIAGE_PRIORITIES, required: true },
+    components: {
+      significance: { type: Number, min: 0, max: 1 },
+      interpretability: { type: Number, min: 0, max: 1 },
+      attributability: { type: Number, min: 0, max: 1 },
+    },
+    inputs: {
+      areaKm2: Number,
+      // Nullable, not absent: the detector reporting no contrast is a fact worth recording.
+      contrastDb: { type: Number, default: null },
+      elongationRatio: Number,
+    },
+    reasons: { type: [String], default: [] },
+    caveats: { type: [String], default: [] },
+    precomputeRequested: { type: Boolean, default: false },
+    assessedAt: { type: Date, required: true },
+    policyVersion: { type: String, required: true },
+  },
+  { _id: false },
+);
+
 const ReviewEntrySchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-    action: { type: String, enum: ['CONFIRM', 'REJECT', 'EDIT', 'REOPEN'], required: true },
+    action: {
+      type: String,
+      enum: ['CONFIRM', 'REJECT', 'EDIT', 'REOPEN', 'AUTO_CONFIRM', 'AUTO_REJECT'],
+      required: true,
+    },
     at: { type: Date, required: true },
     note: String,
     // REJECT only. Not `required` at the schema level because entries written before the
@@ -82,9 +117,18 @@ const SpillDetectionSchema = new Schema(
     probabilityKey: { type: String, required: true },
     reviewStatus: {
       type: String,
-      enum: ['UNREVIEWED', 'CONFIRMED', 'REJECTED', 'EDITED'],
+      enum: ['UNREVIEWED', 'AUTO_CONFIRMED', 'AUTO_REJECTED', 'CONFIRMED', 'REJECTED', 'EDITED'],
       default: 'UNREVIEWED',
     },
+    /*
+     * Stored beside the review status and strictly separate from it. The enum above is
+     * deliberately unchanged — there is no AUTO_CONFIRMED, because the detector's measured
+     * 68.2% look-alike false-positive rate makes a threshold-set verdict a coin flip wearing
+     * a label (see detections/triage.ts).
+     *
+     * Optional: detections written before triage existed carry none and sort last.
+     */
+    triage: { type: TriageSchema, required: false },
     reviewHistory: { type: [ReviewEntrySchema], default: [] },
   },
   { timestamps: true, collection: 'spill_detections' },

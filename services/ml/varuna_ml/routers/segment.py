@@ -80,7 +80,18 @@ class SegmentRequest(BaseModel):
 
 
 @router.post("/segment")
-async def segment_scene(req: SegmentRequest) -> dict:
+# BLOCKING BY DESIGN, AND DECLARED AS SUCH.
+#
+# This handler is a plain `def`, not `async def`, and that is load-bearing. Everything it does
+# is synchronous and slow — provider reads, GDAL, CMEMS, particle integration — and none of it
+# awaits. An `async def` handler runs ON the event loop, so a single one of these stalls the
+# entire service: while one drift run waited ~50 s for CMEMS, every other request queued behind
+# it, `/health` included. The worker then reported `fetch failed` on unrelated jobs, which reads
+# like a network fault and was really self-inflicted head-of-line blocking.
+#
+# Declared `def`, Starlette runs it in its threadpool instead, so slow work occupies one thread
+# and the loop stays free to answer everything else.
+def segment_scene(req: SegmentRequest) -> dict:
     try:
         arr, transform, crs, pixel_m = _open_cog(req.bucket, req.key)
     except Exception as e:
@@ -186,7 +197,7 @@ class VectoriseRequest(BaseModel):
 
 
 @router.post("/vectorise")
-async def vectorise(req: VectoriseRequest) -> dict:
+def vectorise(req: VectoriseRequest) -> dict:
     try:
         geom = shape(req.geometry)
     except Exception as e:

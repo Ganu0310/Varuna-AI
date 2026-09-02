@@ -50,16 +50,75 @@ export function setUnauthorisedHandler(fn: UnauthorisedHandler): void {
   onUnauthorised = fn;
 }
 
-export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${BASE}/api/v1${path}`, {
+function send(path: string, init: RequestInit): Promise<Response> {
+  return fetch(`${BASE}/api/v1${path}`, {
     ...init,
     credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
+      // Minted per attempt, not per call: a retried request is a different request, and a
+      // shared id would make the two indistinguishable in the API log.
       'X-Request-Id': crypto.randomUUID(),
       ...init.headers,
     },
   });
+}
+
+/**
+ * Routes that must never trigger a refresh.
+ *
+ * `/auth/refresh` would recurse into itself; the other three are the endpoints that
+ * ESTABLISH a session, so a 401 from them means the credentials were wrong, not that the
+ * access token aged out. `/auth/me` is deliberately absent — it is the first call a reloaded
+ * tab makes, and it is exactly the one worth retrying.
+ */
+const NO_REFRESH = new Set(['/auth/login', '/auth/register', '/auth/refresh', '/auth/logout']);
+
+let refreshInFlight: Promise<boolean> | null = null;
+let refreshExhausted = false;
+
+/**
+ * Trade the refresh cookie for a fresh access token.
+ *
+ * The access token lives 15 minutes (`ACCESS_TTL_SECONDS`) and the refresh cookie lives 7
+ * days. Nothing used to spend the second one, so a tab left open through a meeting started
+ * answering 401 to everything and dumped the analyst back on the login form mid-case.
+ *
+ * ONE refresh at a time, and this is not merely an optimisation. A screen has several
+ * queries in flight at once; letting each 401 start its own refresh would present the same
+ * token twice, and the API treats a spent refresh token as a stolen one — it revokes the
+ * entire family. Racing here would log the user out for real.
+ */
+async function refreshSession(): Promise<boolean> {
+  if (refreshExhausted) return false;
+  const pending = (refreshInFlight ??= (async () => {
+    try {
+      const res = await fetch(`${BASE}/api/v1/auth/refresh`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'X-Request-Id': crypto.randomUUID() },
+      });
+      // A visitor who never had a session gets one failed attempt, not one per query. The
+      // refresh route is rate-limited, and hammering it would lock out the login that follows.
+      refreshExhausted = !res.ok;
+      return res.ok;
+    } catch {
+      refreshExhausted = true;
+      return false;
+    } finally {
+      refreshInFlight = null;
+    }
+  })());
+  return pending;
+}
+
+export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+  let res = await send(path, init);
+
+  // One silent rotation, then one retry. Only after that does a 401 mean "sign in again".
+  if (res.status === 401 && !NO_REFRESH.has(path) && (await refreshSession())) {
+    res = await send(path, init);
+  }
 
   if (res.status === 401) {
     const problem = (await res.json().catch(() => null)) as ProblemDetails | null;
@@ -71,6 +130,10 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
     const problem = (await res.json().catch(() => null)) as ProblemDetails | null;
     throw new ApiError(res.status, problem, problem?.title ?? res.statusText);
   }
+
+  // A clean response proves the session is alive again, so an earlier failed refresh stops
+  // standing in the way of the next one.
+  refreshExhausted = false;
 
   if (res.status === 204) return undefined as T;
 

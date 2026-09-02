@@ -2,7 +2,11 @@ import type { Polygon } from 'geojson';
 import { env } from '../env.js';
 import { ProviderClient } from './ProviderClient.js';
 import { aoiOverlapPct, bboxOf } from './geoUtil.js';
-import type { CatalogueItem, CatalogueSearchParams, SatelliteCatalogueProvider } from './types.js';
+import type {
+  ProviderCatalogueItem,
+  CatalogueSearchParams,
+  SatelliteCatalogueProvider,
+} from './types.js';
 
 /**
  * ASF DAAC (Alaska Satellite Facility) — 11_API_KEYS A3, 10_DATASETS §10.3.1.
@@ -32,7 +36,7 @@ export class AsfClient extends ProviderClient implements SatelliteCatalogueProvi
     return Boolean(env.EARTHDATA_USERNAME && env.EARTHDATA_PASSWORD);
   }
 
-  async search(params: CatalogueSearchParams): Promise<CatalogueItem[]> {
+  async search(params: CatalogueSearchParams): Promise<ProviderCatalogueItem[]> {
     const wkt = polygonToWkt(params.aoi);
     const query = new URLSearchParams({
       platform: 'SENTINEL-1',
@@ -52,10 +56,10 @@ export class AsfClient extends ProviderClient implements SatelliteCatalogueProvi
 
     return (res.features ?? [])
       .map((f) => this.toCatalogueItem(f, params.aoi))
-      .filter((i): i is CatalogueItem => i !== null);
+      .filter((i): i is ProviderCatalogueItem => i !== null);
   }
 
-  private toCatalogueItem(f: AsfFeature, aoi: Polygon): CatalogueItem | null {
+  private toCatalogueItem(f: AsfFeature, aoi: Polygon): ProviderCatalogueItem | null {
     const p = f.properties ?? {};
     const acquiredAt = (p.startTime ?? p.stopTime) as string | undefined;
     const productId = (p.sceneName ?? p.fileID) as string | undefined;

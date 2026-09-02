@@ -7,7 +7,9 @@ import { rewindPolygon } from '../../geo/envelope.js';
 import { audit } from '../audit/service.js';
 import { SatelliteSceneModel } from '../scenes/model.js';
 import { SpillDetectionModel } from '../detections/model.js';
-import { InvestigationModel } from './model.js';
+import { InvestigationModel, REAL_CASE_FILTER } from './model.js';
+import { OriginEstimateModel } from '../origin/model.js';
+import { CandidateVesselModel } from '../candidates/model.js';
 import { CommentModel } from './comments.model.js';
 import type {
   CreateInvestigationBody,
@@ -87,7 +89,11 @@ export async function listInvestigations(
   q: ListInvestigationsQuery,
   actor: { id: string; role: Role },
 ) {
-  const filter: Record<string, unknown> = { deletedAt: null };
+  // Excludes Discover's sweep-container investigations — internal bookkeeping documents
+  // (06_BACKEND §6.4.10), not cases anyone created or was added to. Every ordinary list of
+  // investigations for a person carries this filter; see `REAL_CASE_FILTER`'s own comment
+  // for why it is written as an exclusion rather than `kind: 'CASE'`.
+  const filter: Record<string, unknown> = { deletedAt: null, ...REAL_CASE_FILTER };
 
   // Non-admins see only what they created or are a member of.
   if (actor.role !== 'admin') {
@@ -113,10 +119,66 @@ export async function listInvestigations(
 
   const hasMore = items.length > q.limit;
   const page = hasMore ? items.slice(0, q.limit) : items;
+
+  // Per-stage counts, so the list can say WHERE each case got to rather than only that it
+  // exists. `status` alone cannot: it covers both a case waiting on an analyst and one whose
+  // ingest died three stages ago, and those need different actions from whoever is looking.
+  //
+  // One grouped aggregate per collection rather than four queries per row — at 50 rows that
+  // is 4 round trips instead of 200.
+  const ids = page.map((p) => p._id);
+  const counts = await countsForInvestigations(ids);
+
   return {
-    items: page,
+    items: page.map((p) => ({ ...p, counts: counts.get(String(p._id)) ?? EMPTY_COUNTS })),
     nextCursor: hasMore ? String(page[page.length - 1]!._id) : null,
   };
+}
+
+export interface StageCounts {
+  scenes: number;
+  detections: number;
+  origins: number;
+  candidates: number;
+}
+
+const EMPTY_COUNTS: StageCounts = { scenes: 0, detections: 0, origins: 0, candidates: 0 };
+
+export async function countsForInvestigations(
+  ids: Types.ObjectId[],
+): Promise<Map<string, StageCounts>> {
+  const out = new Map<string, StageCounts>();
+  if (ids.length === 0) return out;
+
+  const group = async (model: {
+    aggregate: (p: unknown[]) => { exec: () => Promise<{ _id: unknown; n: number }[]> };
+  }): Promise<Map<string, number>> => {
+    const rows = await model
+      .aggregate([
+        { $match: { investigationId: { $in: ids } } },
+        { $group: { _id: '$investigationId', n: { $sum: 1 } } },
+      ])
+      .exec();
+    return new Map(rows.map((r) => [String(r._id), r.n]));
+  };
+
+  const [scenes, detections, origins, candidates] = await Promise.all([
+    group(SatelliteSceneModel as never),
+    group(SpillDetectionModel as never),
+    group(OriginEstimateModel as never),
+    group(CandidateVesselModel as never),
+  ]);
+
+  for (const id of ids) {
+    const k = String(id);
+    out.set(k, {
+      scenes: scenes.get(k) ?? 0,
+      detections: detections.get(k) ?? 0,
+      origins: origins.get(k) ?? 0,
+      candidates: candidates.get(k) ?? 0,
+    });
+  }
+  return out;
 }
 
 /**

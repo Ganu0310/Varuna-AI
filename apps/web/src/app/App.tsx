@@ -12,10 +12,15 @@ import { CreateInvestigationPage } from '../features/investigations/CreateInvest
 import { CataloguePage } from '../features/catalogue/CataloguePage.tsx';
 import { GuidePage } from '../features/guide/GuidePage.tsx';
 import { AdminPage } from '../features/admin/AdminPage.tsx';
+import { DashboardPage } from '../features/dashboard/DashboardPage.tsx';
+import { SystemStatusPage } from '../features/system/SystemStatusPage.tsx';
 // MapLibre and deck.gl are ~1 MB of the bundle and are only needed inside a workspace.
 // Splitting them out keeps the login and list routes small (05_FRONTEND §5.9 budgets).
 const ReportPage = lazy(() =>
   import('../features/reports/ReportPage.tsx').then((m) => ({ default: m.ReportPage })),
+);
+const PlainReportPage = lazy(() =>
+  import('../features/reports/PlainReportPage.tsx').then((m) => ({ default: m.PlainReportPage })),
 );
 // Lazy like the workspace: the prism pulls deck.gl, which must not load on the login route.
 const PrismPage = lazy(() =>
@@ -23,6 +28,9 @@ const PrismPage = lazy(() =>
 );
 const GlobePage = lazy(() =>
   import('../features/globe/GlobePage.tsx').then((m) => ({ default: m.GlobePage })),
+);
+const DiscoverPage = lazy(() =>
+  import('../features/discover/DiscoverPage.tsx').then((m) => ({ default: m.DiscoverPage })),
 );
 const ReliefPage = lazy(() =>
   import('../features/relief/ReliefPage.tsx').then((m) => ({ default: m.ReliefPage })),
@@ -69,6 +77,26 @@ export function App() {
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route
+              path="/dashboard"
+              element={
+                <RequireAuth>
+                  <AppChrome>
+                    <DashboardPage />
+                  </AppChrome>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/system"
+              element={
+                <RequireAuth>
+                  <AppChrome>
+                    <SystemStatusPage />
+                  </AppChrome>
+                </RequireAuth>
+              }
+            />
             <Route
               path="/investigations"
               element={
@@ -141,9 +169,23 @@ export function App() {
               path="/globe"
               element={
                 <RequireAuth>
-                  <Suspense fallback={<main className="page">Loading globe…</main>}>
-                    <GlobePage />
-                  </Suspense>
+                  <AppChrome>
+                    <Suspense fallback={<main className="page">Loading globe…</main>}>
+                      <GlobePage />
+                    </Suspense>
+                  </AppChrome>
+                </RequireAuth>
+              }
+            />
+            <Route
+              path="/discover"
+              element={
+                <RequireAuth>
+                  <AppChrome>
+                    <Suspense fallback={<main className="page">Loading Discover…</main>}>
+                      <DiscoverPage />
+                    </Suspense>
+                  </AppChrome>
                 </RequireAuth>
               }
             />
@@ -151,9 +193,11 @@ export function App() {
               path="/investigations/:id/relief"
               element={
                 <RequireAuth>
-                  <Suspense fallback={<main className="page">Loading relief…</main>}>
-                    <ReliefPage />
-                  </Suspense>
+                  <AppChrome>
+                    <Suspense fallback={<main className="page">Loading relief…</main>}>
+                      <ReliefPage />
+                    </Suspense>
+                  </AppChrome>
                 </RequireAuth>
               }
             />
@@ -161,9 +205,11 @@ export function App() {
               path="/investigations/:id/prism"
               element={
                 <RequireAuth>
-                  <Suspense fallback={<main className="page">Loading prism…</main>}>
-                    <PrismPage />
-                  </Suspense>
+                  <AppChrome>
+                    <Suspense fallback={<main className="page">Loading prism…</main>}>
+                      <PrismPage />
+                    </Suspense>
+                  </AppChrome>
                 </RequireAuth>
               }
             />
@@ -175,6 +221,18 @@ export function App() {
                 <RequireAuth>
                   <Suspense fallback={<main className="page">Preparing dossier…</main>}>
                     <ReportPage />
+                  </Suspense>
+                </RequireAuth>
+              }
+            />
+            {/* Same reason as the dossier route: standalone, so a printed or downloaded copy
+                is only the summary, not the app around it. */}
+            <Route
+              path="/investigations/:id/report/plain"
+              element={
+                <RequireAuth>
+                  <Suspense fallback={<main className="page">Preparing summary…</main>}>
+                    <PlainReportPage />
                   </Suspense>
                 </RequireAuth>
               }

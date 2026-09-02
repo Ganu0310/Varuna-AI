@@ -52,9 +52,19 @@ export const EnvSchema = z.object({
   // a PDF that was written successfully. An absolute value in the environment is used as-is.
   // The one investigation the public landing page reconstructs. Named explicitly rather than
   // "the most recent", which would publish whatever an analyst last happened to open.
+  //
+  // `.env.example` documents this key with an EMPTY value, which is how a variable is
+  // documented-but-unset. An empty string is not `undefined`, so a bare `.optional()` still
+  // ran the regex against `''` and failed the boot — which is why the cold-start gate could
+  // not start the API from the very file it exists to validate. Empty is normalised to unset.
   DEMO_INVESTIGATION_ID: z
-    .string()
-    .regex(/^[a-f\d]{24}$/i)
+    .preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z
+        .string()
+        .regex(/^[a-f\d]{24}$/i)
+        .optional(),
+    )
     .optional(),
 
   // Where operator-supplied scenes are stored. Resolved against the repo root for the same
@@ -94,6 +104,21 @@ export const EnvSchema = z.object({
   CMEMS_PASSWORD: z.string().optional(),
   CDSAPI_URL: z.string().url().optional(),
   CDSAPI_KEY: z.string().optional(),
+  /**
+   * An ERA5 file (GRIB or NetCDF) already on disk, holding 10 m u/v wind.
+   *
+   * Real ERA5 data downloaded by hand from the Climate Data Store is the same reanalysis the
+   * API serves, so this is a second route to the same source rather than a weaker substitute.
+   * The ML service uses it ONLY where the file actually covers the requested box and window;
+   * a file that stops short is refused rather than serving the nearest hours it happens to
+   * hold. The API only needs to know whether one is configured, for the capability panel.
+   */
+  ERA5_LOCAL_PATH: z
+    .preprocess(
+      (v) => (typeof v === 'string' && v.trim() === '' ? undefined : v),
+      z.string().optional(),
+    )
+    .optional(),
   NOAA_GFS_BASE_URL: z.string().url().default('https://nomads.ncep.noaa.gov'),
 
   // ── AIS providers ────────────────────────────────────────────────

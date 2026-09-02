@@ -23,7 +23,16 @@ interface MlBacktrackResponse {
   status: 'OK' | 'DEGRADED' | 'UNAVAILABLE';
   method: 'LAGRANGIAN_BACKTRACK' | 'FOOTPRINT_PROXIMITY';
   degradationReason: string | null;
-  attempted: Array<{ provider: string; outcome: string; covers?: string }>;
+  currentStatus: 'OBSERVED' | 'UNAVAILABLE';
+  windStatus: 'OBSERVED' | 'UNKNOWN' | 'NOT_ATTEMPTED';
+  windStatusReason: string | null;
+  attempted: Array<{
+    provider: string;
+    outcome: string;
+    datasetId?: string;
+    covers?: string;
+    detail?: string;
+  }>;
   frames: Array<{ atTime: string; bounds: number[]; cellSizeDeg: number; centroid: number[] }>;
   support50: Polygon | null;
   support90: Polygon | null;
@@ -58,6 +67,8 @@ export interface RunOriginOutput {
   status: string;
   method: string;
   degradationReason: string | null;
+  currentStatus: string;
+  windStatus: string;
   releaseWindow: MlBacktrackResponse['releaseWindow'];
   particleCount: number;
 }
@@ -91,6 +102,39 @@ async function priorClearSceneAt(
     if (detections === 0) return (s.acquiredAt as Date).toISOString();
   }
   return undefined;
+}
+
+/**
+ * Build the stored forcing reference from what the ML service reported.
+ *
+ * The previous version hard-coded `resolutionDeg: 0.08` / `temporalResolutionH: 3` for
+ * currents and `0.25` / `1` for wind. Those are HYCOM's and ERA5's numbers, written when
+ * those were the only providers that could answer. When CMEMS answers the truth is 1/12
+ * degree and hourly — so the record described a field the run had not used. A provenance
+ * record that is wrong is worse than one that is absent: it is defensible-looking and false.
+ */
+function forcingRef(
+  f: Record<string, unknown> | null,
+  provenanceId: string | undefined,
+): Record<string, unknown> | null {
+  if (!f) return null;
+  const num = (v: unknown, fallback: number): number => {
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0 ? n : fallback;
+  };
+  return {
+    provider: String(f.providerName ?? f.provider),
+    datasetId: String(f.datasetId),
+    resolutionDeg: num(f.resolutionDeg, 0.25),
+    temporalResolutionH: num(f.temporalResolutionH, 1),
+    ...(f.coverage ? { coverage: String(f.coverage) } : {}),
+    ...(Array.isArray(f.variables) ? { variables: f.variables.map(String) } : {}),
+    ...(f.depthLayer ? { depthLayer: String(f.depthLayer) } : {}),
+    ...(f.retrievalRoute ? { retrievalRoute: String(f.retrievalRoute) } : {}),
+    ...(f.processingMethod ? { processingMethod: String(f.processingMethod) } : {}),
+    ...(Number.isFinite(Number(f.medianSpeedMs)) ? { medianSpeedMs: Number(f.medianSpeedMs) } : {}),
+    ...(provenanceId ? { provenanceId: new Types.ObjectId(provenanceId) } : {}),
+  };
 }
 
 export async function runOrigin(input: RunOriginInput): Promise<RunOriginOutput> {
@@ -174,29 +218,19 @@ export async function runOrigin(input: RunOriginInput): Promise<RunOriginOutput>
     // Stored, not just logged: the UI and the report both read this, and a degraded origin
     // must stay visibly degraded wherever it is used.
     degradationReason: bt.degradationReason,
+    currentStatus: bt.currentStatus ?? (bt.forcing.currents ? 'OBSERVED' : 'UNAVAILABLE'),
+    windStatus: bt.windStatus ?? (bt.forcing.winds ? 'OBSERVED' : 'UNKNOWN'),
+    windStatusReason: bt.windStatusReason ?? null,
+    providerAttempts: (bt.attempted ?? []).map((a) => ({
+      provider: a.provider,
+      outcome: a.outcome,
+      ...(a.datasetId ? { datasetId: a.datasetId } : {}),
+      ...(a.covers ? { covers: a.covers } : {}),
+      ...(a.detail ? { detail: a.detail } : {}),
+    })),
     forcing: {
-      currents: bt.forcing.currents
-        ? {
-            provider: String(bt.forcing.currents.provider),
-            datasetId: String(bt.forcing.currents.datasetId),
-            resolutionDeg: 0.08,
-            temporalResolutionH: 3,
-            provenanceId: forcingProvenanceIds[0]
-              ? new Types.ObjectId(forcingProvenanceIds[0])
-              : undefined,
-          }
-        : null,
-      winds: bt.forcing.winds
-        ? {
-            provider: String(bt.forcing.winds.provider),
-            datasetId: String(bt.forcing.winds.datasetId),
-            resolutionDeg: 0.25,
-            temporalResolutionH: 1,
-            provenanceId: forcingProvenanceIds[1]
-              ? new Types.ObjectId(forcingProvenanceIds[1])
-              : undefined,
-          }
-        : null,
+      currents: forcingRef(bt.forcing.currents, forcingProvenanceIds[0]),
+      winds: forcingRef(bt.forcing.winds, forcingProvenanceIds[1]),
     },
     params: {
       particleCount: Number(bt.params.particleCount ?? 0),
@@ -242,6 +276,8 @@ export async function runOrigin(input: RunOriginInput): Promise<RunOriginOutput>
       originEstimateId: String(doc._id),
       status: bt.status,
       method: bt.method,
+      currentStatus: bt.currentStatus,
+      windStatus: bt.windStatus,
       attempted: bt.attempted,
     },
     'origin estimate recorded',
@@ -252,6 +288,8 @@ export async function runOrigin(input: RunOriginInput): Promise<RunOriginOutput>
     status: bt.status,
     method: bt.method,
     degradationReason: bt.degradationReason,
+    currentStatus: bt.currentStatus ?? (bt.forcing.currents ? 'OBSERVED' : 'UNAVAILABLE'),
+    windStatus: bt.windStatus ?? (bt.forcing.winds ? 'OBSERVED' : 'UNKNOWN'),
     releaseWindow: bt.releaseWindow,
     particleCount: bt.particles?.count ?? 0,
   };

@@ -14,6 +14,14 @@ export interface PublicUser {
   lastLoginAt?: string;
 }
 
+/** Per-stage counts, so a list row can say WHERE a case got to, not merely that it exists. */
+export interface StageCounts {
+  scenes: number;
+  detections: number;
+  origins: number;
+  candidates: number;
+}
+
 export interface Investigation {
   _id: string;
   name: string;
@@ -26,16 +34,39 @@ export interface Investigation {
   status: string;
   createdAt: string;
   updatedAt: string;
+  /**
+   * Who may modify or delete this case. Sent by the API on both the list and the single
+   * fetch, and used to decide whether to OFFER an action — a button that exists only to
+   * return 403 teaches the user nothing except not to trust the buttons.
+   */
+  createdBy?: string;
+  members?: Array<{ userId: string; role: Role }>;
+  /** Present on list responses; absent when a single investigation is fetched. */
+  counts?: StageCounts;
 }
 
 // ── auth ────────────────────────────────────────────────────────────
+const meQuery = {
+  queryKey: ['me'],
+  queryFn: () => api.get<{ user: PublicUser; permissions: { role: Role } }>('/auth/me'),
+  retry: false,
+  staleTime: 30_000,
+};
+
 export function useMe() {
-  return useQuery({
-    queryKey: ['me'],
-    queryFn: () => api.get<{ user: PublicUser; permissions: { role: Role } }>('/auth/me'),
-    retry: false,
-    staleTime: 30_000,
-  });
+  return useQuery(meQuery);
+}
+
+/**
+ * The signed-in user AS ALREADY KNOWN to the cache — this observer never fetches.
+ *
+ * `RequireAuth` owns the `/auth/me` request. Anything that merely needs to know whether a
+ * session exists reads it through here instead, so mounting the observer on a public route
+ * (the landing page, the login form) does not buy an extra 401 to answer a question nobody
+ * asked.
+ */
+export function useMeCached() {
+  return useQuery({ ...meQuery, enabled: false }).data;
 }
 
 export function useLogin() {
@@ -106,6 +137,32 @@ export function useCreateInvestigation() {
     mutationFn: (body: CreateInvestigationInput) =>
       api.post<Investigation>('/investigations', body),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['investigations'] }),
+  });
+}
+
+/**
+ * Close an investigation — 06_BACKEND §6.4.2.
+ *
+ * The API soft-deletes: the document is flagged, not destroyed, and the scenes, detections,
+ * origin estimates, candidate rankings, comments and audit trail attached to it all remain.
+ * That is the point. An audit log that refers to an investigation nobody can look up is not
+ * an audit log, and evidence that vanishes because a case was tidied away is evidence that
+ * was never really kept (13_REAL_DATA_POLICY §13.4).
+ *
+ * Only the investigation's lead may. The queries for the case itself are removed rather than
+ * refetched, because the next fetch would 404 and render as an error the user just caused.
+ */
+export function useDeleteInvestigation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.del<void>(`/investigations/${id}`),
+    onSuccess: (_data, id) => {
+      void qc.invalidateQueries({ queryKey: ['investigations'] });
+      qc.removeQueries({ queryKey: ['investigation', id] });
+      qc.removeQueries({ queryKey: ['scenes', id] });
+      qc.removeQueries({ queryKey: ['detections', id] });
+      qc.removeQueries({ queryKey: ['candidates', id] });
+    },
   });
 }
 
@@ -434,6 +491,171 @@ export function useCorrelate(investigationId: string | undefined) {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['jobs'] });
       void qc.invalidateQueries({ queryKey: ['candidates', investigationId] });
+    },
+  });
+}
+
+// ── Discover: browse the sweep's watch regions, start investigating from there ──────
+//
+// A different entry point from every other hook above: those all read or act on ONE
+// investigation a person already opened. These read across the sweep's own internal
+// containers instead — see `apps/api/src/modules/discover/service.ts` for why that read
+// deliberately crosses the ordinary investigation boundary — and `adopt` is the one place a
+// scene changes which investigation owns it.
+
+export interface DiscoverRegion {
+  id: string;
+  label: string;
+  region: string;
+  bbox: [number, number, number, number];
+  aisCoverage: 'STAGED' | 'OBTAINABLE' | 'NONE';
+  note: string;
+  aoi: { type: 'Polygon'; coordinates: number[][][] };
+  /** What the last sweep of this region actually saw — null before the first tick. */
+  status: {
+    lastSweptAt: string | null;
+    overpassesSeen: number | null;
+    ingestible: number | null;
+    enqueued: number | null;
+    error: string | null;
+  };
+}
+
+export function useDiscoverRegions() {
+  return useQuery({
+    queryKey: ['discover-regions'],
+    // The four watch regions are a fixed, deployed constant — see
+    // packages/shared/src/watchRegions.ts — so there is nothing to invalidate this against.
+    queryFn: () => api.get<{ items: DiscoverRegion[] }>('/discover/regions'),
+    staleTime: Infinity,
+  });
+}
+
+export interface DiscoverDetection {
+  _id: string;
+  regionId: string;
+  geometry: { type: 'Polygon'; coordinates: number[][][] };
+  areaKm2: number;
+  confidence: { overall: number; lookAlikeCompetition: number } | Record<string, number>;
+  morphology: Record<string, number>;
+  reviewStatus: string;
+  sceneId: string;
+  productId: string;
+  acquiredAt: string;
+  /** The investigation that owns the scene this sits on. */
+  investigationId: string;
+  /** Already in an ordinary investigation, so it wants opening rather than adopting again. */
+  adopted: boolean;
+}
+
+export interface DiscoverDetectionsResult {
+  items: DiscoverDetection[];
+  /**
+   * Findings in these regions that fall outside the requested window. Surfaced so an empty
+   * list can say WHY it is empty — "nothing here" and "nothing in this period" are different
+   * answers and the period control is the most likely reason for the second.
+   */
+  outsidePeriod: { count: number; earliest: string | null; latest: string | null };
+}
+
+export function useDiscoverDetections(from: string, to: string, regionId?: string) {
+  const search = new URLSearchParams({ from, to });
+  if (regionId) search.set('regionId', regionId);
+  return useQuery({
+    queryKey: ['discover-detections', from, to, regionId],
+    queryFn: () => api.get<DiscoverDetectionsResult>(`/discover/detections?${search}`),
+    enabled: Boolean(from && to),
+    staleTime: 60_000,
+  });
+}
+
+/**
+ * An acquisition the sweep saw — a satellite having looked, which is a different and much
+ * more common fact than VARUNA having found something. `ingestible` is why it may not have
+ * produced a detection, stated by the provider rather than guessed here.
+ */
+export interface DiscoverOverpass {
+  _id: string;
+  regionId: string;
+  productId: string;
+  provider: string;
+  collection: string;
+  acquiredAt: string;
+  platform: string | null;
+  footprint: { type: 'Polygon'; coordinates: number[][][] } | null;
+  ingestible: boolean;
+  ingestibleReason: string | null;
+}
+
+export function useDiscoverOverpasses(from: string, to: string, regionId?: string) {
+  const search = new URLSearchParams({ from, to });
+  if (regionId) search.set('regionId', regionId);
+  return useQuery({
+    queryKey: ['discover-overpasses', from, to, regionId],
+    queryFn: () => api.get<{ items: DiscoverOverpass[] }>(`/discover/overpasses?${search}`),
+    enabled: Boolean(from && to),
+    staleTime: 60_000,
+  });
+}
+
+/**
+ * Run a sweep now. Returns the job id so the caller can follow it in `GET /jobs` — an
+ * unscoped job is visible only to whoever created it, which is exactly the person who
+ * pressed the button.
+ */
+export function useTriggerSweep() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { regionId?: string }) =>
+      api.post<{ jobId: string; deduplicated: boolean; regionId: string | null }>(
+        '/discover/sweep',
+        body,
+      ),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['jobs'] }),
+  });
+}
+
+/**
+ * The caller's own unscoped jobs, polled while any is still running.
+ *
+ * Sockets would be the obvious choice, but an unscoped sweep emits only into the `/jobs`
+ * namespace and `SocketProvider` connects only to `/investigations` — so following one live
+ * would mean opening a second namespace connection for a single button. This mirrors what
+ * `JobActivity` already does for investigation-scoped jobs.
+ */
+export function useSweepJobs(enabled: boolean) {
+  return useQuery({
+    queryKey: ['jobs', 'sweep'],
+    queryFn: () => api.get<{ items: Job[] }>('/jobs?limit=20'),
+    enabled,
+    select: (d) => d.items.filter((j) => j.kind === 'SWEEP_TICK'),
+    // `q.state.data` is the RAW response, NOT the `select`-transformed value — so it is
+    // `{ items }`, not an array. An earlier version cast it to `Job[]` and called `.some` on
+    // it, which type-checked only because the cast said so and crashed the whole page on
+    // first render.
+    refetchInterval: (q) => {
+      const running = q.state.data?.items.some(
+        (j) => j.kind === 'SWEEP_TICK' && (j.status === 'QUEUED' || j.status === 'RUNNING'),
+      );
+      return running ? 2_000 : false;
+    },
+  });
+}
+
+export interface AdoptDetectionResult {
+  investigationId: string;
+  created: boolean;
+  adoptedDetectionCount: number;
+}
+
+export function useAdoptDetection() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, investigationId }: { id: string; investigationId?: string }) =>
+      api.post<AdoptDetectionResult>(`/discover/detections/${id}/adopt`, { investigationId }),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['discover-detections'] });
+      void qc.invalidateQueries({ queryKey: ['investigations'] });
     },
   });
 }

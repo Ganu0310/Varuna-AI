@@ -4,6 +4,8 @@ import { formatUtc, formatAreaKm2 } from '../../lib/format.ts';
 import { DetectionReview } from './DetectionReview.tsx';
 import { DetectionVersions } from './DetectionVersions.tsx';
 import { SceneUpload } from './SceneUpload.tsx';
+import { ScenePicker } from './ScenePicker.tsx';
+import { Modal } from '../../components/Modal.tsx';
 
 /**
  * Detections panel — 05_FRONTEND §5.5.5.
@@ -29,8 +31,8 @@ export function DetectionsPanel({ investigationId }: { investigationId: string }
           <p className="muted">Loading…</p>
         ) : (scenes.data?.items.length ?? 0) === 0 ? (
           <p className="muted">
-            No scenes ingested yet. Search the catalogue for an acquisition covering this area, then
-            ingest it by product ID.
+            No scenes ingested yet. Choose an acquisition below — the catalogue is searched for this
+            investigation's own area and window.
           </p>
         ) : (
           /*
@@ -68,26 +70,40 @@ export function DetectionsPanel({ investigationId }: { investigationId: string }
           </ul>
         )}
 
-        <label htmlFor="pid">Ingest a scene by product ID</label>
-        <input
-          id="pid"
-          className="mono"
-          value={productId}
-          onChange={(e) => setProductId(e.target.value)}
-          placeholder="S1C_IW_GRDH_1SDV_..._rtc"
-        />
-        <div className="form-error" role="alert">
-          {ingest.isError ? (ingest.error as Error).message : ''}
-        </div>
-        <button onClick={() => ingest.mutate(productId)} disabled={!productId || ingest.isPending}>
-          {ingest.isPending ? 'Queuing…' : 'Ingest and detect'}
-        </button>
-        {ingest.isSuccess ? (
-          <p className="field-hint mono">
-            job {ingest.data.jobId}
-            {ingest.data.deduplicated ? ' (already ingested — no duplicate work)' : ''}
-          </p>
-        ) : null}
+        {/*
+          Choosing from the catalogue is the primary way in. Typing a 67-character product id
+          is kept as the secondary path — an analyst who arrives with an id from elsewhere
+          should not have to search for it first — but it is folded away, because it is the
+          route where a transposed digit produces a 404 that reads like an outage.
+        */}
+        <ScenePicker investigationId={investigationId} />
+
+        <details className="by-product-id">
+          <summary className="muted">Or ingest by product ID</summary>
+          <label htmlFor="pid">Product ID</label>
+          <input
+            id="pid"
+            className="mono"
+            value={productId}
+            onChange={(e) => setProductId(e.target.value)}
+            placeholder="S1C_IW_GRDH_1SDV_..._rtc"
+          />
+          <div className="form-error" role="alert">
+            {ingest.isError ? (ingest.error as Error).message : ''}
+          </div>
+          <button
+            onClick={() => ingest.mutate(productId)}
+            disabled={!productId || ingest.isPending}
+          >
+            {ingest.isPending ? 'Queuing…' : 'Ingest and detect'}
+          </button>
+          {ingest.isSuccess ? (
+            <p className="field-hint mono">
+              job {ingest.data.jobId}
+              {ingest.data.deduplicated ? ' (already ingested — no duplicate work)' : ''}
+            </p>
+          ) : null}
+        </details>
       </section>
 
       {/* Sits between the catalogue ingest and the results: an analyst arrives either with a
@@ -120,8 +136,10 @@ export function DetectionsPanel({ investigationId }: { investigationId: string }
                   <td className="num mono">{d.confidence.lookAlikeCompetition.toFixed(2)}</td>
                   <td className="num mono">{d.morphology.elongationRatio.toFixed(2)}</td>
                   <td>
-                    <span className={`token status-${d.reviewStatus.toLowerCase()}`}>
-                      {d.reviewStatus}
+                    <span
+                      className={`token status-${d.reviewStatus.toLowerCase().replace('_', '-')}`}
+                    >
+                      {d.reviewStatus.replace('_', ' ')}
                     </span>
                   </td>
                   <td>
@@ -136,8 +154,14 @@ export function DetectionsPanel({ investigationId }: { investigationId: string }
         )}
       </section>
 
+      {/*
+        Review opens as a dialog rather than expanding under the table. Inline, it had to
+        share width with the map — the confidence bars and version history got a column too
+        narrow to read — and opening it pushed the rest of the page down, moving the row you
+        had just clicked out from under the cursor.
+      */}
       {selected ? (
-        <>
+        <Modal title="Detection review" onClose={() => setSelected(null)}>
           <DetectionReview
             detectionId={selected}
             investigationId={investigationId}
@@ -146,7 +170,7 @@ export function DetectionsPanel({ investigationId }: { investigationId: string }
           <section className="card">
             <DetectionVersions detectionId={selected} />
           </section>
-        </>
+        </Modal>
       ) : null}
     </div>
   );

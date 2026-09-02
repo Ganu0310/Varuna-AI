@@ -36,7 +36,18 @@ class IngestRequest(BaseModel):
 
 
 @router.post("/ingest")
-async def ingest(req: IngestRequest) -> dict:
+# BLOCKING BY DESIGN, AND DECLARED AS SUCH.
+#
+# This handler is a plain `def`, not `async def`, and that is load-bearing. Everything it does
+# is synchronous and slow — provider reads, GDAL, CMEMS, particle integration — and none of it
+# awaits. An `async def` handler runs ON the event loop, so a single one of these stalls the
+# entire service: while one drift run waited ~50 s for CMEMS, every other request queued behind
+# it, `/health` included. The worker then reported `fetch failed` on unrelated jobs, which reads
+# like a network fault and was really self-inflicted head-of-line blocking.
+#
+# Declared `def`, Starlette runs it in its threadpool instead, so slow work occupies one thread
+# and the loop stays free to answer everything else.
+def ingest(req: IngestRequest) -> dict:
     """Fetch the AOI window of one scene, write COGs to object storage, return metadata."""
     try:
         result = ingest_scene(
@@ -56,12 +67,14 @@ class AdoptRequest(BaseModel):
     bucket: str
     key: str
     productId: str
-    """Observation time, from the UPLOADER — never read from the file.
+    """Observation time, resolved by the API before the upload was accepted.
 
-    `TIFFTAG_DATETIME` records when the file was WRITTEN, which for a re-exported product is
-    the day someone opened it in a GIS. Every AIS correlation is a query in a window around
-    this instant, so taking it from the file would search the wrong day and rank vessels that
-    were nowhere near the spill.
+    It is either what the uploader stated, or what the file states UNAMBIGUOUSLY — a mission
+    product identifier, or a metadata key that means acquisition rather than production. It is
+    never `TIFFTAG_DATETIME`, which records when the file was WRITTEN: for a re-exported
+    product, the day someone opened it in a GIS. Every AIS correlation is a query in a window
+    around this instant, so a value inferred from a weak signal would search the wrong day and
+    rank vessels that were nowhere near the spill.
     """
     acquiredAt: str
     platform: str | None = None
@@ -72,7 +85,7 @@ class AdoptRequest(BaseModel):
 
 
 @router.post("/adopt")
-async def adopt(req: AdoptRequest) -> dict:
+def adopt(req: AdoptRequest) -> dict:
     """Describe an uploaded GeoTIFF: CRS, bounds, ground sample distance, radiometry.
 
     This is where the CRS is actually RESOLVED, as opposed to merely being present in the

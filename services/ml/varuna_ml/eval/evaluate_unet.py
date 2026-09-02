@@ -88,9 +88,9 @@ def main() -> None:
         "oil": {
             "mean_iou": float(np.mean(oil_ious)) if oil_ious else None,
             "median_iou": float(np.median(oil_ious)) if oil_ious else None,
-            "detection_rate": (sum(1 for r in oil if r["intersection"] > 0) / len(oil))
-            if oil
-            else None,
+            "detection_rate": (
+                (sum(1 for r in oil if r["intersection"] > 0) / len(oil)) if oil else None
+            ),
             "scenes_with_no_detection": sum(1 for r in oil if not r["fired"]),
         },
         "pixel_pooled": {
@@ -100,12 +100,12 @@ def main() -> None:
             "dice": dice,
         },
         "false_positives": {
-            "lookalike_scene_fp_rate": (sum(1 for r in look if r["fired"]) / len(look))
-            if look
-            else None,
-            "no_oil_scene_fp_rate": (sum(1 for r in none_ if r["fired"]) / len(none_))
-            if none_
-            else None,
+            "lookalike_scene_fp_rate": (
+                (sum(1 for r in look if r["fired"]) / len(look)) if look else None
+            ),
+            "no_oil_scene_fp_rate": (
+                (sum(1 for r in none_ if r["fired"]) / len(none_)) if none_ else None
+            ),
         },
         "per_scene": per_scene,
     }

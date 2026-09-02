@@ -153,7 +153,7 @@ describe('the insufficient-evidence floor is absolute', () => {
     const s = scoreCandidate(barelyObserved(), CTX);
     expect(s.measuredFeatureCount).toBeLessThan(MIN_MEASURED_FEATURES);
     expect(s.tier).toBe('INSUFFICIENT_EVIDENCE');
-    expect(s.insufficientReason).toMatch(/Only \d+ of 12/);
+    expect(s.insufficientReason).toMatch(/Only \d+ of 14/);
   });
 
   it('a HIGH score from too few features is still INSUFFICIENT_EVIDENCE', () => {

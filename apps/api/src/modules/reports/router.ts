@@ -93,10 +93,15 @@ reportsRouter.post(
         deduplicated,
         sections,
         manifest: data.manifest,
-        // Still offered: the route the PDF is printed FROM. An analyst who wants to read the
-        // dossier rather than file it should not have to wait for a browser to boot.
+        // Still offered: the route each PDF is printed FROM. A reader who wants to read the
+        // document rather than file it should not have to wait for a browser to boot.
         printUrl: `/investigations/${id}/report`,
         pdfUrl: `/api/v1/investigations/${id}/report/pdf`,
+        // The plain-language brief is generated in the same job, not on request — see
+        // `apps/worker/src/processors/report.ts`. It is not optional the way SUMMARY or
+        // EVIDENCE are: there is no `sections` entry that omits it.
+        printPlainUrl: `/investigations/${id}/report/plain`,
+        plainPdfUrl: `/api/v1/investigations/${id}/report/plain/pdf`,
       });
     } catch (err) {
       next(err);
@@ -161,17 +166,56 @@ reportsRouter.get(
 );
 
 /**
- * The rendered PDF.
+ * Serve the most recent rendered PDF matching a filename pattern.
+ *
+ * Both PDF routes below share this rather than duplicating the disk logic, but they must
+ * NOT share the same filter: `{id}-{iso}.pdf` (the dossier) and `{id}-plain-{iso}.pdf` (the
+ * brief) both start with `{id}-`, so a naive prefix match on the dossier route would pick up
+ * the newer of the two documents regardless of which one was actually asked for — silently
+ * serving one report as the other. `exclude` is how the dossier route rules the brief's
+ * files back out.
  *
  * Served from disk rather than redirecting to object storage, because there is no object
  * storage in the API and a signed URL to a file the API is already authorised to read would
- * be indirection for its own sake. `rbac('viewer')` plus `requireInvestigationAccess` is the
- * same gate as every other read of this investigation.
+ * be indirection for its own sake. `rbac('viewer')` plus `requireInvestigationAccess` — the
+ * same gate as every other read of this investigation — is enforced by each caller.
  *
  * Returns the most recent render. Reports are not versioned here: the manifest inside the
- * document records what it was built from, and the file's SHA-256 is in the job result, so a
- * PDF someone is holding can always be matched back to the run that produced it.
+ * document (or, for the brief, the dossier's own manifest section) records what it was built
+ * from, and the file's SHA-256 is in the job result, so a PDF someone is holding can always
+ * be matched back to the run that produced it.
  */
+async function servePdf(
+  id: string,
+  opts: { prefix: string; exclude?: string; noneRenderedDetail: string },
+  res: Response,
+): Promise<void> {
+  let names: string[];
+  try {
+    names = await readdir(env.REPORTS_DIR);
+  } catch {
+    names = [];
+  }
+
+  const mine = names
+    .filter((n) => n.startsWith(opts.prefix) && n.endsWith('.pdf'))
+    .filter((n) => !opts.exclude || !n.startsWith(opts.exclude))
+    .sort();
+  const newest = mine[mine.length - 1];
+  if (!newest) throw new NotFoundError(opts.noneRenderedDetail);
+
+  // `basename` defends the join against a name that somehow contained a traversal. The ids
+  // are validated hex and the files are written by us, so this is belt-and-braces — but a
+  // path built from directory contents is exactly where that goes wrong.
+  const path = join(env.REPORTS_DIR, basename(newest));
+  const info = await stat(path);
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Length', info.size);
+  res.setHeader('Content-Disposition', `attachment; filename="${basename(newest)}"`);
+  createReadStream(path).pipe(res);
+}
+
 reportsRouter.get(
   '/:id/report/pdf',
   rbac('viewer'),
@@ -180,33 +224,46 @@ reportsRouter.get(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const id = param(req, 'id');
-      let names: string[];
-      try {
-        names = await readdir(env.REPORTS_DIR);
-      } catch {
-        names = [];
-      }
-
-      // Filenames are `{investigationId}-{iso}.pdf`, so the newest sorts last.
-      const mine = names.filter((n) => n.startsWith(`${id}-`) && n.endsWith('.pdf')).sort();
-      const newest = mine[mine.length - 1];
-      if (!newest) {
-        throw new NotFoundError(
-          'No PDF has been rendered for this investigation yet. POST to ' +
+      await servePdf(
+        id,
+        {
+          prefix: `${id}-`,
+          exclude: `${id}-plain-`,
+          noneRenderedDetail:
+            'No PDF has been rendered for this investigation yet. POST to ' +
             `/investigations/${id}/report/generate first, then retry once the job completes.`,
-        );
-      }
+        },
+        res,
+      );
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
-      // `basename` defends the join against a name that somehow contained a traversal. The
-      // ids are validated hex and the files are written by us, so this is belt-and-braces —
-      // but a path built from directory contents is exactly where that goes wrong.
-      const path = join(env.REPORTS_DIR, basename(newest));
-      const info = await stat(path);
-
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Length', info.size);
-      res.setHeader('Content-Disposition', `attachment; filename="${basename(newest)}"`);
-      createReadStream(path).pipe(res);
+/**
+ * The plain-language brief as a PDF — the same document a non-specialist reader gets from
+ * `/investigations/:id/report/plain`, ready to hand over or attach to an email without
+ * anyone having to open the app first.
+ */
+reportsRouter.get(
+  '/:id/report/plain/pdf',
+  rbac('viewer'),
+  validate({ params: IdParam }),
+  requireInvestigationAccess('viewer'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = param(req, 'id');
+      await servePdf(
+        id,
+        {
+          prefix: `${id}-plain-`,
+          noneRenderedDetail:
+            'No plain-language PDF has been rendered for this investigation yet. POST to ' +
+            `/investigations/${id}/report/generate first, then retry once the job completes.`,
+        },
+        res,
+      );
     } catch (err) {
       next(err);
     }

@@ -102,9 +102,9 @@ def test_dark_land_defeats_the_brightness_mask_and_is_caught_by_geometry():
 
     db = 10.0 * np.log10(sigma0)
     brightness_only = land_mask_from_backscatter(db)
-    assert not brightness_only[r0 + 20, c0 + 20], (
-        "premise of this test: the brightness mask does NOT catch dark land"
-    )
+    assert not brightness_only[
+        r0 + 20, c0 + 20
+    ], "premise of this test: the brightness mask does NOT catch dark land"
 
     without = detect(sigma0, pixel_size_m=10.0, min_area_km2=0.05)
     with_coast = detect(sigma0, pixel_size_m=10.0, min_area_km2=0.05, coastline=lm.mask)

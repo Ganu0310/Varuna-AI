@@ -2,7 +2,11 @@ import { describe, it, expect } from 'vitest';
 import type { Polygon } from 'geojson';
 import { searchCatalogue } from './chain.js';
 import { ProviderUnavailable } from '../errors.js';
-import type { CatalogueItem, CatalogueSearchParams, SatelliteCatalogueProvider } from './types.js';
+import type {
+  ProviderCatalogueItem,
+  CatalogueSearchParams,
+  SatelliteCatalogueProvider,
+} from './types.js';
 
 /**
  * Chain semantics — 06_BACKEND §6.5.1. The rule under test:
@@ -29,8 +33,8 @@ const PARAMS: CatalogueSearchParams = {
 };
 
 function item(
-  overrides: Partial<CatalogueItem> & { productId: string; provider: string },
-): CatalogueItem {
+  overrides: Partial<ProviderCatalogueItem> & { productId: string; provider: string },
+): ProviderCatalogueItem {
   return {
     platform: 'SENTINEL-1A',
     sensor: 'SAR-C',
@@ -55,7 +59,7 @@ function item(
 
 function stubProvider(
   name: string,
-  behaviour: { items?: CatalogueItem[]; throws?: unknown; configured?: boolean },
+  behaviour: { items?: ProviderCatalogueItem[]; throws?: unknown; configured?: boolean },
 ): SatelliteCatalogueProvider {
   return {
     name,

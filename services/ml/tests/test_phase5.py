@@ -17,7 +17,12 @@ from shapely.geometry import Polygon
 from varuna_ml.geo.morphology import compute_morphology
 from varuna_ml.models.confidence import detection_confidence, wind_suitability
 from varuna_ml.models.manifest import validate_manifest
-from varuna_ml.models.registry import ModelMetrics, RegistryError, promotion_allowed, register_model
+from varuna_ml.models.registry import (
+    ModelMetrics,
+    RegistryError,
+    promotion_allowed,
+    register_model,
+)
 
 REPO = Path(__file__).resolve().parents[3]
 
@@ -43,7 +48,10 @@ def write_manifest(tmp_path: Path, **overrides) -> Path:
         "dataset_manifest": {
             "version": "test",
             "entries": [entry],
-            "augmentation": {"permitted": ["hflip", "rot90"], "forbidden": ["gan_synthesis"]},
+            "augmentation": {
+                "permitted": ["hflip", "rot90"],
+                "forbidden": ["gan_synthesis"],
+            },
             "assertion": "no_synthetic_samples",
         }
     }
@@ -163,8 +171,15 @@ def test_morphology_is_measured_in_metres_not_degrees():
 
 
 def test_morphology_of_a_circle_is_compact_and_unelongated():
-    circle = Polygon([(144.6 + 0.02 * __import__("math").cos(t / 20 * 6.28318),
-                       13.4 + 0.02 * __import__("math").sin(t / 20 * 6.28318)) for t in range(20)])
+    circle = Polygon(
+        [
+            (
+                144.6 + 0.02 * __import__("math").cos(t / 20 * 6.28318),
+                13.4 + 0.02 * __import__("math").sin(t / 20 * 6.28318),
+            )
+            for t in range(20)
+        ]
+    )
     m = compute_morphology(circle)
     assert m.elongation_ratio < 1.2
     assert m.compactness > 0.85
@@ -180,7 +195,9 @@ def test_orientation_is_an_axis_not_a_direction():
 
 def test_real_detection_morphology():
     dets = json.loads(
-        (REPO / "data" / "incidents" / "guam-2025-09-21-detections.json").read_text(encoding="utf-8")
+        (REPO / "data" / "incidents" / "guam-2025-09-21-detections.json").read_text(
+            encoding="utf-8"
+        )
     )
     from shapely.geometry import shape
 
@@ -208,8 +225,9 @@ def test_unknown_wind_is_not_treated_as_good_conditions():
 
 
 def test_all_four_terms_are_returned_separately():
-    c = detection_confidence(mean_oil_probability=None, contrast_db=8.0, wind_ms=6.0,
-                             look_alike_risk=0.1)
+    c = detection_confidence(
+        mean_oil_probability=None, contrast_db=8.0, wind_ms=6.0, look_alike_risk=0.1
+    )
     for term in (c.model_term, c.separation_term, c.wind_term, c.shape_term):
         assert 0.0 <= term <= 1.0
     # The raw inputs travel with the score so the UI can show "8.0 dB", not only "0.80".

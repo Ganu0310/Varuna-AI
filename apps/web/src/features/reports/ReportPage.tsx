@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { VarunaMark } from '../../components/VarunaMark.tsx';
 import { useQuery } from '@tanstack/react-query';
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { api, ApiError, downloadFile } from '../../api/client.ts';
 import { EvidenceWaterfall, type FeatureContribution } from '../candidates/EvidenceWaterfall.tsx';
 import { formatUtc, formatAreaKm2 } from '../../lib/format.ts';
@@ -128,6 +129,15 @@ export function ReportPage() {
         <span className="rp-toolbar-sep" aria-hidden="true" />
         <button onClick={() => window.print()}>Print / Save as PDF</button>
         <span className="rp-toolbar-sep" aria-hidden="true" />
+        {/* This dossier assumes its reader can evaluate a confidence interval. Most people
+            this finding eventually reaches cannot, and handing them this document does not
+            inform them — it moves the translation onto whoever passes it along, informally,
+            without the caveats surviving. The plain-language version is built from these same
+            numbers, not a separate or softer set of facts. */}
+        <Link to={`/investigations/${id}/report/plain`} className="btn-download">
+          Plain-language summary →
+        </Link>
+        <span className="rp-toolbar-sep" aria-hidden="true" />
         {(
           [
             ['geojson', 'GeoJSON', 'geojson', 'Slick, AOI and origin geometry — opens in QGIS'],
@@ -168,6 +178,9 @@ export function ReportPage() {
       ) : null}
 
       <header className="rp-cover">
+        {/* On the printed dossier the mark identifies the issuing system at a glance,
+            which matters on a document that may be filed alongside others. */}
+        <VarunaMark size={56} />
         <p className="rp-kicker">VARUNA · Vessel attribution dossier</p>
         <h1>{inv.name}</h1>
         {inv.incidentReference ? <p className="rp-ref mono">{inv.incidentReference}</p> : null}
