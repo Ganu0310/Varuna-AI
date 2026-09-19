@@ -268,8 +268,18 @@ def fetch_hycom_currents(
     Raises ForcingUnavailable when the date falls outside both the archive and the
     operational window — the gap is real and must not be papered over.
     """
-    import cftime
-    import netCDF4 as nc
+    try:
+        import cftime
+        import netCDF4 as nc
+    except ImportError as e:
+        # A missing OPeNDAP client is an unavailable-forcing condition, not a server fault:
+        # degrade to FOOTPRINT_PROXIMITY rather than 500 the whole back-track.
+        raise ForcingUnavailable(
+            "CURRENTS",
+            [{"provider": "HYCOM", "outcome": f"OPENDAP_CLIENT_MISSING ({e})"}],
+            "The OPeNDAP client (netCDF4/cftime) is not installed, so no keyless ocean-current "
+            "model can be read. Back-tracking degrades to footprint proximity.",
+        ) from e
 
     attempted: list[dict] = []
 
@@ -434,10 +444,30 @@ def fetch_currents(
     else:
         log_attempts.append({"provider": "CMEMS", "outcome": "NOT_CONFIGURED"})
 
+    # Same deadline as CMEMS above, and load-bearing here in a way it mostly isn't there:
+    # CMEMS fails fast (bad credentials, a real HTTP error) or works. HYCOM's public THREDDS
+    # server, probed directly, can instead accept the connection and then never send a
+    # response — no error, no timeout of its own, just silence — because `coverage()` and
+    # `nc.Dataset()` open a remote OPeNDAP session with no socket-level timeout. Calling it
+    # unwrapped, as this did, meant a single bad HYCOM request hung the calling thread
+    # indefinitely, which is a job that never finishes rather than a job that degrades.
     try:
-        return fetch_hycom_currents(bbox, start, end)
+        return _call_with_deadline(
+            lambda: fetch_hycom_currents(bbox, start, end),
+            timeout_s,
+            retries,
+            "HYCOM",
+        )
     except ForcingUnavailable as e:
         raise ForcingUnavailable("CURRENTS", log_attempts + e.attempted, e.consequence) from e
+    except ForcingTimeout as e:
+        raise ForcingUnavailable(
+            "CURRENTS",
+            log_attempts + [{"provider": "HYCOM", "outcome": "TIMEOUT", "detail": str(e)}],
+            "The keyless HYCOM OPeNDAP endpoint did not respond within the forcing timeout. "
+            "Back-tracking cannot run, so the origin estimate degrades to footprint proximity "
+            "rather than waiting indefinitely on a provider that may never answer.",
+        ) from e
 
 
 def _fetch_cmems(bbox, start, end, username, password) -> ForcingField:

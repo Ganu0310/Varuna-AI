@@ -58,6 +58,10 @@ export function GlobePage() {
     });
   }, [investigations.data]);
 
+  // Always-current list for the map click handler, which is bound once at globe creation.
+  const invRef = useRef<InvestigationRow[]>([]);
+  invRef.current = investigations.data?.items ?? [];
+
   // The terminator follows the SELECTED incident's own time, not the clock. A globe showing
   // "now" would put the day/night line somewhere with nothing to do with the acquisition being
   // examined.
@@ -69,19 +73,27 @@ export function GlobePage() {
   const terminatorAt = selected ? Date.parse(selected.windowStart) : mountedAt;
 
   useEffect(() => {
-    if (!container.current || map.current || points.length === 0) return;
+    // The globe must render on its own — a day/night Earth is worth showing before any
+    // investigation exists. Markers are added as an (initially empty) source below and
+    // filled by the effect that watches `points`.
+    if (!container.current || map.current) return;
 
-    const initialCentre: [number, number] = [
-      points.reduce((a, p) => a + p.lon, 0) / points.length,
-      points.reduce((a, p) => a + p.lat, 0) / points.length,
-    ];
+    const initialCentre: [number, number] = points.length
+      ? [
+          points.reduce((a, p) => a + p.lon, 0) / points.length,
+          points.reduce((a, p) => a + p.lat, 0) / points.length,
+        ]
+      : [12, 18];
 
     const m = new maplibregl.Map({
       container: container.current,
       style: {
         version: 8,
         sources: {},
-        layers: [{ id: 'space', type: 'background', paint: { 'background-color': '#05080d' } }],
+        // The background layer paints the globe's own surface where nothing else covers it,
+        // so this is the ocean colour. A full-world `fill` polygon does not tessellate
+        // reliably under the globe projection — this is the pattern that actually works.
+        layers: [{ id: 'ocean', type: 'background', paint: { 'background-color': '#0a2942' } }],
       },
       // Centred on the incidents, not on 0°. Every investigation in this deployment is near
       // Guam at ~145°E, which on a globe centred at Greenwich is on the FAR SIDE — the markers
@@ -95,41 +107,20 @@ export function GlobePage() {
       // Native globe. No second 3D engine, no second WebGL context.
       m.setProjection({ type: 'globe' });
 
-      m.addSource('ocean', {
-        type: 'geojson',
-        data: {
-          type: 'Feature',
-          properties: {},
-          geometry: {
-            type: 'Polygon',
-            coordinates: [
-              [
-                [-180, -85],
-                [180, -85],
-                [180, 85],
-                [-180, 85],
-                [-180, -85],
-              ],
-            ],
-          },
-        },
-      });
-      m.addLayer({
-        id: 'ocean',
-        type: 'fill',
-        source: 'ocean',
-        paint: { 'fill-color': '#0d2033' },
-      });
-
-      // The same vendored Natural Earth land the workspace map uses. Without continents the
-      // globe was a featureless ball and an incident marker had nothing to be located
-      // against — the one thing an orbital view is for.
+      // The same vendored Natural Earth land the workspace map uses. Warm-grey continents
+      // over the ocean-blue background give a clear land/sea read at globe zoom.
       m.addSource('land', { type: 'geojson', data: '/basemap/land-50m.json' });
       m.addLayer({
         id: 'land',
         type: 'fill',
         source: 'land',
-        paint: { 'fill-color': '#16242f', 'fill-outline-color': '#37506a' },
+        paint: { 'fill-color': '#2b3b45' },
+      });
+      m.addLayer({
+        id: 'coastline',
+        type: 'line',
+        source: 'land',
+        paint: { 'line-color': '#5a86a8', 'line-width': 0.8, 'line-opacity': 0.85 },
       });
 
       m.addSource('graticule', {
@@ -140,7 +131,7 @@ export function GlobePage() {
         id: 'graticule',
         type: 'line',
         source: 'graticule',
-        paint: { 'line-color': '#1a2431', 'line-width': 1 },
+        paint: { 'line-color': '#1d3346', 'line-width': 0.6, 'line-opacity': 0.55 },
       });
 
       m.addSource('night', { type: 'geojson', data: solarTerminator(terminatorAt) });
@@ -148,7 +139,7 @@ export function GlobePage() {
         id: 'night',
         type: 'fill',
         source: 'night',
-        paint: { 'fill-color': '#020409', 'fill-opacity': 0.55 },
+        paint: { 'fill-color': '#01030a', 'fill-opacity': 0.5 },
       });
 
       // Populated at creation rather than added empty and filled by a later effect. The fill
@@ -185,7 +176,7 @@ export function GlobePage() {
         const f = e.features?.[0];
         if (!f) return;
         const id = f.properties?.id as string | undefined;
-        const row = (investigations.data?.items ?? []).find((i) => i._id === id);
+        const row = invRef.current.find((i) => i._id === id);
         if (row) setSelected(row);
       });
       m.on('mouseenter', 'incidents', () => (m.getCanvas().style.cursor = 'pointer'));
@@ -200,8 +191,27 @@ export function GlobePage() {
     return () => {
       m.remove();
       map.current = null;
+      setReady(false);
     };
-  }, [investigations.data, terminatorAt, points]);
+    // Created exactly once. Investigations, the terminator and framing are pushed in by the
+    // effects below (which read `map.current`), so the globe never tears down when data
+    // arrives — the empty dependency list is deliberate.
+  }, []);
+
+  // Re-frame on the incidents once, the first time they load and nothing is selected.
+  const framedRef = useRef(false);
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready || framedRef.current || selected || points.length === 0) return;
+    framedRef.current = true;
+    m.jumpTo({
+      center: [
+        points.reduce((a, p) => a + p.lon, 0) / points.length,
+        points.reduce((a, p) => a + p.lat, 0) / points.length,
+      ],
+      zoom: 2.1,
+    });
+  }, [ready, points, selected]);
 
   useEffect(() => {
     const m = map.current;
@@ -237,14 +247,15 @@ export function GlobePage() {
     <main className="globe-page">
       <header className="globe-head">
         <div>
-          <Link to="/investigations" className="mono">
-            ← Investigations
+          <Link to="/dashboard" className="mono">
+            ← Dashboard
           </Link>
           <h1>Orbital view</h1>
         </div>
         <p className="muted">
-          {points.length} investigation{points.length === 1 ? '' : 's'} at their real AOI centroids.
-          Marker size is total AOI area.
+          {points.length === 0
+            ? 'No investigations yet — the globe shows the live day/night terminator. Markers appear here at each investigation’s real AOI centroid.'
+            : `${points.length} investigation${points.length === 1 ? '' : 's'} at their real AOI centroids. Marker size is total AOI area.`}
         </p>
       </header>
 

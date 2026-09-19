@@ -1,6 +1,7 @@
 import { Router, type NextFunction, type Request, type Response } from 'express';
 import { rbac } from '../../middleware/rbac.js';
 import { buildCapabilityReport } from './capabilities.js';
+import { buildIntegrationsReport } from './integrations.js';
 import { buildOverview } from './overview.js';
 import { runVerifiedDemo, VERIFIED } from './verifiedDemo.js';
 import { reqId } from '../../middleware/requestId.js';
@@ -40,6 +41,20 @@ systemRouter.get('/capabilities', async (_req: Request, res: Response, next: Nex
     // new credentials shows up while someone is still looking at it.
     res.set('Cache-Control', 'private, max-age=30');
     res.json(await buildCapabilityReport());
+  } catch (err) {
+    next(err);
+  }
+});
+
+/**
+ * `GET /api/v1/system/integrations` — the Settings page's provider table.
+ *
+ * A per-provider reshape of `/capabilities`, not a second probe — see integrations.ts.
+ */
+systemRouter.get('/integrations', async (_req: Request, res: Response, next: NextFunction) => {
+  try {
+    res.set('Cache-Control', 'private, max-age=30');
+    res.json(await buildIntegrationsReport());
   } catch (err) {
     next(err);
   }

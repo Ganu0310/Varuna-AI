@@ -34,6 +34,12 @@ export interface AisImportOptions {
   bbox: [number, number, number, number];
   batchSize?: number;
   source?: string;
+  /**
+   * Overrides the provenance provider/dataset labels. Real Marine Cadastre imports leave
+   * this unset. A synthetic demo slice sets it so the provenance record never claims the
+   * rows came from NOAA when they did not (13_REAL_DATA_POLICY §13.5).
+   */
+  providerLabel?: { provider: string; datasetId: string; accessUrl?: string };
 }
 
 export interface AisImportResult {
@@ -125,13 +131,20 @@ export async function importAisCsv(opts: AisImportOptions): Promise<AisImportRes
     .digest('hex')
     .slice(0, 16);
 
-  const provenanceId = await recordProvenance({
-    sourceType: 'AIS_ARCHIVE',
+  const provLabel = opts.providerLabel ?? {
     provider: 'NOAA Marine Cadastre',
     datasetId: 'AIS Vessel Traffic Data',
-    externalId: `${opts.filePath.split(/[\\/]/).pop()} [${opts.from}..${opts.to}]`,
-    licence: 'U.S. Government work — public domain',
     accessUrl: 'https://marinecadastre.gov/accessais/',
+  };
+  const provenanceId = await recordProvenance({
+    sourceType: 'AIS_ARCHIVE',
+    provider: provLabel.provider,
+    datasetId: provLabel.datasetId,
+    externalId: `${opts.filePath.split(/[\\/]/).pop()} [${opts.from}..${opts.to}]`,
+    licence: opts.providerLabel
+      ? 'Synthetic demo data — not a real AIS archive'
+      : 'U.S. Government work — public domain',
+    accessUrl: provLabel.accessUrl,
     derivedFrom: [],
   });
 

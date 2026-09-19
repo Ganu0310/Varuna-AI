@@ -183,6 +183,10 @@ export interface CatalogueItem {
   licence: string;
   preprocessed: boolean;
   footprint: { type: 'Polygon'; coordinates: number[][][] } | null;
+  /** Present on the wire from the provider chain; declared here for the Satellite Browser. */
+  bbox?: [number, number, number, number] | null;
+  assets?: Record<string, string>;
+  selfHref?: string | null;
 }
 
 export interface ProviderStatus {
@@ -656,6 +660,197 @@ export function useAdoptDetection() {
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: ['discover-detections'] });
       void qc.invalidateQueries({ queryKey: ['investigations'] });
+    },
+  });
+}
+
+// ── dashboard / system / demo / vessels (Phase: productization) ─────
+
+export type CapabilityState = 'AVAILABLE' | 'DEGRADED' | 'UNAVAILABLE' | 'OPTIONAL';
+
+export interface CapabilityReport {
+  generatedAt: string;
+  overall: CapabilityState;
+  capabilities: Array<{ key: string; label: string; state: CapabilityState }>;
+  note: string;
+}
+
+/**
+ * The rail's health pill and the dashboard's badge both read this — the same capability
+ * matrix `/status` shows in full, not a second "is it up" probe. `/system/capabilities`
+ * already reports the weakest link (see apps/api/src/modules/system/capabilities.ts), so
+ * there is nothing this hook would compute itself.
+ */
+export function useSystemStatus() {
+  return useQuery({
+    queryKey: ['system', 'capabilities'],
+    queryFn: () => api.get<CapabilityReport>('/system/capabilities'),
+    refetchInterval: 20_000,
+    staleTime: 10_000,
+  });
+}
+
+export interface Integration {
+  key: string;
+  label: string;
+  category: string;
+  required: boolean;
+  configured: boolean;
+  status: string;
+  enables: string;
+  docs: string;
+}
+export function useIntegrations() {
+  return useQuery({
+    queryKey: ['system', 'integrations'],
+    queryFn: () => api.get<{ items: Integration[] }>('/system/integrations'),
+    staleTime: 60_000,
+  });
+}
+
+export interface DashboardOverview {
+  counts: {
+    investigations: number;
+    scenes: number;
+    detections: number;
+    candidates: number;
+    jobs: number;
+  };
+  recentInvestigations: Array<{
+    _id: string;
+    name: string;
+    status: string;
+    incidentReference: string | null;
+    aoiAreaKm2: number;
+    createdAt: string;
+  }>;
+  recentDetections: Array<{
+    _id: string;
+    investigationId: string;
+    areaKm2: number;
+    confidence: number | null;
+    lookAlikeRisk: number | null;
+    reviewStatus: string;
+  }>;
+  recentJobs: Array<{
+    jobKey: string;
+    kind: string;
+    queue: string;
+    status: string;
+    investigationId: string | null;
+    createdAt: string;
+    completedAt: string | null;
+  }>;
+  topCandidates: Array<{
+    _id: string;
+    investigationId: string;
+    mmsi: number;
+    score: number;
+    tier: string;
+    rank: number;
+  }>;
+  now: string;
+}
+export function useDashboard() {
+  return useQuery({
+    queryKey: ['dashboard', 'overview'],
+    queryFn: () => api.get<DashboardOverview>('/system/overview'),
+    refetchInterval: 15_000,
+    staleTime: 8_000,
+  });
+}
+
+export interface DemoInfo {
+  scenario: string;
+  reference: string;
+  scene: Record<string, unknown> & { productId: string; source: string; dataClass: string };
+  ais: { source: string; dataClass: string };
+  forcing: { dataClass: string; note: string };
+  aoi: number[];
+  stages: string[];
+}
+export function useDemoInfo() {
+  return useQuery({
+    queryKey: ['demo', 'info'],
+    queryFn: () => api.get<DemoInfo>('/demo/info'),
+    staleTime: 5 * 60_000,
+  });
+}
+export function useRunDemo() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      api.post<{ investigationId: string; jobId: string; aisImported: number; productId: string }>(
+        '/demo/run',
+      ),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['investigations'] });
+      void qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+}
+
+export interface VesselIndexRow {
+  mmsi: number;
+  fixCount: number;
+  firstAt: string | null;
+  lastAt: string | null;
+  sources: string[];
+  synthetic: boolean;
+}
+export function useVessels(q: string) {
+  const search = q ? `?q=${encodeURIComponent(q)}` : '';
+  return useQuery({
+    queryKey: ['vessels', q],
+    queryFn: () => api.get<{ items: VesselIndexRow[]; total: number }>(`/vessels${search}`),
+    staleTime: 30_000,
+  });
+}
+export function useVessel(mmsi: string | undefined) {
+  return useQuery({
+    queryKey: ['vessel', mmsi],
+    queryFn: () => api.get<Record<string, unknown>>(`/ais/vessel/${mmsi}`),
+    enabled: Boolean(mmsi),
+    staleTime: 30_000,
+  });
+}
+
+// ── Satellite Browser → investigation ──────────────────────────────
+// Creates an investigation for a scene selected in the browser and immediately queues its
+// ingest, so a browsed real scene lands in the normal workspace pipeline in one action.
+export interface CreateFromSceneInput {
+  productId: string;
+  name: string;
+  aoi: { type: 'Polygon'; coordinates: number[][][] };
+  windowStart: string;
+  windowEnd: string;
+  reportedIncidentAt?: string;
+  collection?: string;
+}
+export function useCreateInvestigationFromScene() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: CreateFromSceneInput) => {
+      const inv = await api.post<Investigation>('/investigations', {
+        name: input.name,
+        aoi: input.aoi,
+        windowStart: input.windowStart,
+        windowEnd: input.windowEnd,
+        ...(input.reportedIncidentAt ? { reportedIncidentAt: input.reportedIncidentAt } : {}),
+      });
+      const id = inv._id;
+      const ingest = await api.post<{ jobId: string; deduplicated: boolean }>(
+        `/investigations/${id}/scenes/ingest`,
+        {
+          productId: input.productId,
+          ...(input.collection ? { collection: input.collection } : {}),
+        },
+      );
+      return { investigationId: id, jobId: ingest.jobId };
+    },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['investigations'] });
+      void qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 }

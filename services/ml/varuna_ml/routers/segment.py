@@ -36,8 +36,33 @@ log = logging.getLogger("varuna_ml.segment")
 router = APIRouter(tags=["segment"], dependencies=[Depends(require_service_token)])
 
 DETECTOR_SOURCE = Path(__file__).resolve().parents[1] / "detect" / "darkspot.py"
-# routers -> varuna_ml -> ml -> services -> <repo root>
-REGISTRY_PATH = Path(__file__).resolve().parents[4] / "data" / "models" / "registry.json"
+
+
+def registry_path() -> Path:
+    """Locate the content-addressed model registry (07_AIML 7.7).
+
+    Resolution order:
+      1. an explicit ``REGISTRY_PATH`` / settings override (lets a container mount a real
+         registry without assuming a repo layout);
+      2. a repo-style ``data/models/registry.json`` at any ancestor directory — this is how
+         it resolves when the service runs from a source checkout;
+      3. a path under the installed package that need not exist. ``load_registry`` tolerates
+         a missing file and returns ``{}`` — the classical detector has no weights file and
+         is legitimately unregistered, so "no registry" is a valid state, not a fault.
+
+    Computed lazily rather than at import time: the previous ``parents[4]`` assumed a fixed
+    four-level nesting and raised ``IndexError`` when the package was installed at a
+    different depth (e.g. ``/app/varuna_ml`` inside the Docker image).
+    """
+    override = get_settings().registry_path
+    if override:
+        return Path(override)
+    here = Path(__file__).resolve()
+    for parent in here.parents:
+        candidate = parent / "data" / "models" / "registry.json"
+        if candidate.exists():
+            return candidate
+    return here.parents[1] / "data" / "models" / "registry.json"
 
 
 def detector_sha() -> str:
@@ -122,7 +147,7 @@ def segment_scene(req: SegmentRequest) -> dict:
     features = to_geojson(spots, transform, crs)
 
     sha = detector_sha()
-    entry = get_model(REGISTRY_PATH, sha)
+    entry = get_model(registry_path(), sha)
 
     detections = []
     # strict=True: `to_geojson` emits one feature per spot, so a length mismatch would mean a

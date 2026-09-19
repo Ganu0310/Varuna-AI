@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useLogin } from '../../api/hooks.ts';
 import { AuthShell } from './AuthShell.tsx';
 import { ApiError } from '../../api/client.ts';
@@ -7,16 +7,17 @@ import { ApiError } from '../../api/client.ts';
 /** `/login` — 05_FRONTEND §5.5.1. Labels are always visible, never placeholder-as-label. */
 export function LoginPage() {
   const navigate = useNavigate();
+  const [params] = useSearchParams();
   const login = useLogin();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [reveal, setReveal] = useState(false);
+
+  const dest = params.get('from') || '/dashboard';
 
   const onSubmit = (e: FormEvent) => {
     e.preventDefault();
-    login.mutate(
-      { email, password },
-      { onSuccess: () => navigate('/investigations', { replace: true }) },
-    );
+    login.mutate({ email, password }, { onSuccess: () => navigate(dest, { replace: true }) });
   };
 
   const problem = login.error instanceof ApiError ? login.error.problem : null;
@@ -24,9 +25,8 @@ export function LoginPage() {
   return (
     <AuthShell>
       <form className="auth-card" onSubmit={onSubmit} noValidate>
-        {/* h2, not h1: the page's h1 is the VARUNA wordmark in the shell. Two h1s give a
-            screen-reader user two competing page titles. */}
         <h2 className="auth-heading">Sign in</h2>
+        <p className="auth-sub muted">Operational access to the investigation workspace.</p>
 
         <label htmlFor="email">Email</label>
         <input
@@ -40,24 +40,33 @@ export function LoginPage() {
         />
 
         <label htmlFor="password">Password</label>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
+        <div className="input-affix">
+          <input
+            id="password"
+            name="password"
+            type={reveal ? 'text' : 'password'}
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <button
+            type="button"
+            className="input-affix-btn"
+            aria-pressed={reveal}
+            onClick={() => setReveal((r) => !r)}
+          >
+            {reveal ? 'Hide' : 'Show'}
+          </button>
+        </div>
 
-        {/* Reserved space so validation does not shift the layout (04_UIUX §4.8.1). */}
         <div className="form-error" role="alert" aria-live="polite">
           {login.isError
             ? (problem?.detail ?? 'Sign in failed. Check your details and try again.')
             : ''}
         </div>
 
-        <button type="submit" disabled={login.isPending}>
+        <button type="submit" className="btn-primary" disabled={login.isPending}>
           {login.isPending ? 'Signing in…' : 'Sign in'}
         </button>
 

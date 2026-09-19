@@ -6,12 +6,16 @@
  * CI check asserts the two stay in sync (04_UIUX §4.13). Do not hardcode a colour anywhere.
  */
 
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+/* No remote font import: VARUNA runs self-contained and the nginx CSP is 'self' only.
+ * The stacks below degrade to the platform UI font rather than fetching from a third party
+ * (which would also leak the analyst's IP to Google on every page load). */
 
 :root {
-  --font-display: 'Space Grotesk', 'IBM Plex Sans', system-ui, sans-serif;
-  --font-ui: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
-  --font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  --font-display:
+    'Space Grotesk', 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-ui: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono:
+    'IBM Plex Mono', ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
 
   /* ---- surface ramp (dark, default) ---- */
   --surface-0: #05080d;
@@ -116,24 +120,71 @@
   --ease-emphasis: cubic-bezier(0.2, 0, 0, 1.12);
 }
 
-/* Light theme — for the report and printing only. Tokens redefined; no component hardcodes a colour. */
+/* Light theme — a deliberately designed operational alternative, not an inversion
+   (04_UIUX §4.2). Dark stays primary; every token the app reads is redefined here so
+   surfaces, ink, accents and status colours all hold contrast on a light ground. */
 :root[data-theme='light'] {
-  --surface-0: #f7f9fb;
+  --surface-0: #eef2f6;
   --surface-1: #ffffff;
-  --surface-2: #f1f5f9;
+  --surface-2: #f4f7fa;
   --surface-3: #ffffff;
-  --surface-4: #e6edf3;
-  --surface-inset: #edf2f7;
+  --surface-4: #e4ebf1;
+  --surface-inset: #e9eef3;
+
   --border-subtle: #e2e8f0;
   --border-default: #cbd5e1;
   --border-strong: #94a3b8;
+  --border-focus: #0e8a93;
+
   --ink-primary: #0b1622;
   --ink-secondary: #3e5265;
   --ink-tertiary: #64748b;
+  --ink-disabled: #9aa8b6;
   --ink-inverse: #ffffff;
+
+  /* Cyan ramp darkened so accent text/fills pass AA on white. */
+  --accent-50: #e2f6f7;
+  --accent-200: #a7e2e6;
+  --accent-400: #17a2ac;
   --accent-500: #0e8a93;
-  --accent-400: #14a2ac;
-  --oil-500: #b9761a;
+  --accent-600: #0c757d;
+  --accent-700: #0a5f66;
+  --accent-900: #063e45;
+
+  --oil-400: #c9821f;
+  --oil-500: #a9691a;
+  --oil-600: #8a5313;
+  --oil-glow: rgba(169, 105, 26, 0.22);
+
+  --origin-100: #ece5fb;
+  --origin-300: #b7a0ee;
+  --origin-500: #7b52d8;
+  --origin-700: #5a37a6;
+
+  --status-ok: #12805a;
+  --status-warn: #b5791a;
+  --status-danger: #c73b30;
+  --status-info: #0e8a93;
+  --status-neutral: #5b6b7c;
+
+  --tier-strong: #c73b30;
+  --tier-moderate: #b5791a;
+  --tier-weak: #2f7fb0;
+  --tier-insufficient: #5b6b7c;
+
+  --track-1: #0e8a93;
+  --track-2: #b5791a;
+  --track-3: #3f8f3f;
+  --track-4: #b25aa6;
+  --track-5: #3a63c9;
+  --track-6: #c25c5c;
+  --track-7: #8a7a2c;
+  --track-8: #5b6b7c;
+
+  --elev-1: 0 1px 2px rgba(15, 30, 50, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  --elev-2: 0 4px 12px rgba(15, 30, 50, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  --elev-3: 0 12px 32px rgba(15, 30, 50, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.6);
+  --elev-glow-accent: 0 0 0 1px var(--accent-400), 0 0 20px rgba(14, 138, 147, 0.16);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -55,6 +55,10 @@ class Settings(BaseSettings):
 
     titiler_url: str = "http://localhost:8001"
 
+    # Optional absolute path to the content-addressed model registry JSON (07_AIML 7.7).
+    # Unset is valid: the classical detector has no weights file and is unregistered.
+    registry_path: str | None = None
+
     # Provider credentials (optional at boot; a missing key degrades capability, not integrity)
     cmems_username: str | None = None
     cmems_password: str | None = None
@@ -74,7 +78,17 @@ class Settings(BaseSettings):
     # How long any single environmental-forcing provider call may take before it is treated
     # as unavailable. A drift job that hangs on a provider is worse than one that degrades:
     # the analyst gets neither a result nor a reason.
-    forcing_timeout_seconds: float = 180.0
+    #
+    # 180s was measured against CMEMS, which answers or fails fast. The keyless HYCOM
+    # OPeNDAP fallback does neither reliably: probed against the real public server, a
+    # single request can sit well past 300s with no response and no error — not a timeout
+    # firing late, a connection that never resolves either way. At 180s x 2 retries x 2
+    # forcing terms (currents, then wind), that is up to twelve minutes before a caller
+    # sees FOOTPRINT_PROXIMITY, which is indistinguishable from hung from where the worker
+    # sits. 20s keeps a fair window for a slow-but-live answer while keeping the worst case
+    # for one forcing term at 20s x forcing_retries — a bound the caller can actually wait
+    # out (apps/api/src/modules/origin/service.ts sets its own fetch deadline against this).
+    forcing_timeout_seconds: float = 20.0
     forcing_retries: int = 2
 
 

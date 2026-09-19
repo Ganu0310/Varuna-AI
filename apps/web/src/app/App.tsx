@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { Suspense, lazy, useEffect, type ReactNode } from 'react';
 import { SocketProvider } from './providers/SocketProvider.tsx';
+import { ThemeProvider } from './providers/ThemeProvider.tsx';
 import { setUnauthorisedHandler } from '../api/client.ts';
 import { useMe } from '../api/hooks.ts';
 import { LoginPage } from '../features/auth/LoginPage.tsx';
@@ -14,6 +15,9 @@ import { GuidePage } from '../features/guide/GuidePage.tsx';
 import { AdminPage } from '../features/admin/AdminPage.tsx';
 import { DashboardPage } from '../features/dashboard/DashboardPage.tsx';
 import { SystemStatusPage } from '../features/system/SystemStatusPage.tsx';
+import { SettingsPage } from '../features/settings/SettingsPage.tsx';
+import { VesselsPage } from '../features/vessels/VesselsPage.tsx';
+import { SatelliteBrowserPage } from '../features/browser/SatelliteBrowserPage.tsx';
 // MapLibre and deck.gl are ~1 MB of the bundle and are only needed inside a workspace.
 // Splitting them out keeps the login and list routes small (05_FRONTEND §5.9 budgets).
 const ReportPage = lazy(() =>
@@ -72,186 +76,218 @@ function RequireAuth({ children }: { children: ReactNode }) {
 export function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <SocketProvider>
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route
-              path="/dashboard"
-              element={
-                <RequireAuth>
-                  <AppChrome>
-                    <DashboardPage />
-                  </AppChrome>
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/system"
-              element={
-                <RequireAuth>
-                  <AppChrome>
-                    <SystemStatusPage />
-                  </AppChrome>
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/investigations"
-              element={
-                <RequireAuth>
-                  <AppChrome>
-                    <InvestigationListPage />
-                  </AppChrome>
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/investigations/new"
-              element={
-                <RequireAuth>
-                  <AppChrome>
-                    <CreateInvestigationPage />
-                  </AppChrome>
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/admin"
-              element={
-                <RequireAuth>
-                  <AppChrome>
-                    <AdminPage />
-                  </AppChrome>
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/catalogue"
-              element={
-                <RequireAuth>
-                  <AppChrome>
-                    <CataloguePage />
-                  </AppChrome>
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/investigations/:id"
-              element={
-                <RequireAuth>
-                  <AppChrome>
-                    <Suspense
-                      fallback={
-                        <main className="page">
-                          <p className="muted">Loading workspace…</p>
-                        </main>
-                      }
-                    >
-                      <WorkspacePage />
-                    </Suspense>
-                  </AppChrome>
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/guide"
-              element={
-                <RequireAuth>
-                  <AppChrome>
-                    <GuidePage />
-                  </AppChrome>
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/globe"
-              element={
-                <RequireAuth>
-                  <AppChrome>
-                    <Suspense fallback={<main className="page">Loading globe…</main>}>
-                      <GlobePage />
-                    </Suspense>
-                  </AppChrome>
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/discover"
-              element={
-                <RequireAuth>
-                  <AppChrome>
-                    <Suspense fallback={<main className="page">Loading Discover…</main>}>
-                      <DiscoverPage />
-                    </Suspense>
-                  </AppChrome>
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/investigations/:id/relief"
-              element={
-                <RequireAuth>
-                  <AppChrome>
-                    <Suspense fallback={<main className="page">Loading relief…</main>}>
-                      <ReliefPage />
-                    </Suspense>
-                  </AppChrome>
-                </RequireAuth>
-              }
-            />
-            <Route
-              path="/investigations/:id/prism"
-              element={
-                <RequireAuth>
-                  <AppChrome>
-                    <Suspense fallback={<main className="page">Loading prism…</main>}>
-                      <PrismPage />
-                    </Suspense>
-                  </AppChrome>
-                </RequireAuth>
-              }
-            />
-            {/* The report renders standalone: no app chrome, so the printed page is only
+      <ThemeProvider>
+        <BrowserRouter>
+          <SocketProvider>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route
+                path="/dashboard"
+                element={
+                  <RequireAuth>
+                    <AppChrome>
+                      <DashboardPage />
+                    </AppChrome>
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/vessels"
+                element={
+                  <RequireAuth>
+                    <AppChrome>
+                      <VesselsPage />
+                    </AppChrome>
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/browser"
+                element={
+                  <RequireAuth>
+                    <AppChrome>
+                      <SatelliteBrowserPage />
+                    </AppChrome>
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/status"
+                element={
+                  <RequireAuth>
+                    <AppChrome>
+                      <SystemStatusPage />
+                    </AppChrome>
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <RequireAuth>
+                    <AppChrome>
+                      <SettingsPage />
+                    </AppChrome>
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/investigations"
+                element={
+                  <RequireAuth>
+                    <AppChrome>
+                      <InvestigationListPage />
+                    </AppChrome>
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/investigations/new"
+                element={
+                  <RequireAuth>
+                    <AppChrome>
+                      <CreateInvestigationPage />
+                    </AppChrome>
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/admin"
+                element={
+                  <RequireAuth>
+                    <AppChrome>
+                      <AdminPage />
+                    </AppChrome>
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/catalogue"
+                element={
+                  <RequireAuth>
+                    <AppChrome>
+                      <CataloguePage />
+                    </AppChrome>
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/investigations/:id"
+                element={
+                  <RequireAuth>
+                    <AppChrome>
+                      <Suspense
+                        fallback={
+                          <main className="page">
+                            <p className="muted">Loading workspace…</p>
+                          </main>
+                        }
+                      >
+                        <WorkspacePage />
+                      </Suspense>
+                    </AppChrome>
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/guide"
+                element={
+                  <RequireAuth>
+                    <AppChrome>
+                      <GuidePage />
+                    </AppChrome>
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/globe"
+                element={
+                  <RequireAuth>
+                    <AppChrome>
+                      <Suspense fallback={<main className="page">Loading globe…</main>}>
+                        <GlobePage />
+                      </Suspense>
+                    </AppChrome>
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/discover"
+                element={
+                  <RequireAuth>
+                    <AppChrome>
+                      <Suspense fallback={<main className="page">Loading Discover…</main>}>
+                        <DiscoverPage />
+                      </Suspense>
+                    </AppChrome>
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/investigations/:id/relief"
+                element={
+                  <RequireAuth>
+                    <AppChrome>
+                      <Suspense fallback={<main className="page">Loading relief…</main>}>
+                        <ReliefPage />
+                      </Suspense>
+                    </AppChrome>
+                  </RequireAuth>
+                }
+              />
+              <Route
+                path="/investigations/:id/prism"
+                element={
+                  <RequireAuth>
+                    <AppChrome>
+                      <Suspense fallback={<main className="page">Loading prism…</main>}>
+                        <PrismPage />
+                      </Suspense>
+                    </AppChrome>
+                  </RequireAuth>
+                }
+              />
+              {/* The report renders standalone: no app chrome, so the printed page is only
                 the dossier. */}
-            <Route
-              path="/investigations/:id/report"
-              element={
-                <RequireAuth>
-                  <Suspense fallback={<main className="page">Preparing dossier…</main>}>
-                    <ReportPage />
-                  </Suspense>
-                </RequireAuth>
-              }
-            />
-            {/* Same reason as the dossier route: standalone, so a printed or downloaded copy
+              <Route
+                path="/investigations/:id/report"
+                element={
+                  <RequireAuth>
+                    <Suspense fallback={<main className="page">Preparing dossier…</main>}>
+                      <ReportPage />
+                    </Suspense>
+                  </RequireAuth>
+                }
+              />
+              {/* Same reason as the dossier route: standalone, so a printed or downloaded copy
                 is only the summary, not the app around it. */}
-            <Route
-              path="/investigations/:id/report/plain"
-              element={
-                <RequireAuth>
-                  <Suspense fallback={<main className="page">Preparing summary…</main>}>
-                    <PlainReportPage />
-                  </Suspense>
-                </RequireAuth>
-              }
-            />
-            {/* The public front door. Unauthenticated: an evaluator should meet the
+              <Route
+                path="/investigations/:id/report/plain"
+                element={
+                  <RequireAuth>
+                    <Suspense fallback={<main className="page">Preparing summary…</main>}>
+                      <PlainReportPage />
+                    </Suspense>
+                  </RequireAuth>
+                }
+              />
+              {/* The public front door. Unauthenticated: an evaluator should meet the
                 system before meeting its login form. */}
-            <Route path="/" element={<LandingPage />} />
-            <Route
-              path="*"
-              element={
-                <main className="page">
-                  <h1>Not found</h1>
-                  <p className="muted">No such page.</p>
-                </main>
-              }
-            />
-          </Routes>
-        </SocketProvider>
-      </BrowserRouter>
+              <Route path="/" element={<LandingPage />} />
+              <Route
+                path="*"
+                element={
+                  <main className="page">
+                    <h1>Not found</h1>
+                    <p className="muted">No such page.</p>
+                  </main>
+                }
+              />
+            </Routes>
+          </SocketProvider>
+        </BrowserRouter>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

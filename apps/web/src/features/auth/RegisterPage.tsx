@@ -16,7 +16,7 @@ export function RegisterPage() {
     e.preventDefault();
     register.mutate(
       { name, email, password },
-      { onSuccess: () => navigate('/investigations', { replace: true }) },
+      { onSuccess: () => navigate('/dashboard', { replace: true }) },
     );
   };
 

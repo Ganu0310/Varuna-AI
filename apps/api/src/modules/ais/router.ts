@@ -234,3 +234,63 @@ aisRouter.get(
     }
   },
 );
+
+/**
+ * Vessel index — every MMSI held in `ais_positions`, with fix count, span and source.
+ * Read-only; used by the Vessel Explorer. `source` distinguishes real archives from the
+ * `USER_UPLOAD` synthetic demo slice.
+ */
+aisRouter.get(
+  '/vessels',
+  rbac('viewer'),
+  validate({
+    query: z
+      .object({
+        q: z.string().trim().max(20).optional(),
+        limit: z.coerce.number().int().min(1).max(200).default(100),
+      })
+      .strict(),
+  }),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const q = validatedQuery<{ q?: string; limit: number }>(req);
+      const db = mongoose.connection.db;
+      if (!db) throw new Error('no mongo connection');
+      const match: Record<string, unknown> = {};
+      if (q.q && /^\d+$/.test(q.q))
+        match['meta.mmsi'] = { $gte: Number(q.q), $lt: Number(q.q) + 1 };
+
+      const rows = await db
+        .collection('ais_positions')
+        .aggregate([
+          ...(Object.keys(match).length ? [{ $match: match }] : []),
+          {
+            $group: {
+              _id: '$meta.mmsi',
+              fixes: { $sum: 1 },
+              firstAt: { $min: '$t' },
+              lastAt: { $max: '$t' },
+              sources: { $addToSet: '$meta.source' },
+            },
+          },
+          { $sort: { fixes: -1 } },
+          { $limit: q.limit },
+        ])
+        .toArray();
+
+      res.json({
+        items: rows.map((r) => ({
+          mmsi: r._id as number,
+          fixCount: r.fixes as number,
+          firstAt: (r.firstAt as Date)?.toISOString?.() ?? null,
+          lastAt: (r.lastAt as Date)?.toISOString?.() ?? null,
+          sources: r.sources as string[],
+          synthetic: (r.sources as string[]).every((s) => s === 'USER_UPLOAD'),
+        })),
+        total: rows.length,
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+);

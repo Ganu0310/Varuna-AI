@@ -152,17 +152,35 @@ export async function runOrigin(input: RunOriginInput): Promise<RunOriginOutput>
 
   const priorClear = await priorClearSceneAt(input.investigationId, scene.acquiredAt as Date);
 
-  const res = await fetch(`${env.ML_SERVICE_URL}/backtrack`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-Service-Token': env.ML_SERVICE_TOKEN },
-    body: JSON.stringify({
-      geometry: detection.geometry,
-      observedAt,
-      horizonHours: input.horizonHours ?? 24,
-      particleCount: input.particleCount ?? 5000,
-      priorClearSceneAt: priorClear,
-    }),
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${env.ML_SERVICE_URL}/backtrack`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Service-Token': env.ML_SERVICE_TOKEN },
+      body: JSON.stringify({
+        geometry: detection.geometry,
+        observedAt,
+        horizonHours: input.horizonHours ?? 24,
+        particleCount: input.particleCount ?? 5000,
+        priorClearSceneAt: priorClear,
+      }),
+      // Belt and braces against the ML side's own forcing deadline (varuna_ml.drift.forcing
+      // bounds each provider call, but a caller-side ceiling means a bug there degrades this
+      // request to a clean, reported failure instead of an indefinite wait on the worker.
+      signal: AbortSignal.timeout(90_000),
+    });
+  } catch (err) {
+    throw new ProviderUnavailable(
+      'ML_SERVICE',
+      'BACKTRACK_TIMEOUT',
+      undefined,
+      err instanceof Error ? err.message : String(err),
+      [{ provider: 'ML_SERVICE', outcome: 'TIMEOUT' }],
+      'Back-tracking did not respond in time, so no origin estimate was recorded. ' +
+        'Correlation cannot run without one, and no partial or unverified origin enters the ' +
+        'investigation.',
+    );
+  }
 
   if (!res.ok) {
     const detail = await res.text().catch(() => '');

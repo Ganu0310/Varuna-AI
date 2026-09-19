@@ -18,6 +18,12 @@ COPY tsconfig.base.json ./
 COPY packages/shared packages/shared
 COPY apps/api apps/api
 COPY apps/worker apps/worker
+# Reference/eval data read at runtime by resolve(__dirname, '../../../../../data/...'):
+#   data/reference/mid-table.json      — ITU MID → flag lookup (AIS)
+#   data/eval/detector-partIII-summary.json — measured detector metrics for the report
+#   data/demo/ais/*.demo.csv           — synthetic demo AIS slice for `ais:import --demo`
+# .dockerignore already strips data/raw, data/processed, data/models and all blob types.
+COPY data data
 RUN pnpm --filter @varuna/shared build \
   && pnpm --filter @varuna/api build \
   && pnpm --filter @varuna/worker build

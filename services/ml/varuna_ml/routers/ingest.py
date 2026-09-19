@@ -33,6 +33,9 @@ class IngestRequest(BaseModel):
     """[west, south, east, north] in EPSG:4326."""
     aoi: list[float] = Field(min_length=4, max_length=4)
     collection: str = "sentinel-1-rtc"
+    """When set, the scene is read from this already-uploaded object key instead of a
+    provider (analyst upload path). The file must be a geocoded GeoTIFF."""
+    sourceKey: str | None = None
 
 
 @router.post("/ingest")
@@ -51,7 +54,10 @@ def ingest(req: IngestRequest) -> dict:
     """Fetch the AOI window of one scene, write COGs to object storage, return metadata."""
     try:
         result = ingest_scene(
-            req.productId, (req.aoi[0], req.aoi[1], req.aoi[2], req.aoi[3]), req.collection
+            req.productId,
+            (req.aoi[0], req.aoi[1], req.aoi[2], req.aoi[3]),
+            req.collection,
+            source_key=req.sourceKey,
         )
     except LookupError as e:
         # The scene is genuinely absent from that collection — a real answer, not a fault.

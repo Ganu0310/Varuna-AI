@@ -118,7 +118,8 @@ services:
       S3_ACCESS_KEY_ID: minioadmin
       S3_SECRET_ACCESS_KEY: minioadmin
       S3_BUCKET: varuna
-      TITILER_URL: http://titiler:8000
+      # Server-side use only: titiler's official image serves on port 80 inside the network.
+      TITILER_URL: http://titiler:80
     ports: ['8000:8000']
     depends_on:
       minio:
@@ -134,7 +135,11 @@ services:
       REDIS_URL: redis://redis:6379
       S3_ENDPOINT: http://minio:9000
       ML_SERVICE_URL: http://ml:8000
-      TITILER_URL: http://titiler:8001
+      # The API never calls titiler server-side for tiles; it embeds this base in tile-URL
+      # templates the BROWSER fetches, so it must be the host-reachable origin.
+      TITILER_URL: http://localhost:8001
+      # In-network address used only by the /system/status health probe.
+      TITILER_INTERNAL_URL: http://titiler:80
     ports: ['4000:4000']
     depends_on:
       mongo:
@@ -165,6 +170,8 @@ services:
     build:
       context: .
       dockerfile: apps/web/Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:4000}
     ports: ['5173:80']
     depends_on:
       - api

@@ -47,6 +47,27 @@ export async function putScene(key: string, body: Buffer): Promise<void> {
   );
 }
 
+/**
+ * Store an arbitrary object under a caller-chosen key and content type — used by the raw
+ * upload route (`POST /uploads/raster`), which stores bytes ahead of any ingest decision and
+ * so cannot reuse `putScene`'s fixed content type or checksum-derived key.
+ */
+export async function putObject(
+  key: string,
+  body: Buffer,
+  contentType: string,
+): Promise<{ key: string; sizeBytes: number }> {
+  await objectStore().send(
+    new PutObjectCommand({
+      Bucket: env.S3_BUCKET,
+      Key: key,
+      Body: body,
+      ContentType: contentType,
+    }),
+  );
+  return { key, sizeBytes: body.length };
+}
+
 /** True when the object is already there — the upload is idempotent on content. */
 export async function sceneExists(key: string): Promise<boolean> {
   try {

@@ -87,6 +87,12 @@ export const EnvSchema = z.object({
   ML_SERVICE_URL: z.string().url(),
   ML_SERVICE_TOKEN: z.string().min(1),
   TITILER_URL: z.string().url(),
+  // In-network TiTiler address for server-side health probes; TITILER_URL is browser-facing.
+  // Empty string in .env is treated as "unset".
+  TITILER_INTERNAL_URL: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.string().url().optional(),
+  ),
 
   // ── satellite providers ──────────────────────────────────────────
   CDSE_CLIENT_ID: z.string().optional(),

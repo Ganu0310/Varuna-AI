@@ -130,7 +130,7 @@ export function DashboardPage() {
           </p>
         </div>
         {overall ? (
-          <Link className={`status-badge status-${overall.toLowerCase()}`} to="/system">
+          <Link className={`status-badge status-${overall.toLowerCase()}`} to="/status">
             SYSTEM {overall}
           </Link>
         ) : null}

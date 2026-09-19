@@ -16,13 +16,31 @@ dependencies = [
   "numpy>=1.26",
   "pyproj>=3.6",
   "shapely>=2.0",
+  # Raster I/O + COG writing for the ingest/segment/detect routers (varuna_ml.ingest,
+  # varuna_ml.routers.ingest/segment). rasterio manylinux wheels vendor GDAL/PROJ/GEOS.
+  "rasterio>=1.3",
+  "rio-cogeo>=5.3",
+  # S3 access for reading/writing scene COGs in object storage (varuna_ml.ingest.preprocess,
+  # varuna_ml.routers.ingest/segment). botocore is pulled in transitively.
+  "boto3>=1.35",
+  # Classical dark-spot detector: adaptive thresholding + connected components + morphology
+  # (varuna_ml.detect.darkspot). Imported at service start-up via the /segment router.
+  "scipy>=1.11",
+  "scikit-image>=0.22",
+  # Model/eval manifest parsing (varuna_ml.models.manifest).
+  "pyyaml>=6.0",
+  # OPeNDAP access for the keyless HYCOM currents attempt in the drift degradation ladder
+  # (varuna_ml.drift.forcing). Without these the /backtrack endpoint raises ModuleNotFound
+  # instead of degrading cleanly to FOOTPRINT_PROXIMITY for dates outside HYCOM coverage.
+  "netCDF4>=1.6",
+  "cftime>=1.6",
 ]
 
 # Heavier scientific/ML dependencies land with the phases that need them (see
 # IMPLEMENTATION_PLAN.md §14.6):
-#   Phase 4/5: rasterio, rio-cogeo, opencv-python-headless, geopandas,
+#   Phase 4/5: opencv-python-headless, geopandas,
 #              torch, torchvision, segmentation-models-pytorch, transformers, mlflow
-#   Phase 7:   xarray, netCDF4, copernicusmarine, cdsapi, opendrift, scipy
+#   Phase 7:   xarray, netCDF4, copernicusmarine, cdsapi, opendrift
 [project.optional-dependencies]
 dev = [
   "pytest>=8.3.0",

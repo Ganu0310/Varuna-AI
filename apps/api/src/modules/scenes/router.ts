@@ -14,6 +14,7 @@ import { jobCreationLimiter } from '../../middleware/rateLimits.js';
 import { enqueue } from '../../queue/producer.js';
 import { audit } from '../audit/service.js';
 import { getInvestigation } from '../investigations/service.js';
+import { createHash } from 'node:crypto';
 import { env } from '../../env.js';
 import { NotFoundError, HttpError } from '../../errors.js';
 import { SatelliteSceneModel } from './model.js';
@@ -21,7 +22,6 @@ import { inspectGeoTiff } from './geotiff.js';
 import { extractSceneMetadata, type ExtractedSceneMetadata } from './sceneMetadata.js';
 import multer from 'multer';
 import * as turf from '@turf/turf';
-import { createHash } from 'node:crypto';
 import { putScene, sceneExists, uploadKey } from '../../lib/objectStore.js';
 import { SpillDetectionModel } from '../detections/model.js';
 
@@ -81,13 +81,36 @@ function receiveFile(handler: RequestHandler, limitBytes: number, hint: string):
 }
 
 const IdParam = z.object({ id: z.string().regex(/^[a-f\d]{24}$/i) });
+const SceneIdParam = z.object({
+  id: z.string().regex(/^[a-f\d]{24}$/i),
+  sceneId: z.string().regex(/^[a-f\d]{24}$/i),
+});
 
+/** Either an archive `productId` or an `uploadKey` from `POST /uploads/raster`. */
 const IngestBody = z
   .object({
-    productId: z.string().min(4).max(200),
+    productId: z.string().min(4).max(200).optional(),
     collection: z.string().min(2).max(80).optional(),
+    uploadKey: z
+      .string()
+      .regex(/^uploads\/[\w./-]+$/)
+      .max(300)
+      .optional(),
+    filename: z.string().max(160).optional(),
   })
-  .strict();
+  .strict()
+  .refine((v) => Boolean(v.productId) !== Boolean(v.uploadKey), {
+    message: 'provide exactly one of productId or uploadKey',
+    path: ['productId'],
+  });
+
+/** In-network TiTiler base for server-side calls; `TITILER_URL` is browser-facing. */
+function titilerInternal(): string {
+  return (
+    env.TITILER_INTERNAL_URL ??
+    env.TITILER_URL.replace('localhost:8001', 'titiler:80').replace('127.0.0.1:8001', 'titiler:80')
+  );
+}
 
 scenesRouter.post(
   '/:id/scenes/ingest',
@@ -112,6 +135,13 @@ scenesRouter.post(
         Math.max(...lats),
       ];
 
+      const fromUpload = Boolean(req.body.uploadKey);
+      // For an upload the product id is synthesised from the object key so the job is still
+      // idempotent and the scene is still uniquely addressable.
+      const productId: string = fromUpload
+        ? `UPLOAD_${createHash('sha1').update(req.body.uploadKey!).digest('hex').slice(0, 16)}`
+        : req.body.productId!;
+
       // INGESTIBILITY, checked here rather than discovered three services downstream.
       //
       // The ML service resolves a product id against the Planetary Computer `sentinel-1-rtc`
@@ -119,9 +149,10 @@ scenesRouter.post(
       // real acquisition that simply is not in that collection, and it came back as
       // `ML_SERVICE unavailable: HTTP_404` after a queue round trip. That reads like an
       // outage and is actually a provider mismatch, so it is refused up front with the reason
-      // and the remedy.
+      // and the remedy. Not applicable to an upload: there is no catalogue collection to
+      // mismatch against, since the raster is read from stored bytes, not a provider.
       const collection = req.body.collection ?? 'sentinel-1-rtc';
-      if (collection !== 'sentinel-1-rtc') {
+      if (!fromUpload && collection !== 'sentinel-1-rtc') {
         throw new HttpError(
           422,
           'Unsupported collection',
@@ -134,16 +165,17 @@ scenesRouter.post(
 
       // Deterministic key: re-requesting the same product for the same investigation is a
       // no-op rather than a second multi-second provider read (03_ARCHITECTURE §3.6).
-      const jobKey = `ingest:${investigationId}:${req.body.productId}`;
+      const jobKey = `ingest:${investigationId}:${productId}`;
       const { jobId, deduplicated } = await enqueue({
         queue: 'ingest',
         kind: 'INGEST',
         jobKey,
         payload: {
           investigationId,
-          productId: req.body.productId,
+          productId,
           aoi,
           collection,
+          ...(fromUpload ? { uploadKey: req.body.uploadKey, skipDetect: true } : {}),
         },
         investigationId,
         userId: req.user!.id,
@@ -154,11 +186,17 @@ scenesRouter.post(
         action: 'SCENE_INGEST_REQUESTED',
         entityType: 'Investigation',
         entityId: investigationId,
-        after: { productId: req.body.productId, jobId, deduplicated },
+        after: {
+          productId,
+          source: fromUpload ? 'UPLOAD' : 'ARCHIVE',
+          filename: req.body.filename,
+          jobId,
+          deduplicated,
+        },
         requestId: reqId(req),
       });
 
-      res.status(deduplicated ? 200 : 202).json({ jobId, deduplicated, aoi });
+      res.status(deduplicated ? 200 : 202).json({ jobId, deduplicated, aoi, productId });
     } catch (err) {
       next(err);
     }
@@ -653,6 +691,9 @@ scenesRouter.post(
             originalName: file.originalname,
             checksum,
           },
+          // Registers the scene; the analyst runs "Run Oil Spill Detection" as a distinct
+          // step via POST /:id/scenes/:sceneId/detect, same as the reference-upload path.
+          skipDetect: true,
         },
         investigationId,
         userId: req.user!.id,
@@ -680,6 +721,99 @@ scenesRouter.post(
             : `The acquisition time was read from the file itself (${acquiredAtSource})`) +
           ' — and every AIS correlation depends on that time being right.',
       });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+/**
+ * "Run Oil Spill Detection" — runs the SAME classical detector over an already-stored
+ * scene (used by the upload flow, where ingest registers the scene without detecting).
+ * The work happens on the `ingest` queue; the processor branches on `detectSceneId`.
+ */
+scenesRouter.post(
+  '/:id/scenes/:sceneId/detect',
+  rbac('analyst'),
+  jobCreationLimiter,
+  validate({ params: SceneIdParam }),
+  requireInvestigationAccess('analyst'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const investigationId = param(req, 'id');
+      const sceneId = param(req, 'sceneId');
+      const scene = await SatelliteSceneModel.findOne({
+        _id: new Types.ObjectId(sceneId),
+        investigationId: new Types.ObjectId(investigationId),
+      }).lean();
+      if (!scene) throw new NotFoundError('Scene not found in this investigation');
+
+      const jobKey = `detect:${investigationId}:${sceneId}`;
+      const { jobId, deduplicated } = await enqueue({
+        queue: 'ingest',
+        kind: 'DETECTION',
+        jobKey,
+        payload: { investigationId, detectSceneId: sceneId },
+        investigationId,
+        userId: req.user!.id,
+      });
+
+      await audit({
+        actorId: req.user!.id,
+        action: 'SCENE_INGEST_REQUESTED',
+        entityType: 'Investigation',
+        entityId: investigationId,
+        after: { detection: true, sceneId, jobId, deduplicated },
+        requestId: reqId(req),
+      });
+
+      res.status(deduplicated ? 200 : 202).json({ jobId, deduplicated, sceneId });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+/**
+ * A single static SAR preview PNG for one scene, proxied from TiTiler so the browser stays
+ * same-origin (the app CSP is `img-src 'self'`). Sigma0 is linear and spans a huge range,
+ * so it is stretched for display only — the analysis used the untouched values.
+ */
+scenesRouter.get(
+  '/:id/scenes/:sceneId/preview.png',
+  rbac('viewer'),
+  validate({ params: SceneIdParam }),
+  requireInvestigationAccess('viewer'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const scene = await SatelliteSceneModel.findOne({
+        _id: new Types.ObjectId(param(req, 'sceneId')),
+        investigationId: new Types.ObjectId(param(req, 'id')),
+      }).lean();
+      if (!scene) throw new NotFoundError('Scene not found in this investigation');
+      const key = scene.storage?.cogKey ?? scene.storage?.key;
+      if (!key) throw new NotFoundError('This scene has no stored raster to preview.');
+
+      const bucket = scene.storage?.bucket ?? env.S3_BUCKET;
+      const qs = new URLSearchParams({
+        url: `s3://${bucket}/${key}`,
+        rescale: '0,0.3',
+        colormap_name: 'gray',
+        max_size: '1024',
+      });
+      const upstream = await fetch(`${titilerInternal()}/cog/preview.png?${qs.toString()}`);
+      if (!upstream.ok || !upstream.body) {
+        const detail = await upstream.text().catch(() => '');
+        throw new HttpError(
+          502,
+          'Preview unavailable',
+          `TiTiler could not render this scene (HTTP ${upstream.status}). ${detail.slice(0, 200)}`,
+        );
+      }
+      res.setHeader('Content-Type', 'image/png');
+      res.setHeader('Cache-Control', 'private, max-age=300');
+      const buf = Buffer.from(await upstream.arrayBuffer());
+      res.end(buf);
     } catch (err) {
       next(err);
     }

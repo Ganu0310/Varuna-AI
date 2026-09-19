@@ -25,6 +25,7 @@ from __future__ import annotations
 import io
 import json
 import os
+import re
 import time
 import urllib.request
 from dataclasses import asdict, dataclass
@@ -35,6 +36,7 @@ import numpy as np
 import rasterio
 from botocore.client import Config
 from rasterio.io import MemoryFile
+from rasterio.session import AWSSession
 from rasterio.warp import transform_bounds
 from rasterio.windows import from_bounds
 from rio_cogeo.cogeo import cog_translate
@@ -152,16 +154,177 @@ def _write_cog(arr: np.ndarray, transform, crs) -> bytes:
             return dst_mem.read()
 
 
+def _pick_sar_band(ds) -> tuple[int, str]:
+    """Choose the SAR intensity band from an uploaded GeoTIFF.
+
+    Sentinel-1 oil-spill GeoTIFFs are commonly two-band. The literature convention and the
+    Trujillo-Acatitla dataset both order them (VH, VV) — band 2 is the co-pol VV, which is
+    what the dark-spot detector expects (07_AIML 7.2). Co-pol sea backscatter runs several
+    dB above cross-pol, so when the order is unknown the stronger band over its own finite
+    pixels is VV. Single-band files pass straight through.
+    """
+    if ds.count == 1:
+        return 1, "single band"
+    medians: list[tuple[float, int]] = []
+    for b in range(1, ds.count + 1):
+        a = ds.read(b).astype("float32")
+        f = np.isfinite(a) & (a != 0)
+        medians.append((float(np.median(a[f])) if f.any() else -1e9, b))
+    _, best = max(medians)
+    return best, f"band {best} of {ds.count} (strongest co-pol)"
+
+
+def _to_linear_sigma0(arr: np.ndarray) -> tuple[np.ndarray, str]:
+    """Normalise an uploaded SAR raster to LINEAR Sigma0, the scale `darkspot.detect()`
+    (and the `rescale=0,0.3` preview) are calibrated for.
+
+    This is a radiometric *unit* normalisation, not a content change: it is monotonic, so it
+    never turns a dark feature bright or vice-versa, and the adaptive detector keys only on
+    relative local contrast. Feeding dB or raw DN straight in is exactly the failure the
+    dataset manifest warns about — `to_db()` then produces almost no valid pixels and every
+    scene returns zero detections.
+
+    Branches, chosen from the data's own robust statistics:
+      • already linear Sigma0  (float, 0 < p50 ≲ 2)      → unchanged
+      • decibels               (p50 < 0, p2 in −50…−1)   → 10 ** (dB / 10)
+      • amplitude / DN         (all-positive, p50 ≳ 2)   → linear rescale so the sea
+                                                            (≈ p50) maps to a plausible VV
+                                                            Sigma0 (0.07)
+    """
+    f = np.isfinite(arr) & (arr != 0)
+    if f.sum() < 1000:
+        return arr, "as-is (insufficient valid pixels to classify scale)"
+    p2, p50, p98 = (float(x) for x in np.percentile(arr[f], [2, 50, 98]))
+
+    if p50 < 0.0 and -60.0 < p2 < 0.0:
+        lin = np.where(np.isfinite(arr), np.power(10.0, arr / 10.0), np.nan).astype("float32")
+        return lin, f"dB → linear Sigma0 (p50 {p50:.1f} dB)"
+
+    if p50 > 2.0 and p2 >= 0.0:
+        # Map the sea level to a physical VV Sigma0; clip the bright tail so land/ships do
+        # not dominate the stretch. Structure (and therefore every detection) is preserved.
+        scale = 0.07 / max(p50, 1e-6)
+        lin = np.where(np.isfinite(arr), np.clip(arr.astype("float32") * scale, 0.0, 2.0), np.nan)
+        return lin.astype("float32"), f"amplitude/DN → linear Sigma0 (p50 {p50:.0f} → 0.07)"
+
+    return arr.astype("float32"), f"already linear Sigma0 (p50 {p50:.3f})"
+
+
+def _s1_time_from_name(name: str) -> str | None:
+    """Recover the acquisition instant from a Sentinel-1 product filename, if it carries one
+    (…_20250921T200737_…). Never invents a time — returns None when the name has none."""
+    m = re.search(r"(\d{8})T(\d{6})", name)
+    if not m:
+        return None
+    d, t = m.group(1), m.group(2)
+    return f"{d[0:4]}-{d[4:6]}-{d[6:8]}T{t[0:2]}:{t[2:4]}:{t[4:6]}Z"
+
+
+def ingest_upload(product_id: str, source_key: str) -> IngestResult:
+    """Process an analyst-uploaded raster that is ALREADY in object storage.
+
+    The file must be a geocoded GeoTIFF (it carries a CRS + affine transform). Raw
+    Sentinel-1 SLC/GRD in radar geometry has no CRS and is rejected here rather than fed to
+    a detector that would place every pixel at the wrong coordinate — terrain correction is
+    a prerequisite this build does not run (07_AIML 7.2.4).
+    """
+    started = time.time()
+    settings = get_settings()
+    s3 = _s3()
+
+    session = boto3.Session(
+        aws_access_key_id=settings.s3_access_key_id,
+        aws_secret_access_key=settings.s3_secret_access_key,
+        region_name=settings.s3_region,
+    )
+    with (
+        rasterio.Env(
+            AWSSession(session, endpoint_url=settings.s3_endpoint.replace("http://", "")),
+            AWS_HTTPS="NO",
+            AWS_VIRTUAL_HOSTING="FALSE",
+        ),
+        rasterio.open(f"s3://{settings.s3_bucket}/{source_key}") as ds,
+    ):
+        if ds.crs is None:
+            raise ValueError(
+                "the uploaded raster has no CRS — it is in radar geometry and must be "
+                "terrain-corrected before ingest. Upload a geocoded GeoTIFF (for example "
+                "a Sentinel-1 RTC export) or use the archive search."
+            )
+        band, band_note = _pick_sar_band(ds)
+        arr = ds.read(band).astype("float32")
+        transform = ds.transform
+        crs = ds.crs
+        pixel_m = float(abs(ds.transform.a))
+        west, south, east, north = transform_bounds(ds.crs, "EPSG:4326", *ds.bounds)
+
+    # Put the raster on the LINEAR Sigma0 scale the detector and preview expect. Without
+    # this, dB or DN input yields zero detections on every scene (dataset_manifest units_note).
+    arr, scale_note = _to_linear_sigma0(arr)
+    radiometry_note = f"USER_UPLOAD_COG [{band_note}; {scale_note}]"
+
+    finite = np.isfinite(arr) & (arr > 0)
+    valid_fraction = float(finite.sum() / arr.size) if arr.size else 0.0
+    clean = np.where(finite, arr, np.nan).astype("float32")
+
+    blob = _write_cog(clean, transform, crs)
+    key = f"scenes/{product_id}/data.tif"
+    s3.put_object(
+        Bucket=settings.s3_bucket,
+        Key=key,
+        Body=io.BytesIO(blob),
+        ContentType="image/tiff; application=geotiff; profile=cloud-optimized",
+    )
+
+    name = source_key.split("/")[-1]
+    acquired_at = _s1_time_from_name(name) or datetime.now(UTC).isoformat().replace("+00:00", "Z")
+
+    return IngestResult(
+        product_id=product_id,
+        collection="user-upload",
+        acquired_at=acquired_at,
+        platform="SENTINEL-1" if name.upper().startswith("S1") else "OTHER",
+        polarisations=["VV"],
+        orbit_direction=None,
+        mode="IW" if "_IW_" in name.upper() else None,
+        crs=str(crs),
+        pixel_size_m=pixel_m,
+        width=int(arr.shape[1]),
+        height=int(arr.shape[0]),
+        bucket=settings.s3_bucket,
+        cog_keys={"data": key},
+        size_bytes=len(blob),
+        aoi_bounds=[west, south, east, north],
+        valid_pixel_fraction=valid_fraction,
+        preprocessing=radiometry_note,
+        seconds=round(time.time() - started, 1),
+        provenance={
+            "sourceType": "SATELLITE_SCENE",
+            "provider": "User-supplied upload",
+            "datasetId": "user-upload",
+            "externalId": f"{name} :: {radiometry_note}",
+            "retrievedAt": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+            "licence": "User-supplied (uploaded by the analyst)",
+            "derivedFrom": [],
+        },
+    )
+
+
 def ingest_scene(
     product_id: str,
     aoi: tuple[float, float, float, float],
     collection: str = "sentinel-1-rtc",
     polarisations: tuple[str, ...] = ("vv", "vh"),
+    source_key: str | None = None,
 ) -> IngestResult:
     """Fetch the AOI window of one scene, convert to COG, and store it.
 
-    `aoi` is (west, south, east, north) in EPSG:4326.
+    `aoi` is (west, south, east, north) in EPSG:4326. When `source_key` is given the scene is
+    read from an already-uploaded object in storage instead of from a provider.
     """
+    if source_key:
+        return ingest_upload(product_id, source_key)
+
     started = time.time()
     settings = get_settings()
 

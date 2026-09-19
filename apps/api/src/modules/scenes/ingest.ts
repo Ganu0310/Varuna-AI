@@ -160,6 +160,16 @@ export interface IngestSceneInput {
   collection?: string;
   /** Defaults to CATALOGUE, so existing callers are unchanged. */
   source?: SceneSource;
+  /**
+   * Lightweight reference to an object already stored via `POST /uploads/raster`. Unlike
+   * `source: { kind: 'UPLOAD' }`, this path has no analyst-supplied acquisition metadata yet —
+   * the ML service reads the raster as-is through `/ingest?sourceKey=`, the same endpoint a
+   * catalogue read uses. Prefer `source` when full upload provenance (checksum, uploader,
+   * acquisition instant) is available.
+   */
+  uploadKey?: string;
+  /** Register the scene without running detection (the analyst triggers it separately). */
+  skipDetect?: boolean;
   onProgress?: (pct: number, stage: string, message?: string) => void | Promise<void>;
 }
 
@@ -174,6 +184,115 @@ export interface IngestSceneOutput {
    */
   precomputedDetectionIds: string[];
   seconds: number;
+}
+
+/**
+ * Run the classical dark-spot detector over an already-stored scene and persist the
+ * detections. Shared by `ingestAndDetect` (archive scenes) and the standalone
+ * "Run Oil Spill Detection" action (uploaded scenes). Same ML endpoint, same persistence,
+ * same provenance chain — there is no second detection path.
+ */
+export async function runDetectionForScene(input: {
+  investigationId: string;
+  sceneId: string;
+  onProgress?: (pct: number, stage: string, message?: string) => void | Promise<void>;
+}): Promise<{ detectionIds: string[]; detectionCount: number }> {
+  const progress = input.onProgress ?? (() => {});
+  const scene = (await SatelliteSceneModel.findById(input.sceneId).lean()) as {
+    _id: Types.ObjectId;
+    productId: string;
+    storage?: { bucket?: string; key?: string; cogKey?: string };
+    provenance?: { derivedFrom?: Types.ObjectId[] };
+  } | null;
+  if (!scene)
+    throw new ProviderUnavailable(
+      'ML_SERVICE',
+      'SCENE_NOT_FOUND',
+      undefined,
+      '',
+      [],
+      'The scene to detect on no longer exists.',
+    );
+
+  const bucket = scene.storage?.bucket ?? env.S3_BUCKET;
+  const cogKey = scene.storage?.cogKey ?? scene.storage?.key;
+  if (!cogKey) {
+    throw new ProviderUnavailable(
+      'ML_SERVICE',
+      'NO_RASTER',
+      undefined,
+      '',
+      [],
+      'This scene has no stored raster, so detection cannot run.',
+    );
+  }
+
+  await progress(20, 'DETECTION', 'Running dark-feature detection');
+  const det = await callMl<MlDetectResponse>('/detect', { bucket, key: cogKey });
+
+  await progress(70, 'PERSIST', `Recording ${det.detections.length} detections`);
+
+  // A re-run supersedes the previous detections for this scene.
+  await SpillDetectionModel.deleteMany({ sceneId: scene._id });
+
+  const sceneProvenanceId = scene.provenance?.derivedFrom?.[0];
+
+  const detectionIds: string[] = [];
+  for (const d of det.detections) {
+    if (!d.geometry || d.geometry.type !== 'Polygon') continue;
+    const geometry = rewindPolygon(d.geometry);
+    const doc = await SpillDetectionModel.create({
+      sceneId: scene._id,
+      investigationId: new Types.ObjectId(input.investigationId),
+      geometry,
+      areaKm2: geodesicPolygonAreaKm2(geometry) as number,
+      perimeterKm: d.perimeterKm,
+      morphology: {
+        majorAxisKm: d.morphology.majorAxisKm,
+        minorAxisKm: d.morphology.minorAxisKm,
+        elongationRatio: d.morphology.elongationRatio,
+        orientationDeg: d.morphology.orientationDeg,
+        convexity: d.morphology.convexity,
+      },
+      model: {
+        name: det.detector.name,
+        version: det.detector.version,
+        artefactSha256: 'n/a-classical-detector',
+        inputBands: ['VV'],
+        tileSize: 0,
+        overlap: 0,
+      },
+      confidence: {
+        meanOilProbability: d.confidence,
+        minOilProbability: d.confidence,
+        maxOilProbability: d.confidence,
+        lookAlikeCompetition: d.lookAlikeRisk,
+        windSuitability: 0.5,
+        overall: d.confidence,
+      },
+      classCounts: { sea_surface: 0, oil_spill: 0, look_alike: 0, ship: 0, land: 0 },
+      maskKey: cogKey,
+      probabilityKey: cogKey,
+      reviewStatus: 'UNREVIEWED',
+      provenance: {
+        sourceType: 'DERIVED',
+        provider: 'VARUNA',
+        datasetId: `${det.detector.name}@${det.detector.version}`,
+        externalId: `detect:${scene.productId}:${d.rank}`,
+        retrievedAt: new Date(),
+        licence: 'internal',
+        derivedFrom: sceneProvenanceId ? [sceneProvenanceId] : [],
+      },
+    });
+    detectionIds.push(String(doc._id));
+  }
+
+  await progress(100, 'COMPLETE');
+  logger.info(
+    { sceneId: input.sceneId, detections: detectionIds.length },
+    'standalone detection complete',
+  );
+  return { detectionIds, detectionCount: detectionIds.length };
 }
 
 export async function ingestAndDetect(input: IngestSceneInput): Promise<IngestSceneOutput> {
@@ -201,6 +320,15 @@ export async function ingestAndDetect(input: IngestSceneInput): Promise<IngestSc
       uploadedBy: source.uploadedBy,
       originalName: source.originalName,
       checksum: source.checksum,
+    });
+  } else if (input.uploadKey) {
+    await progress(5, 'CATALOGUE', 'Reading uploaded raster');
+    await progress(15, 'PREPROCESS', 'Converting the uploaded GeoTIFF to a COG');
+    ing = await callMl<MlIngestResponse>('/ingest', {
+      productId: input.productId,
+      aoi: input.aoi,
+      collection: source.collection ?? 'sentinel-1-rtc',
+      sourceKey: input.uploadKey,
     });
   } else {
     await progress(5, 'CATALOGUE', `Resolving ${input.productId}`);
@@ -284,6 +412,24 @@ export async function ingestAndDetect(input: IngestSceneInput): Promise<IngestSc
   );
 
   // ── 2 · detect ────────────────────────────────────────────────────
+  // Skipped for uploads: the analyst runs "Run Oil Spill Detection" as a distinct step,
+  // which calls `runDetectionForScene` — the same ML `/detect` endpoint used here.
+  if (input.skipDetect) {
+    await progress(100, 'COMPLETE');
+    logger.info(
+      { productId: ing.product_id, upload: true },
+      'upload ingest complete (detection deferred)',
+    );
+    return {
+      sceneId: String(scene._id),
+      productId: ing.product_id,
+      detectionIds: [],
+      detectionCount: 0,
+      precomputedDetectionIds: [],
+      seconds: Math.round((Date.now() - started) / 100) / 10,
+    };
+  }
+
   await progress(65, 'DETECTION', 'Running dark-feature detection');
   const cogKey = ing.cog_keys.vv ?? Object.values(ing.cog_keys)[0]!;
   const det = await callMl<MlDetectResponse>('/detect', { bucket: ing.bucket, key: cogKey });

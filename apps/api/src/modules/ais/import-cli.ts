@@ -26,12 +26,29 @@ async function main() {
   const from = arg('from');
   const to = arg('to');
   const bbox = arg('bbox').split(',').map(Number) as [number, number, number, number];
+  // `--demo` marks a synthetic slice so its provenance record does not claim NOAA origin.
+  const demo = process.argv.includes('--demo');
 
   await connectMongo();
   await bootstrapDatabase();
 
   const started = Date.now();
-  const res = await importAisCsv({ filePath, from, to, bbox });
+  const res = await importAisCsv({
+    filePath,
+    from,
+    to,
+    bbox,
+    ...(demo
+      ? {
+          source: 'USER_UPLOAD',
+          providerLabel: {
+            provider: 'VARUNA synthetic demo AIS',
+            datasetId: 'demo-ais-guam-2025-09-21',
+            accessUrl: undefined,
+          },
+        }
+      : {}),
+  });
   const seconds = (Date.now() - started) / 1000;
 
   logger.info(

@@ -29,6 +29,8 @@ import { adminRouter } from './modules/admin/router.js';
 import { systemRouter } from './modules/system/router.js';
 import { discoverRouter } from './modules/discover/router.js';
 import { publicRouter } from './modules/public/router.js';
+import { demoRouter } from './modules/demo/router.js';
+import { uploadsRouter } from './modules/uploads/router.js';
 import { openApiDocument } from './openapi.js';
 
 /**
@@ -70,6 +72,8 @@ export const ROUTE_MOUNTS: ReadonlyArray<readonly [string, Router]> = [
   ['/api/v1/discover', discoverRouter],
   // Unauthenticated by design; the router itself is the security boundary. See its header.
   ['/api/v1/public', publicRouter],
+  ['/api/v1/demo', demoRouter],
+  ['/api/v1/uploads', uploadsRouter],
 ] as const;
 
 export function createApp(): Express {
