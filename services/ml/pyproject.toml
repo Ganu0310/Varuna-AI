@@ -34,13 +34,17 @@ dependencies = [
   # instead of degrading cleanly to FOOTPRINT_PROXIMITY for dates outside HYCOM coverage.
   "netCDF4>=1.6",
   "cftime>=1.6",
+  # Reads a local ERA5 GRIB/NetCDF file (ERA5_LOCAL_PATH) in the same drift degradation
+  # ladder (varuna_ml.drift.forcing._fetch_era5_local). Without this the local-file path
+  # raises ModuleNotFound instead of either reading the file or degrading cleanly.
+  "xarray>=2024.1",
 ]
 
 # Heavier scientific/ML dependencies land with the phases that need them (see
 # IMPLEMENTATION_PLAN.md §14.6):
 #   Phase 4/5: opencv-python-headless, geopandas,
 #              torch, torchvision, segmentation-models-pytorch, transformers, mlflow
-#   Phase 7:   xarray, netCDF4, copernicusmarine, cdsapi, opendrift
+#   Phase 7:   copernicusmarine, cdsapi, opendrift
 [project.optional-dependencies]
 dev = [
   "pytest>=8.3.0",

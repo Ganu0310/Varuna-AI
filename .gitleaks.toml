@@ -22,4 +22,9 @@ regexes = [
   '''dev-service-token''',
   '''test-access-secret-that-is-long-enough-000000''',
   '''test-refresh-secret-that-is-long-enough-00000''',
+  # HTTP-error classification labels (services/ml/varuna_ml/drift/forcing.py),
+  # not credentials — matched by the generic-api-key heuristic on shape alone.
+  '''AUTH_FAILED_401''',
+  '''FORBIDDEN_403''',
+  '''NOT_FOUND_404''',
 ]

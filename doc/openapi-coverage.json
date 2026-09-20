@@ -1,7 +1,7 @@
 {
   "note": "A ratchet, not a target. `undocumented` may go DOWN freely; the build fails when it goes up. Lower it by documenting a route in apps/api/src/openapi.ts, then re-run with --write and commit this file.",
-  "mounted": 85,
-  "undocumented": 65,
+  "mounted": 101,
+  "undocumented": 64,
   "operations": [
     "DELETE /api/v1/investigations/:id/comments/:commentId",
     "GET /api/v1",
@@ -65,7 +65,6 @@
     "POST /api/v1/investigations/:id/origin/run",
     "POST /api/v1/investigations/:id/report/generate",
     "POST /api/v1/investigations/:id/scenes/ingest",
-    "POST /api/v1/investigations/:id/scenes/upload",
     "POST /api/v1/investigations/candidates/:id/exclude",
     "POST /api/v1/system/verified-scenario"
   ]

@@ -17,3 +17,8 @@ services/ml
 # this reason. The generator is the only thing that may write them.
 doc/openapi.json
 doc/openapi-coverage.json
+
+# Natural Earth basemap data, fetched verbatim (apps/web/public/basemap/provenance.json
+# records the source). Not hand-authored, and land-50m.json alone is >1MB of coordinates —
+# reformatting buys nothing and just churns the diff.
+apps/web/public/basemap/

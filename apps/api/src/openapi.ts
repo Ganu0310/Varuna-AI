@@ -738,6 +738,245 @@ function buildRegistry(): OpenAPIRegistry {
     });
   }
 
+  r.registerPath({
+    method: 'get',
+    path: '/api/v1/demo/info',
+    tags: ['demo'],
+    summary: 'Describe the verified Guam demo scenario before running it',
+    responses: {
+      200: {
+        description: 'The demo scenario, its data classes, and the pipeline stages it drives',
+        content: {
+          'application/json': {
+            schema: z.object({
+              scenario: z.string(),
+              reference: z.string(),
+              scene: z.object({
+                productId: z.string(),
+                collection: z.string(),
+                platform: z.string(),
+                mode: z.string(),
+                polarisations: z.array(z.string()),
+                orbit: z.string(),
+                acquiredAt: z.string(),
+                source: z.string(),
+                dataClass: z.literal('REAL'),
+              }),
+              ais: z.object({ source: z.string(), dataClass: z.literal('SYNTHETIC') }),
+              forcing: z.object({ dataClass: z.string(), note: z.string() }),
+              aoi: z.array(z.number()),
+              stages: z.array(z.string()),
+            }),
+          },
+        },
+      },
+      401: problem,
+    },
+  });
+
+  r.registerPath({
+    method: 'post',
+    path: '/api/v1/demo/run',
+    tags: ['demo'],
+    summary: 'Stand up the verified Guam demo investigation and queue the real ingest job',
+    responses: {
+      202: {
+        description: 'Investigation created; ingest (and automatic detection) queued',
+        content: {
+          'application/json': {
+            schema: z.object({
+              investigationId: z.string(),
+              jobId: z.string(),
+              deduplicated: z.boolean(),
+              aisImported: z.number(),
+              productId: z.string(),
+              next: z.string(),
+            }),
+          },
+        },
+      },
+      401: problem,
+      403: problem,
+      429: problem,
+    },
+  });
+
+  r.registerPath({
+    method: 'get',
+    path: '/api/v1/system/integrations',
+    tags: ['system'],
+    summary: "The Settings page's provider table — a per-provider reshape of /system/capabilities",
+    responses: {
+      200: {
+        description: 'Satellite, ocean-forcing and AIS providers, and whether each is configured',
+        content: {
+          'application/json': {
+            schema: z.object({
+              items: z.array(
+                z.object({
+                  key: z.string(),
+                  label: z.string(),
+                  category: z.enum(['satellite', 'forcing', 'ais']),
+                  required: z.boolean(),
+                  configured: z.boolean(),
+                  status: z.string(),
+                  enables: z.string(),
+                  docs: z.string(),
+                }),
+              ),
+            }),
+          },
+        },
+      },
+      401: problem,
+    },
+  });
+
+  r.registerPath({
+    method: 'post',
+    path: '/api/v1/uploads/raster',
+    tags: ['uploads'],
+    summary:
+      'Upload a geocoded GeoTIFF for ingest — rejected at the boundary if not real SAR raster',
+    request: {
+      query: z.object({ filename: z.string().optional() }),
+      body: {
+        content: {
+          'application/octet-stream': { schema: z.string().openapi({ format: 'binary' }) },
+        },
+      },
+    },
+    responses: {
+      201: {
+        description: 'Stored; ingest it with POST /investigations/:id/scenes/ingest {"uploadKey"}',
+        content: {
+          'application/json': {
+            schema: z.object({
+              uploadKey: z.string(),
+              filename: z.string(),
+              sizeBytes: z.number(),
+              format: z.literal('GeoTIFF'),
+              sha256: z.string(),
+              note: z.string(),
+            }),
+          },
+        },
+      },
+      400: problem,
+      401: problem,
+      415: problem,
+    },
+  });
+
+  const VesselIndexResponse = {
+    description: 'Every MMSI held in ais_positions, with fix count, span and data source',
+    content: {
+      'application/json': {
+        schema: z.object({
+          items: z.array(
+            z.object({
+              mmsi: z.number(),
+              fixCount: z.number(),
+              firstAt: z.string().nullable(),
+              lastAt: z.string().nullable(),
+              sources: z.array(z.string()),
+              synthetic: z.boolean(),
+            }),
+          ),
+          total: z.number(),
+        }),
+      },
+    },
+  };
+
+  r.registerPath({
+    method: 'get',
+    path: '/api/v1/vessels',
+    tags: ['ais'],
+    summary: 'Vessel Explorer index, across all investigations the caller can see',
+    request: { query: z.object({ q: z.string().optional(), limit: z.coerce.number().optional() }) },
+    responses: { 200: VesselIndexResponse, 401: problem },
+  });
+
+  r.registerPath({
+    method: 'get',
+    path: '/api/v1/investigations/vessels',
+    tags: ['investigations'],
+    summary: 'Same Vessel Explorer index, mounted under /investigations for menu consistency',
+    request: { query: z.object({ q: z.string().optional(), limit: z.coerce.number().optional() }) },
+    responses: { 200: VesselIndexResponse, 401: problem },
+  });
+
+  r.registerPath({
+    method: 'post',
+    path: '/api/v1/investigations/{id}/scenes/{sceneId}/detect',
+    tags: ['scenes'],
+    summary: 'Run the classical detector on an already-stored scene (the upload-flow path)',
+    request: { params: z.object({ id: z.string(), sceneId: z.string() }) },
+    responses: {
+      200: {
+        description: 'Deduplicated — an identical detection job was already queued or ran',
+        content: {
+          'application/json': {
+            schema: z.object({
+              jobId: z.string(),
+              deduplicated: z.boolean(),
+              sceneId: z.string(),
+            }),
+          },
+        },
+      },
+      202: {
+        description: 'Detection job queued',
+        content: {
+          'application/json': {
+            schema: z.object({
+              jobId: z.string(),
+              deduplicated: z.boolean(),
+              sceneId: z.string(),
+            }),
+          },
+        },
+      },
+      401: problem,
+      403: problem,
+      404: problem,
+    },
+  });
+
+  r.registerPath({
+    method: 'get',
+    path: '/api/v1/investigations/{id}/scenes/{sceneId}/preview.png',
+    tags: ['scenes'],
+    summary: 'A stretched-for-display SAR preview PNG, proxied same-origin from TiTiler',
+    request: { params: z.object({ id: z.string(), sceneId: z.string() }) },
+    responses: {
+      200: {
+        description: 'PNG image',
+        content: { 'image/png': { schema: z.string().openapi({ format: 'binary' }) } },
+      },
+      401: problem,
+      404: problem,
+      502: problem,
+    },
+  });
+
+  r.registerPath({
+    method: 'get',
+    path: '/api/v1/investigations/{id}/report/plain/pdf',
+    tags: ['reports'],
+    summary: 'The plain-language brief as a ready-to-send PDF',
+    request: { params: z.object({ id: z.string() }) },
+    responses: {
+      200: {
+        description: 'PDF document',
+        content: { 'application/pdf': { schema: z.string().openapi({ format: 'binary' }) } },
+      },
+      401: problem,
+      404: problem,
+    },
+  });
+
   return r;
 }
 
