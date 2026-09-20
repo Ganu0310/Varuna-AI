@@ -26,6 +26,10 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile=false
+      # @varuna/shared is resolved via its package.json main/types (./dist), which is
+      # gitignored build output — not TS project references to source. Every other
+      # workspace package imports it, so nothing past this line typechecks without it.
+      - run: pnpm --filter @varuna/shared build
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
@@ -56,6 +60,7 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile=false
+      - run: pnpm --filter @varuna/shared build
       - run: pnpm --filter @varuna/api test:integration
 
   real-data-policy:
