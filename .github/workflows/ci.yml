@@ -26,10 +26,13 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile=false
-      # @varuna/shared is resolved via its package.json main/types (./dist), which is
-      # gitignored build output — not TS project references to source. Every other
-      # workspace package imports it, so nothing past this line typechecks without it.
+      # @varuna/shared and @varuna/api are resolved via package.json main/exports
+      # (./dist and ./src/* -> ./dist/*), which is gitignored build output — not TS
+      # project references to source. apps/api and apps/web import @varuna/shared;
+      # apps/worker imports @varuna/api's dist through the ./src/* subpath export.
+      # Nothing past this line typechecks without both built, in this order.
       - run: pnpm --filter @varuna/shared build
+      - run: pnpm --filter @varuna/api build
       - run: pnpm format:check
       - run: pnpm lint
       - run: pnpm typecheck
@@ -50,8 +53,19 @@ jobs:
         options: >-
           --health-cmd "mongosh --quiet --eval 'db.adminCommand({ ping: 1 }).ok'"
           --health-interval 10s --health-timeout 5s --health-retries 10
+      # enqueue() (apps/api/src/queue/producer.ts) is a real BullMQ queue, not an in-memory
+      # stub — every job-creating route needs this to respond. Without it, `queue.getJob`/
+      # `queue.add` hang until vitest's testTimeout, surfacing as an unrelated-looking
+      # "Test timed out in 30000ms" on whichever job-creating test happens to run.
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s --health-timeout 5s --health-retries 10
     env:
       MONGODB_URI_TEST: mongodb://localhost:27017
+      REDIS_URL: redis://localhost:6379
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

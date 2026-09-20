@@ -8,6 +8,8 @@ import { InvestigationModel } from '../investigations/model.js';
 import { SatelliteSceneModel } from '../scenes/model.js';
 import { SpillDetectionModel } from '../detections/model.js';
 import { SweepStateModel, SweepOverpassModel } from '../sweep/model.js';
+import { JobModel } from '../jobs/model.js';
+import { getQueue } from '../../queue/queues.js';
 
 /**
  * Discover end to end against a REAL MongoDB — 06_BACKEND §6.4.10.
@@ -103,6 +105,16 @@ describe('discover (real MongoDB)', () => {
     await SweepOverpassModel.deleteMany({});
     await UserModel.deleteMany({ email: ANALYST.email });
     await RefreshTokenModel.deleteMany({});
+    // The manual-sweep test's jobKey is hardcoded per region ('sweep:manual:guam-apra'), not
+    // per test run. Without this, a job left behind by an earlier run collides on that key —
+    // enqueue() returns the STALE job (created by a user this beforeEach just deleted) instead
+    // of a fresh one, and the "visible to its creator" assertion fails against the new user.
+    await JobModel.deleteMany({});
+    // No worker consumes the 'sweep' queue in this test process, so the BullMQ job enqueue()
+    // creates in Redis is never completed and outlives this run — the SAME jobId collision
+    // as above, one layer down. enqueue()'s dedup check hits it on the next run and returns
+    // early without ever reaching the JobModel upsert.
+    await getQueue('sweep').obliterate({ force: true });
   });
 
   afterAll(async () => {
