@@ -68,7 +68,7 @@ without one.
 | API server | Node.js 20 + Express 5 + TypeScript | MERN "E" + "N" |
 | Database | MongoDB 7 (Atlas) with 2dsphere + time-series collections | MERN "M" |
 | Geometry in JS | Turf.js | Compensates for MongoDB's lack of PostGIS functions |
-| ML / geo service | Python 3.11 + FastAPI | PyTorch, rasterio, GeoPandas, Shapely, OpenDrift |
+| ML / geo service | Python 3.11 + FastAPI | PyTorch, rasterio, GeoPandas, Shapely. **Drift uses an in-house Lagrangian stepper, not OpenDrift** — see [07_AIML §7.3.3](07_AIML_Specification.md) |
 | Queue | BullMQ on Redis | Long-running ingestion + inference jobs |
 | Realtime | Socket.IO | Job progress, live AIS, collaborative investigation |
 | Object storage | S3-compatible (Cloudflare R2 / MinIO) | Scenes, COGs, masks, report PDFs |
@@ -95,6 +95,27 @@ without one.
 - **Running it** → [`docs/RUNNING.md`](docs/RUNNING.md).
 - **Using it** → [`docs/FEATURE_GUIDE.md`](docs/FEATURE_GUIDE.md) — every feature, how to
   drive it and how it works underneath. The in-product short version is `/guide`.
+- **What is still open** → [`docs/GAP_REGISTER.md`](docs/GAP_REGISTER.md).
+- **Security posture** → [`docs/SECURITY_REVIEW.md`](docs/SECURITY_REVIEW.md).
+- **The live API surface** → [`openapi.json`](openapi.json), with
+  [`openapi-coverage.json`](openapi-coverage.json) as the ratchet recording what is not yet
+  specified.
+
+### These documents are specifications *and* a record of what was measured
+
+Where the build diverged from what was specified, **the divergence is written into the
+document rather than the specification being quietly rewritten to match.** The four that
+matter most, because each is somewhere a reader would otherwise be misled:
+
+| Where | What changed |
+|---|---|
+| [07_AIML §7.3.3](07_AIML_Specification.md) | OpenDrift was specified as the drift integrator. It could not be installed; **an in-house stepper is primary**, with no oil weathering or coastline stranding. |
+| [01_PRD §9.1](01_PRD_Product_Requirements.md) · [07_AIML §7.2.12](07_AIML_Specification.md) | The detector **misses its look-alike false-positive target by 3.4×** (0.682 against ≤ 0.20), and is wrong *without warning*. A full parameter sweep failed to transfer and was not adopted. |
+| [06_BACKEND §6.4](06_BACKEND_Specification.md) | The endpoint reference is reconciled against the 85 mounted routes; endpoints that were specified but not built are marked **`NOT BUILT`** rather than listed as if callable. |
+| [05_FRONTEND §5.5.1](05_FRONTEND_Specification.md) | Six specified routes are **panels inside the workspace**, not addressable screens — a direct consequence of the one-map-forever rule, and not deep-linkable. |
+
+This is the same standard the product holds itself to: an explicit, labelled absence beats a
+plausible-looking value.
 
 ---
 

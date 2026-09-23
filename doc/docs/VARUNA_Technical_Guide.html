@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>VARUNA (SIH26143) — Technical & Concept Guide</title>
+<style>
+    @page {
+        size: A4;
+        margin: 20mm 15mm 20mm 15mm;
+    }
+    body {
+        font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
+        color: #1e293b;
+        background-color: #ffffff;
+        line-height: 1.6;
+        font-size: 13px;
+        padding: 0;
+        margin: 0;
+    }
+    h1 {
+        color: #0f172a;
+        font-size: 24px;
+        border-bottom: 3px solid #0284c7;
+        padding-bottom: 8px;
+        margin-top: 0;
+    }
+    h2 {
+        color: #0369a1;
+        font-size: 18px;
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 4px;
+        margin-top: 24px;
+    }
+    h3 {
+        color: #0f172a;
+        font-size: 14px;
+        margin-top: 16px;
+    }
+    p, li {
+        margin-bottom: 8px;
+    }
+    code {
+        background-color: #f1f5f9;
+        color: #0f172a;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: 'Consolas', 'Courier New', monospace;
+        font-size: 12px;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 16px 0;
+        font-size: 12px;
+    }
+    th {
+        background-color: #0f172a;
+        color: #ffffff;
+        text-align: left;
+        padding: 8px 12px;
+        font-weight: 600;
+    }
+    td {
+        padding: 8px 12px;
+        border-bottom: 1px solid #e2e8f0;
+        vertical-align: top;
+    }
+    tr:nth-child(even) {
+        background-color: #f8fafc;
+    }
+    .alert {
+        background-color: #f0f9ff;
+        border-left: 4px solid #0284c7;
+        padding: 12px 16px;
+        margin: 16px 0;
+        border-radius: 0 6px 6px 0;
+        color: #0369a1;
+    }
+    .footer {
+        margin-top: 40px;
+        padding-top: 10px;
+        border-top: 1px solid #cbd5e1;
+        font-size: 10px;
+        color: #64748b;
+        text-align: center;
+    }
+</style>
+</head>
+<body>
+<h1>VARUNA (SIH26143) — Plain-English & Easy Technical Guide</h1>
+<blockquote class='alert'><strong>Vessel Attribution through Remote-sensing & Unified Navigational Analytics</strong></blockquote>
+<blockquote class='alert'>Smart India Hackathon 2026 — Problem Statement <strong>SIH26143</strong></blockquote>
+<p>---</p>
+<h2>🌊 1. What is VARUNA? (The Ocean Detective Story)</h2>
+<p>Imagine a ship secretly dumps oil in the ocean at night and sails away. How do authorities catch who did it?</p>
+<p>VARUNA works like an <strong>AI Maritime Detective</strong>:</p>
+<p><code></code>`mermaid</p>
+<p>graph TD</p>
+<p>A["🛰️ Step 1: Take a Satellite Photo"] --> B["🔎 Step 2: Find Dark Oil Stains"]</p>
+<p>B --> C["👨‍💼 Step 3: Human Analyst Checks the Stain"]</p>
+<p>C --> D["⏪ Step 4: Rewind Time (Simulate Wind & Ocean Currents)"]</p>
+<p>D --> E["📍 Step 5: Mark the Release Zone & Time Window"]</p>
+<p>E --> F["🚢 Step 6: Match GPS Trajectories of Ships Nearby"]</p>
+<p>F --> G["📄 Step 7: Print an Evidence Report with Suspect Ranks"]</p>
+<p><code></code>`</p>
+<li><strong>The Satellite Photo:</strong> A radar satellite takes a photo of the ocean. Oil smooths out waves, so oil spills look like dark black spots.</li>
+<li><strong>Spotting the Spill:</strong> The system scans the image and highlights dark spots.</li>
+<li><strong>Rewinding Time (Drift Physics):</strong> Oil floats on water. We drop 5,000 virtual particles on the oil spill and <strong>rewind the clock backward in time</strong> using real ocean current and wind data to see where the oil came from.</li>
+<li><strong>Checking Ship GPS (AIS Tracks):</strong> We look at all ships that passed through that exact spot at that exact time.</li>
+<li><strong>Evaluating 12 Clues:</strong> We grade each ship on 12 clues (e.g., *How close was it? Did it turn off its GPS transmitter? Did its ship weight change?*).</li>
+<p>6. <strong>The Final Report:</strong> The system ranks the suspect ships and prints a complete, audit-proof evidence report.</p>
+<p>---</p>
+<h2>🏗️ 2. How Was the Project Built? (SDLC Model)</h2>
+<p>VARUNA was built using a <strong>Phase-Gated Agile MVP (Minimum Viable Product) Model</strong>.</p>
+<li><strong>What does this mean?</strong> Instead of building everything at once, the project was built step-by-step in <strong>14 distinct phases</strong> (Phase 0 to Phase 13).</li>
+<li><strong>The Rule:</strong> Phase 1 (Geodesy distance calculators and Data schemas) had to be 100% tested and verified before starting Phase 2 (User Login & Job Queues), and so on.</li>
+<p>---</p>
+<h2>🧠 3. Algorithms Explained in Plain English</h2>
+<p>Here are the main algorithms used in VARUNA and why each one was chosen:</p>
+<table><thead><tr><th>Stage</th><th>Algorithm Name</th><th>Plain English Explanation</th><th>Why This Algorithm?</th></tr></thead><tbody>
+<tr><td><strong>Spotting Oil Slicks</strong></td><td><strong>Darkspot-v1 (Local Adaptive Thresholding)</strong></td><td>Compares each pixel on the satellite photo against its local ocean background to find spots that are at least 3 dB darker than the surrounding sea.</td><td>A single global threshold fails because satellite photos get darker near the edges. Comparing local neighborhoods works everywhere on the image.</td></tr>
+<tr><td><strong>Calculating Distances</strong></td><td><strong>Karney's WGS84 Ellipsoidal Geodesy</strong></td><td>Calculates distances and areas on the real curved, oval-shaped Earth (ellipsoid) rather than a flat map or perfect sphere.</td><td>Simple flat-map formulas can be 0.5% wrong over long distances. Karney's math guarantees accuracy under 0.1%.</td></tr>
+<tr><td><strong>Rewinding Time</strong></td><td><strong>Stochastic 2D Reverse Lagrangian Particle Integrator</strong></td><td>Drops 5,000 virtual particles on the slick and pushes them backward in time (-15 minute steps) using ocean current vectors and wind speed.</td><td>Fixing wind drift at a single number gives a fake sense of precision. Randomly sampling wind and deflection angles gives an honest, realistic spill zone.</td></tr>
+<tr><td><strong>Spill Zone Mapping</strong></td><td><strong>Kernel Density Estimation (KDE)</strong></td><td>Takes the scattered 5,000 particles and draws smooth 50% and 90% probability boundary circles around where they cluster.</td><td>Converts scattered dots into a clean, colored map layer showing where the leak most likely started.</td></tr>
+<tr><td><strong>Ship Scoring</strong></td><td><strong>12-Feature Weighted Scoring Engine</strong></td><td>Grades candidate ships from 0 to 100 based on 12 weighted clues.</td><td>Renormalizes scores over *measured clues only*. If public data is missing a ship's type, the ship isn't unfairly punished for missing data.</td></tr>
+<tr><td><strong>Confidence Bounds</strong></td><td><strong>Monte Carlo Bootstrap Resampling</strong></td><td>Runs 300 random simulations of the data to calculate error margins (e.g. 85% ± 4%).</td><td>Tells investigators whether Ship #1 is *definitely* guilty or if Ship #1 and Ship #2 are too close to call.</td></tr>
+</tbody></table>
+<p>---</p>
+<h2>📊 4. Model Accuracy & Evaluation Results</h2>
+<p>The <code>darkspot-v1</code> detector was tested on <strong>66 held-out test satellite scenes</strong> (22 oil spills, 22 look-alikes like calm wind zones, 22 clean seas):</p>
+<li><strong>Oil Detection Rate:</strong> <strong>100%</strong> (It detected all 22 oil spills; 0 were missed).</li>
+<li><strong>Mean Oil IoU (Overlap Accuracy):</strong> <strong>0.56</strong> (Median: <strong>0.63</strong>).</li>
+<li><strong>Look-alike False Positives:</strong> <strong>68%</strong> (It triggered on 15 out of 22 false look-alike features, such as low-wind calm sea zones).</li>
+<blockquote class='alert'>💡 <strong>Why Human Review is Mandatory:</strong> Because low-wind ocean zones look dark like oil on radar, the detector finds all dark spots but relies on a human analyst to review and confirm <code>CONFIRM</code>, <code>EDIT</code>, or <code>REJECT</code> before taking action.</blockquote>
+<p>---</p>
+<h2>🗂️ 5. Datasets & How Bias Was Prevented</h2>
+<li><strong>Main Dataset:</strong> Trujillo-Acatitla et al. Part III dataset (450 dual-polarization Sentinel-1 radar scenes).</li>
+<li><strong>Geographic Splitting:</strong> The data was divided by <strong>ocean grid regions</strong> (315 training scenes, 69 validation scenes, 66 test scenes). The test scenes came from geographic areas the model *never* saw during training, preventing regional bias.</li>
+<li><strong>Real Historical AIS Data:</strong> Uses real NOAA Marine Cadastre AIS data (US coastal waters) and Danish Maritime Authority (DMA) data. Zero fake/synthetic data is permitted.</li>
+<p>---</p>
+<h2>📐 6. Parameters & Formulas Made Simple</h2>
+<h3>1. Look-Alike Risk Score</h3>
+<p>Scores whether a dark spot is real oil or just a calm water look-alike (0 = Oil, 1 = Look-alike):</p>
+<li><strong>Shape:</strong> Real oil slicks are stretched long by wind and currents; calm water spots are round blobs.</li>
+<li><strong>Edges:</strong> Real oil slicks have rough, jagged edges; look-alikes have smooth edges.</li>
+<li><strong>Contrast:</strong> Oil damps waves heavily, making the spot significantly darker than the sea around it.</li>
+<h3>2. Wind Suitability Gate</h3>
+<li><strong>Wind < 2 m/s:</strong> The ocean is glassy calm everywhere. Everything looks like oil $\rightarrow$ <strong>Confidence drops to 5%</strong>.</li>
+<li><strong>Wind 4–9 m/s:</strong> Perfect wind for detection $\rightarrow$ <strong>100% Confidence</strong>.</li>
+<li><strong>Wind > 14 m/s:</strong> Waves re-rough the sea and wash away the slick $\rightarrow$ <strong>Confidence drops to 5%</strong>.</li>
+<p>---</p>
+<h2>⚙️ 7. Time & Space Complexity (Speed & Memory)</h2>
+<table><thead><tr><th>Subsystem</th><th>Operation</th><th>Time Complexity (Speed)</th><th>Space Complexity (Memory)</th></tr></thead><tbody>
+<tr><td><strong>SAR Segmentation</strong></td><td>Local Median Filter & Threshold</td><td><strong>O(N)</strong> — Fast (~1 to 2 seconds for a full satellite image)</td><td><strong>O(N)</strong> — Stores image pixel array</td></tr>
+<tr><td><strong>Drift Integration</strong></td><td>5,000 particles x 96 time steps</td><td><strong>O(P * T)</strong> — ~480,000 steps (~100 milliseconds)</td><td><strong>O(P * T)</strong> — Stores particle tracks</td></tr>
+<tr><td><strong>KDE Release Zone</strong></td><td>Gaussian Kernel Density</td><td><strong>O(P * G)</strong> — Computes density grid</td><td><strong>O(G)</strong> — Stores grid map</td></tr>
+<tr><td><strong>Vessel Correlation</strong></td><td>12 Clues + 300 Resample Runs</td><td><strong>O(M * V * K)</strong> — Fast execution for candidate vessels</td><td><strong>O(V * K)</strong> — Stores ship GPS coordinates</td></tr>
+</tbody></table>
+<p>---</p>
+<h2>🚫 8. Zero Mock Data & Real-Data Policy</h2>
+<p>VARUNA has a <strong>Strict Real-Data Policy</strong>:</p>
+<li>Zero fake, synthetic, or placeholder data is allowed anywhere in the system.</li>
+<li>Every single satellite scene, AIS position fix, and current vector carries a <strong>provenance record</strong> (<code>sourceType</code>, <code>retrievedAt</code>, <code>externalId</code>, <code>checksum</code>).</li>
+<li>If data is missing provenance, VARUNA's API automatically <strong>strips the object</strong> and flags it in the user interface.</li>
+<div class="footer">
+    VARUNA (SIH26143) — Vessel Attribution through Remote-sensing & Unified Navigational Analytics | Smart India Hackathon 2026
+</div>
+</body>
+</html>

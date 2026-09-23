@@ -206,12 +206,12 @@ headline tanker casualties. Attribution is the deterrent. Detection alone is not
 - **FR-2.8** Human review workflow producing versioned corrections.
 
 ### FR-3 Environmental and Drift
-- **FR-3.1** Fetch real surface current fields (CMEMS) and 10 m wind fields (ERA5 / GFS) for the AOI and window.
+- **FR-3.1** Fetch real surface current fields and real 10 m wind fields for the AOI and window, each through an ordered provider chain with no synthetic fallback at any position: currents `CMEMS → HYCOM archive → HYCOM operational`, wind `ERA5 local file → ERA5 CDS API`. Every attempt is recorded and returned, including those that succeeded after an earlier failure.
 - **FR-3.2** Backward Lagrangian particle transport with configurable ensemble size (default 5,000).
 - **FR-3.3** Forcing model: `u_particle = u_current + alpha * u_wind`, with `alpha` sampled per particle from 0.02–0.04, a sampled Ekman deflection of 0°–20°, plus a horizontal diffusion term. Parameters recorded per run.
 - **FR-3.4** Output: time-indexed particle cloud plus a kernel-density origin probability surface per time step.
 - **FR-3.5** Release-time window estimator combining slick major-axis length, drift speed, and prior-scene non-detection.
-- **FR-3.6** Graceful, *labelled* degradation when forcing data is unavailable.
+- **FR-3.6** Graceful, *labelled* degradation when forcing data is unavailable. Currents and wind degrade **independently** (`currentStatus`, `windStatus`) because the consequences differ: no currents means no drift result at all, while no wind means `α = 0` and an origin zone under-displaced for a wind-driven slick. Unknown wind is never replaced with a constant or a climatological mean.
 
 ### FR-4 AIS Processing
 - **FR-4.1** Multi-source ingestion: bulk historical CSV (Marine Cadastre, Danish DMA, Norwegian AIS), API (Global Fishing Watch), live stream (AISStream WebSocket).
@@ -331,16 +331,36 @@ live, with no gaps in the chain.
 
 ### 9.1 Model metrics (measured on a held-out split of real labelled data)
 
-| Metric | Target (MVP) | Target (Phase 2) |
-|---|---|---|
-| Oil-class IoU | ≥ 0.55 | ≥ 0.65 |
-| Oil-class Dice/F1 | ≥ 0.70 | ≥ 0.78 |
-| Oil-class recall | ≥ 0.75 | ≥ 0.85 |
-| Mean IoU (five classes) | ≥ 0.60 | ≥ 0.70 |
-| Look-alike → oil false-positive rate | ≤ 0.20 | ≤ 0.10 |
+Measured on **66 held-out real Sentinel-1 scenes** (22 oil / 22 look-alike / 22 clean sea),
+split by whole 1.0° geographic cells, measured once with no sweep against the split. Full
+method and raw results in [07_AIML §7.2.12](07_AIML_Specification.md).
+
+| Metric | Target (MVP) | Target (Phase 2) | **Measured — `darkspot-v1` (shipped)** | Verdict |
+|---|---|---|---|---|
+| Oil-class IoU | ≥ 0.55 | ≥ 0.65 | **0.564** | ✅ met |
+| Oil-class Dice/F1 | ≥ 0.70 | ≥ 0.78 | 0.738 *(U-Net, not adopted)* | ⚠️ not measured for the shipped detector |
+| Oil-class recall | ≥ 0.75 | ≥ 0.85 | **1.00** — 0 of 22 oil scenes missed | ✅ met |
+| Mean IoU (five classes) | ≥ 0.60 | ≥ 0.70 | — | ⚠️ not applicable; the shipped detector is binary, not 5-class |
+| **Look-alike → oil false-positive rate** | **≤ 0.20** | ≤ 0.10 | **0.682** | ❌ **missed by 3.4×** |
 
 > These targets are set relative to published benchmarks on the same public dataset
 > family (see [09_RESEARCH §9.6](09_RESEARCH_Competitive_Analysis.md)), not invented.
+
+**The one red row is reported, not buried, and it carries a second finding that is worse than
+the rate itself:** on its false positives the detector's own look-alike warning channel
+averages **0.259** — barely above what it assigns a true slick. It is not merely wrong; it is
+wrong *without warning*.
+
+A full parameter sweep (contrast, area, elongation, risk gate, and combinations) over 384
+development scenes was run to close this and **did not transfer to the held-out split** — the
+look-alike rate was unchanged at 68.2% while oil IoU fell. It was **not adopted**. This
+establishes that the look-alike problem is not reachable by thresholds on a classical
+detector; what remains is focal loss and a trained look-alike classifier, fed by the labelled
+negatives analyst review now produces ([07_AIML §7.2.12](07_AIML_Specification.md)).
+
+Consequence for the product claim: the detector is a **high-recall candidate generator with a
+known false-alarm rate**, which is why review is mandatory before correlation and why nothing
+downstream treats an unreviewed detection as evidence.
 
 ### 9.2 System metrics
 

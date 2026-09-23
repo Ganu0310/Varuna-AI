@@ -1,0 +1,762 @@
+{
+  "split": "part3-split.json :: train+val (384 scenes)",
+  "results": {
+    "c3_a0.05_e0_r1": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.05,
+        "min_elongation": 0.0,
+        "max_look_alike_risk": 1.0
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.4477568447672952,
+      "oil_median_iou": 0.462041637276362,
+      "oil_detection_rate": 1.0,
+      "oil_missed": 0,
+      "lookalike_fp_rate": 0.7734375,
+      "no_oil_fp_rate": 0.3984375,
+      "lookalike_mean_risk_on_fp": 0.2614680090525103,
+      "mean_detections_per_oil_scene": 11.1875
+    },
+    "c3_a0.05_e0_r0.3": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.05,
+        "min_elongation": 0.0,
+        "max_look_alike_risk": 0.3
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.43537723251399324,
+      "oil_median_iou": 0.44896052036456846,
+      "oil_detection_rate": 1.0,
+      "oil_missed": 0,
+      "lookalike_fp_rate": 0.734375,
+      "no_oil_fp_rate": 0.3671875,
+      "lookalike_mean_risk_on_fp": 0.21375282447838365,
+      "mean_detections_per_oil_scene": 8.34375
+    },
+    "c3_a0.05_e0_r0.25": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.05,
+        "min_elongation": 0.0,
+        "max_look_alike_risk": 0.25
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.42410020597073544,
+      "oil_median_iou": 0.4322718257160222,
+      "oil_detection_rate": 1.0,
+      "oil_missed": 0,
+      "lookalike_fp_rate": 0.6875,
+      "no_oil_fp_rate": 0.3203125,
+      "lookalike_mean_risk_on_fp": 0.1852236105900495,
+      "mean_detections_per_oil_scene": 6.3515625
+    },
+    "c3_a0.05_e2_r1": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.05,
+        "min_elongation": 2.0,
+        "max_look_alike_risk": 1.0
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.4274363751121896,
+      "oil_median_iou": 0.43843275341488847,
+      "oil_detection_rate": 1.0,
+      "oil_missed": 0,
+      "lookalike_fp_rate": 0.75,
+      "no_oil_fp_rate": 0.3671875,
+      "lookalike_mean_risk_on_fp": 0.21610540642272144,
+      "mean_detections_per_oil_scene": 8.0078125
+    },
+    "c3_a0.05_e2_r0.3": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.05,
+        "min_elongation": 2.0,
+        "max_look_alike_risk": 0.3
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.42656857386753,
+      "oil_median_iou": 0.44180120671858203,
+      "oil_detection_rate": 1.0,
+      "oil_missed": 0,
+      "lookalike_fp_rate": 0.734375,
+      "no_oil_fp_rate": 0.3671875,
+      "lookalike_mean_risk_on_fp": 0.20856680833525995,
+      "mean_detections_per_oil_scene": 7.671875
+    },
+    "c3_a0.05_e2_r0.25": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.05,
+        "min_elongation": 2.0,
+        "max_look_alike_risk": 0.25
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.4185669820844337,
+      "oil_median_iou": 0.43081303104540297,
+      "oil_detection_rate": 1.0,
+      "oil_missed": 0,
+      "lookalike_fp_rate": 0.6875,
+      "no_oil_fp_rate": 0.3203125,
+      "lookalike_mean_risk_on_fp": 0.18342866846434716,
+      "mean_detections_per_oil_scene": 6.15625
+    },
+    "c3_a0.05_e2.5_r1": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.05,
+        "min_elongation": 2.5,
+        "max_look_alike_risk": 1.0
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.4060343170628176,
+      "oil_median_iou": 0.41002489567363415,
+      "oil_detection_rate": 1.0,
+      "oil_missed": 0,
+      "lookalike_fp_rate": 0.7265625,
+      "no_oil_fp_rate": 0.3359375,
+      "lookalike_mean_risk_on_fp": 0.19493938344173145,
+      "mean_detections_per_oil_scene": 6.28125
+    },
+    "c3_a0.05_e2.5_r0.3": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.05,
+        "min_elongation": 2.5,
+        "max_look_alike_risk": 0.3
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.40603752746509303,
+      "oil_median_iou": 0.41002489567363415,
+      "oil_detection_rate": 1.0,
+      "oil_missed": 0,
+      "lookalike_fp_rate": 0.7265625,
+      "no_oil_fp_rate": 0.3359375,
+      "lookalike_mean_risk_on_fp": 0.19428911747269922,
+      "mean_detections_per_oil_scene": 6.265625
+    },
+    "c3_a0.05_e2.5_r0.25": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.05,
+        "min_elongation": 2.5,
+        "max_look_alike_risk": 0.25
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.40440297449427126,
+      "oil_median_iou": 0.39885122117906524,
+      "oil_detection_rate": 1.0,
+      "oil_missed": 0,
+      "lookalike_fp_rate": 0.6875,
+      "no_oil_fp_rate": 0.3203125,
+      "lookalike_mean_risk_on_fp": 0.18095006602810743,
+      "mean_detections_per_oil_scene": 5.671875
+    },
+    "c3_a0.1_e0_r1": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.1,
+        "min_elongation": 0.0,
+        "max_look_alike_risk": 1.0
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.4422682323913156,
+      "oil_median_iou": 0.4612717986384426,
+      "oil_detection_rate": 0.9921875,
+      "oil_missed": 1,
+      "lookalike_fp_rate": 0.7109375,
+      "no_oil_fp_rate": 0.3125,
+      "lookalike_mean_risk_on_fp": 0.24505648287776632,
+      "mean_detections_per_oil_scene": 7.8359375
+    },
+    "c3_a0.1_e0_r0.3": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.1,
+        "min_elongation": 0.0,
+        "max_look_alike_risk": 0.3
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.4309695148245509,
+      "oil_median_iou": 0.44055361684887817,
+      "oil_detection_rate": 0.984375,
+      "oil_missed": 2,
+      "lookalike_fp_rate": 0.6953125,
+      "no_oil_fp_rate": 0.265625,
+      "lookalike_mean_risk_on_fp": 0.20808931909496728,
+      "mean_detections_per_oil_scene": 6.3046875
+    },
+    "c3_a0.1_e0_r0.25": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.1,
+        "min_elongation": 0.0,
+        "max_look_alike_risk": 0.25
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.4204459649050566,
+      "oil_median_iou": 0.4264547064837678,
+      "oil_detection_rate": 0.9765625,
+      "oil_missed": 3,
+      "lookalike_fp_rate": 0.6484375,
+      "no_oil_fp_rate": 0.21875,
+      "lookalike_mean_risk_on_fp": 0.17800085171888497,
+      "mean_detections_per_oil_scene": 5.0546875
+    },
+    "c3_a0.1_e2_r1": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.1,
+        "min_elongation": 2.0,
+        "max_look_alike_risk": 1.0
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.4231330164568939,
+      "oil_median_iou": 0.43638433789042724,
+      "oil_detection_rate": 0.984375,
+      "oil_missed": 2,
+      "lookalike_fp_rate": 0.6953125,
+      "no_oil_fp_rate": 0.265625,
+      "lookalike_mean_risk_on_fp": 0.20333787392309569,
+      "mean_detections_per_oil_scene": 5.8984375
+    },
+    "c3_a0.1_e2_r0.3": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.1,
+        "min_elongation": 2.0,
+        "max_look_alike_risk": 0.3
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.4223651053765636,
+      "oil_median_iou": 0.43638433789042724,
+      "oil_detection_rate": 0.984375,
+      "oil_missed": 2,
+      "lookalike_fp_rate": 0.6953125,
+      "no_oil_fp_rate": 0.265625,
+      "lookalike_mean_risk_on_fp": 0.20126647737135173,
+      "mean_detections_per_oil_scene": 5.75
+    },
+    "c3_a0.1_e2_r0.25": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.1,
+        "min_elongation": 2.0,
+        "max_look_alike_risk": 0.25
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.41491375075704884,
+      "oil_median_iou": 0.4264547064837678,
+      "oil_detection_rate": 0.9765625,
+      "oil_missed": 3,
+      "lookalike_fp_rate": 0.6484375,
+      "no_oil_fp_rate": 0.21875,
+      "lookalike_mean_risk_on_fp": 0.17587858366901984,
+      "mean_detections_per_oil_scene": 4.875
+    },
+    "c3_a0.1_e2.5_r1": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.1,
+        "min_elongation": 2.5,
+        "max_look_alike_risk": 1.0
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.40261180313532297,
+      "oil_median_iou": 0.40828301082436225,
+      "oil_detection_rate": 0.984375,
+      "oil_missed": 2,
+      "lookalike_fp_rate": 0.6875,
+      "no_oil_fp_rate": 0.2421875,
+      "lookalike_mean_risk_on_fp": 0.18814876489965535,
+      "mean_detections_per_oil_scene": 4.8515625
+    },
+    "c3_a0.1_e2.5_r0.3": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.1,
+        "min_elongation": 2.5,
+        "max_look_alike_risk": 0.3
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.40261180313532297,
+      "oil_median_iou": 0.40828301082436225,
+      "oil_detection_rate": 0.984375,
+      "oil_missed": 2,
+      "lookalike_fp_rate": 0.6875,
+      "no_oil_fp_rate": 0.2421875,
+      "lookalike_mean_risk_on_fp": 0.18814876489965535,
+      "mean_detections_per_oil_scene": 4.8515625
+    },
+    "c3_a0.1_e2.5_r0.25": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.1,
+        "min_elongation": 2.5,
+        "max_look_alike_risk": 0.25
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.4011285079471375,
+      "oil_median_iou": 0.3949602163706927,
+      "oil_detection_rate": 0.9765625,
+      "oil_missed": 3,
+      "lookalike_fp_rate": 0.6484375,
+      "no_oil_fp_rate": 0.21875,
+      "lookalike_mean_risk_on_fp": 0.17314090460674655,
+      "mean_detections_per_oil_scene": 4.515625
+    },
+    "c3_a0.2_e0_r1": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.2,
+        "min_elongation": 0.0,
+        "max_look_alike_risk": 1.0
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.4335949302689505,
+      "oil_median_iou": 0.4410898787144791,
+      "oil_detection_rate": 0.984375,
+      "oil_missed": 1,
+      "lookalike_fp_rate": 0.671875,
+      "no_oil_fp_rate": 0.25,
+      "lookalike_mean_risk_on_fp": 0.23707582947268385,
+      "mean_detections_per_oil_scene": 5.390625
+    },
+    "c3_a0.2_e0_r0.3": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.2,
+        "min_elongation": 0.0,
+        "max_look_alike_risk": 0.3
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.42407951275191125,
+      "oil_median_iou": 0.4304121601639219,
+      "oil_detection_rate": 0.96875,
+      "oil_missed": 4,
+      "lookalike_fp_rate": 0.6640625,
+      "no_oil_fp_rate": 0.1953125,
+      "lookalike_mean_risk_on_fp": 0.2064450136297632,
+      "mean_detections_per_oil_scene": 4.671875
+    },
+    "c3_a0.2_e0_r0.25": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.2,
+        "min_elongation": 0.0,
+        "max_look_alike_risk": 0.25
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.4143182143911526,
+      "oil_median_iou": 0.41379502824182307,
+      "oil_detection_rate": 0.9609375,
+      "oil_missed": 5,
+      "lookalike_fp_rate": 0.578125,
+      "no_oil_fp_rate": 0.1484375,
+      "lookalike_mean_risk_on_fp": 0.17857991959021896,
+      "mean_detections_per_oil_scene": 3.9453125
+    },
+    "c3_a0.2_e2_r1": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.2,
+        "min_elongation": 2.0,
+        "max_look_alike_risk": 1.0
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.41646427112233253,
+      "oil_median_iou": 0.4304121601639219,
+      "oil_detection_rate": 0.96875,
+      "oil_missed": 4,
+      "lookalike_fp_rate": 0.640625,
+      "no_oil_fp_rate": 0.1796875,
+      "lookalike_mean_risk_on_fp": 0.1972768296090991,
+      "mean_detections_per_oil_scene": 4.3125
+    },
+    "c3_a0.2_e2_r0.3": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.2,
+        "min_elongation": 2.0,
+        "max_look_alike_risk": 0.3
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.4157220068832966,
+      "oil_median_iou": 0.4304121601639219,
+      "oil_detection_rate": 0.96875,
+      "oil_missed": 4,
+      "lookalike_fp_rate": 0.640625,
+      "no_oil_fp_rate": 0.1796875,
+      "lookalike_mean_risk_on_fp": 0.19631070468977718,
+      "mean_detections_per_oil_scene": 4.25
+    },
+    "c3_a0.2_e2_r0.25": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.2,
+        "min_elongation": 2.0,
+        "max_look_alike_risk": 0.25
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.408782237410293,
+      "oil_median_iou": 0.41379502824182307,
+      "oil_detection_rate": 0.9609375,
+      "oil_missed": 5,
+      "lookalike_fp_rate": 0.578125,
+      "no_oil_fp_rate": 0.1484375,
+      "lookalike_mean_risk_on_fp": 0.17540817155943245,
+      "mean_detections_per_oil_scene": 3.78125
+    },
+    "c3_a0.2_e2.5_r1": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.2,
+        "min_elongation": 2.5,
+        "max_look_alike_risk": 1.0
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.3969398162561185,
+      "oil_median_iou": 0.3932455668309115,
+      "oil_detection_rate": 0.96875,
+      "oil_missed": 4,
+      "lookalike_fp_rate": 0.6015625,
+      "no_oil_fp_rate": 0.15625,
+      "lookalike_mean_risk_on_fp": 0.18131137886205093,
+      "mean_detections_per_oil_scene": 3.65625
+    },
+    "c3_a0.2_e2.5_r0.3": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.2,
+        "min_elongation": 2.5,
+        "max_look_alike_risk": 0.3
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.3969398162561185,
+      "oil_median_iou": 0.3932455668309115,
+      "oil_detection_rate": 0.96875,
+      "oil_missed": 4,
+      "lookalike_fp_rate": 0.6015625,
+      "no_oil_fp_rate": 0.15625,
+      "lookalike_mean_risk_on_fp": 0.18131137886205093,
+      "mean_detections_per_oil_scene": 3.65625
+    },
+    "c3_a0.2_e2.5_r0.25": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.2,
+        "min_elongation": 2.5,
+        "max_look_alike_risk": 0.25
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.3955989997072623,
+      "oil_median_iou": 0.38814573848991385,
+      "oil_detection_rate": 0.9609375,
+      "oil_missed": 5,
+      "lookalike_fp_rate": 0.5703125,
+      "no_oil_fp_rate": 0.1484375,
+      "lookalike_mean_risk_on_fp": 0.1715024306298263,
+      "mean_detections_per_oil_scene": 3.4921875
+    },
+    "c3_a0.4_e0_r1": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.4,
+        "min_elongation": 0.0,
+        "max_look_alike_risk": 1.0
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.41232047214679507,
+      "oil_median_iou": 0.41379502824182307,
+      "oil_detection_rate": 0.953125,
+      "oil_missed": 5,
+      "lookalike_fp_rate": 0.59375,
+      "no_oil_fp_rate": 0.1484375,
+      "lookalike_mean_risk_on_fp": 0.22906138206883267,
+      "mean_detections_per_oil_scene": 3.78125
+    },
+    "c3_a0.4_e0_r0.3": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.4,
+        "min_elongation": 0.0,
+        "max_look_alike_risk": 0.3
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.4048616449758955,
+      "oil_median_iou": 0.41379502824182307,
+      "oil_detection_rate": 0.9453125,
+      "oil_missed": 7,
+      "lookalike_fp_rate": 0.5546875,
+      "no_oil_fp_rate": 0.109375,
+      "lookalike_mean_risk_on_fp": 0.19595114270179,
+      "mean_detections_per_oil_scene": 3.40625
+    },
+    "c3_a0.4_e0_r0.25": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.4,
+        "min_elongation": 0.0,
+        "max_look_alike_risk": 0.25
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.3974328254937799,
+      "oil_median_iou": 0.3788249890876342,
+      "oil_detection_rate": 0.9296875,
+      "oil_missed": 9,
+      "lookalike_fp_rate": 0.4921875,
+      "no_oil_fp_rate": 0.0703125,
+      "lookalike_mean_risk_on_fp": 0.17110972492772678,
+      "mean_detections_per_oil_scene": 2.9765625
+    },
+    "c3_a0.4_e2_r1": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.4,
+        "min_elongation": 2.0,
+        "max_look_alike_risk": 1.0
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.39947326437324215,
+      "oil_median_iou": 0.41379502824182307,
+      "oil_detection_rate": 0.9453125,
+      "oil_missed": 7,
+      "lookalike_fp_rate": 0.5,
+      "no_oil_fp_rate": 0.1015625,
+      "lookalike_mean_risk_on_fp": 0.18054120904601217,
+      "mean_detections_per_oil_scene": 3.1796875
+    },
+    "c3_a0.4_e2_r0.3": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.4,
+        "min_elongation": 2.0,
+        "max_look_alike_risk": 0.3
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.39880075611261545,
+      "oil_median_iou": 0.41379502824182307,
+      "oil_detection_rate": 0.9453125,
+      "oil_missed": 7,
+      "lookalike_fp_rate": 0.5,
+      "no_oil_fp_rate": 0.09375,
+      "lookalike_mean_risk_on_fp": 0.17991051097300007,
+      "mean_detections_per_oil_scene": 3.1484375
+    },
+    "c3_a0.4_e2_r0.25": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.4,
+        "min_elongation": 2.0,
+        "max_look_alike_risk": 0.25
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.39278162242821235,
+      "oil_median_iou": 0.3788249890876342,
+      "oil_detection_rate": 0.9296875,
+      "oil_missed": 9,
+      "lookalike_fp_rate": 0.4765625,
+      "no_oil_fp_rate": 0.0703125,
+      "lookalike_mean_risk_on_fp": 0.16738759608116363,
+      "mean_detections_per_oil_scene": 2.8828125
+    },
+    "c3_a0.4_e2.5_r1": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.4,
+        "min_elongation": 2.5,
+        "max_look_alike_risk": 1.0
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.381001915363188,
+      "oil_median_iou": 0.3672066952138683,
+      "oil_detection_rate": 0.9296875,
+      "oil_missed": 9,
+      "lookalike_fp_rate": 0.4765625,
+      "no_oil_fp_rate": 0.078125,
+      "lookalike_mean_risk_on_fp": 0.1675938005330858,
+      "mean_detections_per_oil_scene": 2.7578125
+    },
+    "c3_a0.4_e2.5_r0.3": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.4,
+        "min_elongation": 2.5,
+        "max_look_alike_risk": 0.3
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.381001915363188,
+      "oil_median_iou": 0.3672066952138683,
+      "oil_detection_rate": 0.9296875,
+      "oil_missed": 9,
+      "lookalike_fp_rate": 0.4765625,
+      "no_oil_fp_rate": 0.078125,
+      "lookalike_mean_risk_on_fp": 0.1675938005330858,
+      "mean_detections_per_oil_scene": 2.7578125
+    },
+    "c3_a0.4_e2.5_r0.25": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.4,
+        "min_elongation": 2.5,
+        "max_look_alike_risk": 0.25
+      },
+      "counts": {
+        "oil": 128,
+        "lookalike": 128,
+        "no_oil": 128
+      },
+      "oil_mean_iou": 0.38009771752156496,
+      "oil_median_iou": 0.3590727442613352,
+      "oil_detection_rate": 0.9296875,
+      "oil_missed": 9,
+      "lookalike_fp_rate": 0.46875,
+      "no_oil_fp_rate": 0.0625,
+      "lookalike_mean_risk_on_fp": 0.1628445661312528,
+      "mean_detections_per_oil_scene": 2.6796875
+    }
+  },
+  "stage": "combine"
+}

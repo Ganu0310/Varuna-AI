@@ -112,6 +112,11 @@ services:
   ml:
     build:
       context: ./services/ml
+    # The ML service needs the SAME provider credentials the API has. Without this the
+    # container booted with CMEMS unset, the currents chain fell through to HYCOM, and every
+    # origin estimate degraded to FOOTPRINT_PROXIMITY — while a working credential sat in
+    # `.env`, read by every other service in this file.
+    env_file: .env
     environment:
       ML_SERVICE_TOKEN: ${ML_SERVICE_TOKEN:-dev-service-token}
       S3_ENDPOINT: http://minio:9000

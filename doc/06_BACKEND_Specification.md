@@ -206,6 +206,15 @@ All routes are under `/api/v1`. All responses are JSON. Errors are RFC 9457
 `application/problem+json`. Collection responses are cursor-paginated:
 `{ items: T[], nextCursor: string | null, total?: number }`.
 
+**This reference is reconciled against `ROUTE_MOUNTS` in `apps/api/src/app.ts` — 85 mounted
+operations.** Where a route below is specified but *not built*, it is marked
+**`NOT BUILT`** rather than quietly listed as though it exists. A specification that
+describes endpoints an integrator cannot call is worse than one that admits a gap.
+
+Note that the AIS, origin and candidates routers are each mounted **twice** — under
+`/api/v1/investigations/:id/...` and under bare `/api/v1/...` — because some resources are
+addressed by investigation and some by their own id. Both forms are live.
+
 ### 6.4.1 Auth
 
 | Method | Path | Body | Response | Role |
@@ -244,6 +253,31 @@ Behaviour: fans out to the configured provider chain (CDSE → Planetary Compute
 normalises heterogeneous STAC/OData records to one shape, dedupes by product ID,
 returns per-provider status so a partial failure is visible rather than hidden.
 
+**Ingestibility is decided at search time, and this is a correctness fix, not a convenience.**
+The chain has three *search* providers and one *ingestible* one: ingest resolves product ids
+against the Planetary Computer `sentinel-1-rtc` collection, so a CDSE or ASF record is a real
+acquisition **this pipeline cannot read**. Discovering that only when the job fails produced
+`ML_SERVICE unavailable: HTTP_404` after a full queue round trip — which reads like an outage
+and is actually a provider mismatch.
+
+Two conditions must both hold (`decideIngestible` in `providers/chain.ts`):
+
+1. `collection === 'sentinel-1-rtc'`, the one collection ingest resolves against, **and**
+2. `preprocessed === true` — terrain correction is the real requirement, because it is what
+   lets ingest window a scene in seconds instead of running SNAP.
+
+Both are checked rather than just the first, so a future provider serving RTC under another
+collection name is reported honestly instead of being silently accepted or silently dropped.
+
+The flag is stamped **after** the merge and dedupe, not by each provider client. Two reasons:
+the same overpass listed by CDSE and by the Planetary Computer collapses to the RTC record, and
+it is *that* record's ingestibility the caller needs; and a provider knows what it holds but
+does not know what this pipeline can read. The type system enforces the split — provider
+clients return `ProviderCatalogueItem`, which is `CatalogueItem` minus the two fields, so a new
+provider client **physically cannot forget** to set a flag that was never theirs to set. The
+catalogue UI, the scene picker, the verified scenario and the backfill CLI then all consult one
+rule instead of each re-deriving it slightly differently.
+
 ```jsonc
 // 200 response
 {
@@ -258,7 +292,10 @@ returns per-provider status so a partial failure is visible rather than hidden.
     "footprint": { "type": "Polygon", "coordinates": [[...]] },
     "aoiOverlapPct": 87.4,
     "sizeBytes": 1073741824,
-    "assets": { "VV": "...", "VH": "..." }
+    "assets": { "VV": "...", "VH": "..." },
+    "preprocessed": false,
+    "ingestible": false,
+    "ingestibleReason": "CDSE serves this as raw SENTINEL-1, which needs SNAP radiometric and terrain correction before it can be read. Look for the same overpass as a Planetary Computer RTC product."
   }],
   "providerStatus": [
     { "provider": "CDSE", "status": "OK", "count": 14, "latencyMs": 812 },
@@ -271,49 +308,76 @@ returns per-provider status so a partial failure is visible rather than hidden.
 
 ### 6.4.4 Scenes
 
+Scenes are addressed **under their investigation**, not globally.
+
 | Method | Path | Notes |
 |---|---|---|
-| POST | `/scenes/ingest` | `{ investigationId, productId, provider }` → `202 { jobId }`. Idempotent on `productId`. |
-| POST | `/scenes/upload` | multipart GeoTIFF. Rejects files without CRS, transform, or acquisition time. |
-| GET | `/scenes?investigationId=` | List with status |
-| GET | `/scenes/:id` | Full document incl. processing manifest |
-| GET | `/scenes/:id/tiles` | `{ tileUrl, bounds, minzoom, maxzoom, defaultRescale }` — a signed TiTiler URL template |
-| GET | `/scenes/:id/quicklook` | Redirect to a signed object-storage URL |
-| DELETE | `/scenes/:id` | Removes derived artefacts; blocked if detections reference it |
+| POST | `/investigations/:id/scenes/ingest` | `{ productId, provider }` → `202 { jobId }`. Idempotent on `productId`. |
+| POST | `/investigations/:id/scenes/upload` | multipart GeoTIFF. Rejects files without CRS, transform, or acquisition time. |
+| GET | `/investigations/:id/scenes` | List with status |
+| GET | `/investigations/:id/scenes/:sceneId/tiles` | `{ tileUrl, bounds, minzoom, maxzoom, defaultRescale }` — a signed TiTiler URL template |
+| — | `GET /scenes/:id`, `/scenes/:id/quicklook`, `DELETE /scenes/:id` | **`NOT BUILT`** |
+
+**Operator-supplied GeoTIFF.** The upload route is the answer to "can I bring my own image?"
+and it is checked hard rather than trusted. A file without a CRS, without a geotransform, or
+without an acquisition timestamp is **rejected** — none of the three can be defaulted without
+inventing georeferencing or a time, and a scene with an invented timestamp would silently
+poison the release-window estimate downstream.
+
+**Ingestibility is decided at search time, not at ingest time.** See §6.4.3.
 
 ### 6.4.5 Detections
 
+**There is no `POST /detections/run`.** Segmentation is a stage of the scene-ingest job, not a
+separately triggered operation — the pipeline is API → queue → worker → ML service → MongoDB
+(§6.6.1). Re-running detection means re-running ingest, which is idempotent on `productId`.
+
 | Method | Path | Notes |
 |---|---|---|
-| POST | `/detections/run` | `{ sceneId, modelId?, minAreaKm2?, minProbability? }` → `202 { jobId }` |
-| GET | `/detections?investigationId=` | List |
+| GET | `/investigations/:id/detections` | List for an investigation |
 | GET | `/detections/:id` | Full document |
 | GET | `/detections/:id/geometry` | GeoJSON; `?simplify=z{zoom}` for zoom-appropriate simplification; `ETag` |
-| POST | `/detections/:id/review` | `{ action: 'CONFIRM'\|'REJECT'\|'EDIT', note?, geometry? }` — creates a new version, never mutates the model output |
+| GET | `/detections/:id/tiles` | Signed TiTiler template for the probability raster |
+| POST | `/detections/:id/review` | `{ action: 'CONFIRM'\|'REJECT'\|'EDIT', note?, geometry?, rejectionCategory? }` — creates a new version, never mutates the model output. **A `REJECT` requires `rejectionCategory`**; see below. |
 | GET | `/detections/:id/versions` | Full review history |
-| GET | `/detections/:id/probability-tiles` | Signed TiTiler template for the probability raster |
+| GET | `/detections/rejection-categories` | The taxonomy, served to the UI so the client cannot drift from the enum the API validates against |
+
+**Why a rejection carries a category.** Prose is unusable in aggregate: it cannot answer
+"which look-alike class does this detector fall for most?", and it cannot become a labelled
+negative. Each category declares a `kind` — `LOOK_ALIKE` (a statement about the imagery) or
+`OPERATIONAL` (a statement about the workflow) — and a `sarClass`, which is the single rule for
+trainability: **usable as a labelled negative iff `sarClass !== null`.** The enum lives in
+`packages/shared/src/constants.ts` so the API, the worker and the UI share one definition.
+Full taxonomy and rationale in [07_AIML §7.2.12](07_AIML_Specification.md).
+
+Rejections recorded before the taxonomy existed are reported as `UNCATEGORISED` — counted,
+never back-filled with a guess.
 
 ### 6.4.6 Origin estimation
 
 | Method | Path | Notes |
 |---|---|---|
-| POST | `/origin/run` | `{ detectionId, horizonHours?, particleCount?, windDriftRange?, deflectionRange? }` → `202 { jobId }` |
-| GET | `/origin/:id` | Origin estimate incl. `status`, `degradationReason`, forcing provenance |
-| GET | `/origin/:id/frames` | `[{ atTime, tileUrl, bounds }]` for the KDE surfaces |
-| GET | `/origin/:id/support` | `{ support50, support90 }` as GeoJSON |
-| GET | `/origin/:id/particles` | `?format=binary` — ensemble trajectories for the prism |
+| POST | `/investigations/:id/origin/run` | `{ detectionId, horizonHours?, particleCount?, windDriftRange?, deflectionRange? }` → `202 { jobId }` |
+| GET | `/investigations/:id/origin` | The investigation's current origin estimate |
+| GET | `/origin/:id` | Origin estimate incl. `status`, `degradationReason`, `currentStatus`, `windStatus`, `windStatusReason`, `providerAttempts[]`, forcing provenance |
+| — | `/origin/:id/frames`, `/origin/:id/support` | **`NOT BUILT`** as separate routes — `originField.frames`, `support50` and `support90` are fields on the origin-estimate document above, which is what the map and the space-time prism read. |
+| — | `/origin/:id/particles` | **`NOT BUILT`.** The raw ensemble is not persisted; only the KDE frames and the 50%/90% support polygons derived from it are. The prism draws the slab from `support90`. |
 
 ### 6.4.7 AIS
 
 | Method | Path | Notes |
 |---|---|---|
-| POST | `/ais/import` | `{ investigationId, source, from, to, bbox }` → `202 { jobId }`. Pulls from the configured archive/API. |
-| POST | `/ais/upload` | CSV upload; column mapping UI-driven; validated per row, rejects rather than coerces |
-| GET | `/ais/positions` | `?bbox=&from=&to=&mmsi=&limit=` — raw fixes, paginated |
-| GET | `/ais/tracks` | `?investigationId=&format=json\|binary&simplify=z{zoom}` |
-| GET | `/ais/tracks/:mmsi` | Single reconstructed track with gaps and quality |
-| GET | `/ais/coverage` | `{ source, recordCount, firstAt, lastAt, bboxCovered, medianIntervalSec }` — the honesty endpoint: tells the analyst what data actually exists |
+| GET | `/investigations/:id/ais/coverage` | `{ source, recordCount, firstAt, lastAt, bboxCovered, medianIntervalSec }` — **the honesty endpoint**: what data actually exists, before anyone reads a ranking built on it |
+| GET | `/investigations/:id/ais/tracks` | Reconstructed tracks; `?simplify=z{zoom}` |
+| GET | `/investigations/:id/ais/vessels` | Vessels present in the envelope |
 | GET | `/ais/vessel/:mmsi` | Static data, flag from MID, registry join |
+| — | `POST /ais/import`, `POST /ais/upload`, `GET /ais/positions` | **`NOT BUILT` as HTTP routes.** |
+
+**AIS import is a CLI, not an endpoint** (`apps/api/src/modules/ais/import-cli.ts`). The bulk
+archives are multi-gigabyte yearly files; importing one is an operator task measured in
+minutes, run once per region, not a request a web client should hold open. Keeping it off the
+HTTP surface also keeps a route that writes millions of documents out of the rate limiter's
+blast radius.
 
 **The envelope query** (the core spatiotemporal join):
 
@@ -348,14 +412,24 @@ export async function queryEnvelope(
 
 | Method | Path | Notes |
 |---|---|---|
-| POST | `/candidates/score` | `{ investigationId, detectionId, originEstimateId, weightProfileId? }` → `202 { jobId }` |
-| GET | `/candidates?investigationId=` | Ranked list |
+| POST | `/investigations/:id/candidates/correlate` | Runs correlation **and** scoring → `202 { jobId }`. This is the route this document previously called `/candidates/score`. |
+| GET | `/investigations/:id/candidates` | Ranked list, including the rank-separation verdict (§6.4.8.1) |
 | GET | `/candidates/:id` | Full evidence |
 | GET | `/candidates/:id/evidence/:featureKey` | Source records behind one feature |
-| POST | `/candidates/reweight` | `{ investigationId, weights: Record<string, number> }` — synchronous, < 3 s, returns re-ranked list; the profile is persisted and recorded in the report |
+| POST | `/investigations/:id/candidates/reweight` | `{ weights }` — synchronous, returns a re-ranked list; the profile is persisted and recorded in the report |
 | POST | `/candidates/:id/exclude` | `{ reason }` — required, audit-logged |
-| DELETE | `/candidates/:id/exclude` | Restore |
-| GET | `/candidates/weight-profiles` | Default + saved profiles |
+| GET | `/weight-profiles` | Default + saved profiles |
+| — | `DELETE /candidates/:id/exclude` | **`NOT BUILT`** — an exclusion cannot currently be undone through the API |
+
+#### 6.4.8.1 Rank separation
+
+`GET /investigations/:id/candidates` carries a **separation verdict** alongside the list: in N
+paired draws of the evidence, how often does the leader still come first, and by what mean
+margin. It exists because two independently-drawn bootstrap intervals cannot answer "is the
+top candidate actually ahead of the second" — the origin-zone uncertainty is **common-mode**
+across every candidate, so it must be drawn once per iteration and applied to all of them,
+while positional error stays independent per vessel. Rationale and outputs in
+[07_AIML §7.5.3](07_AIML_Specification.md).
 
 ### 6.4.9 Reports
 
@@ -377,11 +451,67 @@ export async function queryEnvelope(
 | GET | `/jobs/:id` | member |
 | POST | `/jobs/:id/cancel` | member |
 | POST | `/jobs/:id/retry` | analyst |
-| GET | `/admin/users`, `POST /admin/users/:id/role` | admin |
-| GET | `/admin/quotas` | Per-provider consumption | admin |
-| GET | `/admin/providers` | Circuit-breaker state, latency, last success | admin |
-| GET | `/admin/audit` | Filterable append-only log | admin |
+| GET | `/admin/users` · `POST /admin/users/:id/role` | admin |
+| GET | `/admin/quotas` — per-provider consumption | admin |
+| GET | `/admin/providers` — circuit-breaker state, latency, last success | admin |
+| GET | `/admin/audit` — filterable append-only log | admin |
+| GET | `/admin/investigations` — every case on the instance | admin |
+| GET | `/admin/reports` · `/admin/reports/:filename` — generated dossiers | admin |
+| GET | `/admin/training-labels` — the labelled set analyst review has produced ([07_AIML §7.2.12](07_AIML_Specification.md)) | admin |
 | GET | `/health`, `/health/deep` | public / internal |
+
+### 6.4.11 System
+
+Authenticated at `viewer`, but **deliberately not admin-gated**: an analyst must be able to
+see that the ocean-current chain is degraded *before* they read an origin estimate, not after
+they have filed the dossier.
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/system/capabilities` | The capability matrix — see below. `Cache-Control: private, max-age=30`. |
+| GET | `/system/overview` | Operations dashboard, **scoped to what the caller can see**. An analyst's tiles count their own cases, an admin's count the instance, and the response says which in a `scope` field — a number without its denominator is a number nobody can act on. `max-age=15`. |
+| GET | `/system/verified-scenario` | What the demo button *will* do, before it is pressed. The dashboard card renders this rather than duplicating constants in the frontend, so the two cannot drift into describing different incidents. |
+| POST | `/system/verified-scenario` | Runs it. `analyst` role, rate-limited as a job-creation route. Idempotent — re-clicking reuses the investigation and de-duplicates the ingest. |
+
+**The capability matrix has three states, and the middle one is the point.**
+
+| State | Meaning |
+|---|---|
+| `AVAILABLE` | the stage runs on real data from a real provider |
+| `DEGRADED` | the stage runs, but on a weaker footing that **changes what may be claimed** |
+| `UNAVAILABLE` | the stage cannot run at all |
+
+A binary up/down would collapse `DEGRADED` into one of the other two, and `DEGRADED` is the
+state this system spends most of its life in. Every capability carries both a `reason` (what
+is missing — operator-facing) and a `consequence` (what it costs the conclusion — analyst- and
+judge-facing), because a judge, an analyst and a regulator all need the second one and only an
+operator needs the first. `overall` is the **weakest link**, because the chain is only as
+strong as it.
+
+Two deliberate constraints:
+
+- **Nothing here probes a provider over the network.** Reporting configuration and *recorded*
+  health is fast, safe on every page load, and cannot itself fail in a way that makes the
+  status panel lie. Live reachability belongs to `/health/deep` and to the per-provider
+  circuit-breaker state, which this surfaces rather than duplicates.
+- **It reports whether a credential is configured, never its value.** This is also why the
+  router is authenticated: unauthenticated, `/capabilities` published which provider
+  credentials the deployment holds to anyone who asked.
+
+> **A time-series counting trap, recorded because it produced a wrong number.** AIS
+> availability cannot be answered from configuration — the bulk archives need no credential,
+> so "AIS is configured" is trivially true. It must be asked of the collection. But
+> `ais_positions` is a **time-series** collection, and `estimatedDocumentCount()` reports the
+> metadata of the underlying *bucket* collection — so it returns the number of buckets, orders
+> of magnitude below the truth, which the panel would then print as the size of the evidence
+> base. The panel only needs "some" or "none", so it asks for at most one document and says so.
+
+**The verified scenario stops after setup, deliberately.** It finds or creates the
+investigation, locates the product with a **live catalogue search** (not a pinned product id,
+which rots the first time a provider re-processes its archive), and queues the real ingest.
+Detection, back-tracking and ranking are **not** run: they are the part an evaluator is there
+to watch, and pre-computing them would turn a live demonstration into a playback. This is the
+same rule `stage:demo` follows — cache the real *inputs*, never the conclusions.
 
 ---
 

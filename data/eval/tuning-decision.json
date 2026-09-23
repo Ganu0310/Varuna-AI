@@ -1,0 +1,56 @@
+{
+  "measuredAt": "2026-08-30",
+  "question": "Can parameter tuning of darkspot-v1 reduce the look-alike false-positive rate without costing oil recall?",
+  "answer": "No. Not adopted.",
+  "method": {
+    "harness": "services/ml/varuna_ml/eval/tuning.py",
+    "development": "train+val, 384 real Sentinel-1 scenes (128 per class)",
+    "confirmation": "test, 66 scenes (22 per class), measured ONCE with a single pre-registered configuration and no sweep",
+    "split": "data/splits/part3-split.json — whole 1.0-degree geographic cells assigned to one split",
+    "selectionRule": "oil detection rate is a hard floor; the objective is the look-alike rate alone; oil mean IoU breaks ties. Recall was deliberately NOT traded off inside a combined score.",
+    "laddersSwept": [
+      "contrast threshold 2.5-5.0",
+      "minimum area 0.05-3.0 km2",
+      "minimum elongation 0-4",
+      "look-alike risk gate 0.2-1.0",
+      "all promising combinations of the last three"
+    ]
+  },
+  "chosenOnDevelopment": {
+    "config": { "contrast_db": 3.0, "min_area_km2": 0.05, "min_elongation": 0.0, "max_look_alike_risk": 0.25 },
+    "why": "On 384 development scenes it removed 8.5 points of look-alike false positives and 7.8 points of clean-sea false positives at ZERO recall cost — the only gate that reduced false positives without missing a real slick.",
+    "developmentResult": {
+      "oilMeanIou": 0.424,
+      "oilDetectionRate": 1.0,
+      "lookalikeFpRate": 0.688,
+      "noOilFpRate": 0.32,
+      "baselineLookalikeFpRate": 0.773
+    }
+  },
+  "heldOutResult": {
+    "oilMeanIou": 0.5363,
+    "oilDetectionRate": 1.0,
+    "oilMissed": 0,
+    "lookalikeFpRate": 0.6818,
+    "noOilFpRate": 0.1364,
+    "lookalikeMeanRiskOnFp": 0.2
+  },
+  "baselineHeldOut": {
+    "oilMeanIou": 0.5642,
+    "oilDetectionRate": 1.0,
+    "lookalikeFpRate": 0.6818,
+    "noOilFpRate": 0.1818,
+    "lookalikeMeanRiskOnFp": 0.259
+  },
+  "decision": "NOT ADOPTED — darkspot-v1 keeps its shipped parameters.",
+  "rationale": "The development gain did not transfer. On the held-out split the look-alike false-positive rate is UNCHANGED at 68.2% (15 of 22 scenes, identical to baseline), while oil IoU falls 0.028. The clean-sea improvement of 4.5 points is exactly one scene out of 22, which is within noise at this sample size. Adopting a configuration that costs segmentation quality and returns nothing measurable on unseen data would be tuning to the development set and calling it progress.",
+  "whatThisEstablishes": "The look-alike problem is not reachable by thresholds, area gates, shape gates or risk gates on the classical detector. Rungs 1-5 of the 14 Phase 9 ladder are now measured and exhausted.",
+  "supportingFinding": "The gates are largely REDUNDANT rather than complementary. Adding an elongation gate on top of the risk gate changed the false-positive rate by exactly zero on 384 scenes, because look_alike_risk() already contains an elongation term (r_shape). Tuning them jointly cannot help.",
+  "secondFinding": "Across every configuration swept, the mean look-alike risk assigned to false positives stayed in the 0.15-0.29 band. No parameter setting makes the detector's own warning channel informative about its own errors — it remains wrong AND unwarned.",
+  "next": "Rungs 6-7: focal loss to down-weight easy negatives, and a trained look-alike classifier. Look-alike scenes carry no positive pixels, so a segmentation objective alone teaches no rejection — which is also why the U-Net trained earlier scored better on oil IoU and worse on look-alikes.",
+  "files": {
+    "ladderSweep": "data/eval/tuning-ladder-trainval.json",
+    "combinationSweep": "data/eval/tuning-combine-trainval.json",
+    "heldOutConfirmation": "data/eval/tuning-chosen-test.json"
+  }
+}

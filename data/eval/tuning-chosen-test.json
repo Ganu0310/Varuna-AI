@@ -1,0 +1,27 @@
+{
+  "split": "part3-split.json :: test (66 scenes)",
+  "results": {
+    "c3_a0.05_e0_r0.25": {
+      "config": {
+        "contrast_db": 3.0,
+        "min_area_km2": 0.05,
+        "min_elongation": 0.0,
+        "max_look_alike_risk": 0.25
+      },
+      "counts": {
+        "oil": 22,
+        "lookalike": 22,
+        "no_oil": 22
+      },
+      "oil_mean_iou": 0.5363051544240148,
+      "oil_median_iou": 0.6269656776710502,
+      "oil_detection_rate": 1.0,
+      "oil_missed": 0,
+      "lookalike_fp_rate": 0.6818181818181818,
+      "no_oil_fp_rate": 0.13636363636363635,
+      "lookalike_mean_risk_on_fp": 0.19998656941964946,
+      "mean_detections_per_oil_scene": 6.636363636363637
+    }
+  },
+  "stage": "single:3.0,0.05,0.0,0.25"
+}

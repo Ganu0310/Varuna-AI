@@ -359,7 +359,7 @@ def detection_confidence(c, wind_u10_ms, elongation):
 All four terms are displayed individually in the UI. A single blended number would hide
 which factor is limiting.
 
-### 7.2.12 Evaluation
+### 7.2.12 Evaluation, and the labels review produces
 
 **Never reported:** pixel accuracy. It is meaningless at 98% sea.
 
@@ -378,6 +378,119 @@ Splits are **by scene and by geography**, never by random tile. Random tile spli
 information: two overlapping tiles from the same slick would land in train and test,
 inflating metrics. Splits: 70/15/15 train/val/test, with the test set containing scenes from
 geographic regions absent from training, to measure genuine generalisation.
+
+#### What was actually measured
+
+Held-out split: **66 real Sentinel-1 scenes**, 22 oil / 22 look-alike / 22 clean sea, from
+1.0° geographic cells assigned wholly to one split (`data/splits/part3-split.json`). Measured
+once, with no sweep against it.
+
+| Metric | Target (§9.1) | `darkspot-v1` (shipped) | U-Net (trained, **not adopted**) |
+|---|---|---|---|
+| Oil mean IoU | ≥ 0.55 | **0.564** ✅ | 0.637 |
+| Oil median IoU | — | 0.627 | 0.696 |
+| Oil detection rate | ≥ 0.75 | **1.00** ✅ (0 missed) | 1.00 |
+| Pixel-pooled Dice / F1 | ≥ 0.70 | — | 0.738 |
+| **Look-alike → oil FP rate** | **≤ 0.20** | **0.682** ❌ | **0.818** ❌ |
+| Clean-sea FP rate | — | 0.182 | 0.000 |
+| Mean look-alike risk on its own false positives | — | **0.259** | — |
+
+**The last row is the finding that matters, and it is a bad one.** The detector fires on 68%
+of look-alike scenes, and on those false positives its own look-alike warning channel averages
+0.26 — barely above what it assigns a true slick. **It is not merely wrong; it is wrong without
+warning.** Reporting this is not optional under the honesty rule: a look-alike FP rate 3.4×
+the target is exactly the number a judge should be told before they trust a ranking.
+
+Raw results: `data/eval/classical-test66.json`, `data/eval/unet-test66.json`,
+`data/eval/detector-comparison.json`.
+
+#### Why thresholds cannot fix it — the tuning ladder, measured and closed
+
+`services/ml/varuna_ml/eval/tuning.py` swept contrast threshold (2.5–5.0), minimum area
+(0.05–3.0 km²), minimum elongation (0–4), the look-alike risk gate (0.2–1.0), and every
+promising combination, on 384 development scenes. Oil detection rate was a **hard floor**, not
+a term in a combined score — recall was never traded away to buy a better headline.
+
+The best development configuration removed 8.5 points of look-alike false positives at zero
+recall cost. **It did not transfer.** On the held-out split the look-alike FP rate was
+unchanged at 68.2% — 15 of 22 scenes, identical to baseline — while oil IoU fell 0.028. It was
+**not adopted**; `darkspot-v1` keeps its shipped parameters (`data/eval/tuning-decision.json`).
+
+Two supporting findings, both negative and both worth keeping:
+
+- **The gates are redundant, not complementary.** Adding an elongation gate on top of the risk
+  gate changed the false-positive rate by *exactly zero* on 384 scenes — because
+  `look_alike_risk()` already contains an elongation term (`r_shape`). Tuning them jointly
+  cannot help.
+- Across every configuration swept, mean look-alike risk on false positives stayed in the
+  0.15–0.29 band. **No parameter setting makes the detector's warning channel informative
+  about its own errors.**
+
+This establishes that the look-alike problem is **not reachable by thresholds, area gates,
+shape gates or risk gates on a classical detector.** What remains is focal loss to down-weight
+easy negatives, and a trained look-alike classifier. Look-alike scenes carry no positive
+pixels, so a segmentation objective alone teaches no rejection — which is also why the U-Net
+scored *better* on oil IoU and *worse* on look-alikes.
+
+#### The labelled set analyst review already produces
+
+The fix the evidence points at is labelled negatives of each look-alike class. That is the
+expensive half of a training set — the imagery is free, the labelling is not — and this system
+generates it as a by-product of ordinary work, provided a rejection records *which class* it
+was. Implemented in `apps/api/src/modules/detections/labels.ts`, exposed at
+`GET /api/v1/admin/training-labels`.
+
+A rejection therefore carries a **category**, not just prose. Prose is unusable in aggregate:
+it cannot answer "which look-alike class does this detector fall for most?", and it cannot
+become a labelled negative. The taxonomy lives in `packages/shared/src/constants.ts` as
+`REJECTION_CATEGORIES` and is served to the UI at
+`GET /api/v1/detections/rejection-categories`.
+
+`kind` separates the two different questions a rejection can answer:
+
+| `kind` | Meaning | Trainable |
+|---|---|---|
+| `LOOK_ALIKE` | The analyst judged the pixels are not oil — a statement about the **imagery** | Yes, iff `sarClass` is non-null |
+| `OPERATIONAL` | The rejection is about the **workflow**, not the pixels | **Never** |
+
+| Category | `kind` | `sarClass` |
+|---|---|---|
+| `LOW_WIND` — low-wind or wind-shadow zone | `LOOK_ALIKE` | `sea_surface` |
+| `BIOGENIC_FILM` — biogenic film or algal slick | `LOOK_ALIKE` | `look_alike` |
+| `RAIN_CELL` — rain cell | `LOOK_ALIKE` | `look_alike` |
+| `SHIP_WAKE` — wake or turbulent trail | `LOOK_ALIKE` | `look_alike` |
+| `INTERNAL_WAVE` — internal wave or current shear | `LOOK_ALIKE` | `look_alike` |
+| `SEA_ICE` — sea ice | `LOOK_ALIKE` | `look_alike` |
+| `LAND_OR_STRUCTURE` — land, tidal flat or fixed structure | `LOOK_ALIKE` | `land` |
+| `SENSOR_ARTEFACT` — azimuth ambiguity, scalloping, thermal-noise banding | `LOOK_ALIKE` | **`null`** |
+| `LOOK_ALIKE_UNCLASSIFIED` — not oil, mechanism not named | `LOOK_ALIKE` | `look_alike` |
+| `INSUFFICIENT_IMAGE_QUALITY` — cannot be judged from this scene | `OPERATIONAL` | `null` |
+| `DUPLICATE` — duplicate of another detection | `OPERATIONAL` | `null` |
+| `SUPERSEDED` — superseded by a better acquisition | `OPERATIONAL` | `null` |
+| `OUT_OF_SCOPE` — outside this investigation | `OPERATIONAL` | `null` |
+
+**The single rule: a rejection is usable as a labelled negative iff `sarClass !== null`.**
+`SENSOR_ARTEFACT` is the case that proves it is the right rule — a processing artefact is
+genuinely not oil, but it is not a valid sample of any *physical* class either, so it is
+recorded and never trained on. `INSUFFICIENT_IMAGE_QUALITY` is an absence of evidence, not
+evidence of absence, and is `OPERATIONAL` for the same reason.
+
+Three rules govern what leaves the harvester, each stopping a plausible-looking but dishonest
+label:
+
+1. **An `UNREVIEWED` detection is not a label.** No human looked at it. Excluded.
+2. **An `OPERATIONAL` rejection is not a negative.** Training on "duplicate" would teach the
+   detector that a perfectly good slick is not a slick.
+3. **A rejection recorded before the taxonomy existed is `UNCATEGORISED`, not guessed.** It is
+   counted, reported, and left out of the training set.
+
+`MIN_LABELS_PER_CLASS = 25` is **a working target, not a measured one** — the held-out split
+carries 22 scenes per class, so a training set materially smaller than that cannot be said to
+have taught a class the model will be tested on. It is a judgement call, labelled as one
+wherever it is reported, and must never be read as a validated sample-size result.
+
+Nothing in this module trains anything. It assembles and counts, so the decision to retrain is
+made against a number somebody can see.
 
 ---
 
@@ -405,15 +518,70 @@ u_total(x,t) = u_current(x,t) + α · R(θ) · u_wind10(x,t)
 
 | Term | Source | Value |
 |---|---|---|
-| `u_current` | **Real** CMEMS global ocean physics analysis (`GLOBAL_ANALYSISFORECAST_PHY_001_024`), surface `uo`/`vo`, 1/12° hourly | Interpolated in space and time |
-| `u_wind10` | **Real** ERA5 10 m `u10`/`v10` (0.25°, hourly), or NOAA GFS | Interpolated in space and time |
-| `α` | Wind drift coefficient | Sampled per particle, `Uniform(0.02, 0.04)` |
+| `u_current` | **Real** surface `uo`/`vo` from the currents chain below | Bilinear in space, linear in time |
+| `u_wind10` | **Real** 10 m `u10`/`v10` from the wind chain below | Bilinear in space, linear in time |
+| `α` | Wind drift coefficient | Sampled per particle, `Uniform(0.02, 0.04)`; **set to 0 when `windStatus = UNKNOWN`** |
 | `R(θ)` | Ekman/Coriolis deflection rotation | `θ ~ Uniform(0°, 20°)`, right of wind in the Northern Hemisphere, left in the Southern |
 
 The 2–4% wind-drift factor with a 0–20° deflection is the long-standing empirical rule used
 in operational spill response, and it is a *range* precisely because it is uncertain. We
 sample it rather than fixing it, so that uncertainty propagates into the origin field
 instead of being hidden.
+
+#### The forcing provider chains
+
+Implemented in `services/ml/varuna_ml/drift/forcing.py`. Best-quality first, keyless last.
+**There is no synthetic fallback at any position in either chain.** If no provider covers the
+region and date, the run degrades and says so — inventing a current field would produce an
+origin zone that looks authoritative and means nothing
+([13_REAL_DATA_POLICY §13.8](13_REAL_DATA_POLICY.md)).
+
+| Chain | Order | Credential | Dataset |
+|---|---|---|---|
+| **CURRENTS** | 1. CMEMS | `CMEMS_USERNAME` + `CMEMS_PASSWORD` | `cmems_mod_glo_phy_anfc_0.083deg_PT1H-m` — 1/12°, hourly |
+| | 2. HYCOM archive | none (OPeNDAP) | `GLBy0.08/expt_93.0/uv3z` |
+| | 3. HYCOM operational | none (OPeNDAP) | `FMRC_ESPC-D-V02_uv3z_best.ncd` |
+| **WIND** | 1. ERA5 local file | `ERA5_LOCAL_PATH` | operator-supplied GRIB/NetCDF, 10 m `u10`/`v10` |
+| | 2. ERA5 CDS API | `CDSAPI_KEY` | `reanalysis-era5-single-levels` — 0.25°, hourly |
+
+Three properties of these chains are deliberate and load-bearing.
+
+**Every attempt is recorded, including the ones that succeeded later.** Each provider the
+chain touches appends one entry — `provider`, `outcome`, and where relevant `datasetId`,
+`covers`, `detail` — and the list is returned to the caller, persisted on the origin estimate
+as `providerAttempts`, and rendered in the provenance panel and the dossier. A chain that
+falls through silently is indistinguishable from one that was never tried, and the difference
+is exactly what an analyst needs when the estimate comes back degraded. Outcomes are
+deliberately coarse and stable (`OK`, `NOT_CONFIGURED`, `AUTH_FAILED_401`, `FORBIDDEN_403`,
+`NOT_FOUND_404`, `NO_DATA`, `OUT_OF_COVERAGE`, `TIMEOUT`, `UNREACHABLE`, `ERROR`) rather than
+echoing a library's error text, which changes between versions.
+
+**There is a real keyless coverage gap, found by probing rather than assumed.** HYCOM's
+reanalysis archive ends **2024-09-05**, while its operational feed holds only roughly the last
+two weeks. Dates in between have **no keyless current coverage at all**, so an incident in
+that gap requires CMEMS credentials. `coverage()` reports this honestly instead of silently
+returning the nearest available field, which would attribute a spill using currents from a
+different year.
+
+**NOAA GFS is not a wind fallback, despite being keyless.** NOMADS retains roughly ten days,
+so it cannot serve a historic incident. Rather than pretend otherwise, the chain records
+`NOAA_GFS: RETENTION_TOO_SHORT_FOR_HISTORIC_DATE` and the run degrades to `α = 0`.
+
+**Deadlines and retries.** The provider libraries (`copernicusmarine`, `netCDF4`/OPeNDAP,
+`cdsapi`) are synchronous with no uniform timeout, so a wall-clock deadline is imposed from
+outside on a worker thread — `forcing_timeout_seconds` (default 180 s), `forcing_retries`
+(default 2). A thread that overruns is abandoned rather than killed, so the drift run degrades
+on schedule instead of hanging a job queue behind a provider outage. Retries cover only
+transport-shaped failures: an authentication failure or an out-of-coverage window will not
+change on a second attempt, and retrying it wastes the deadline the analyst is waiting on.
+
+> **The `/backtrack` handler is a blocking `def`, not `async def`, and that is load-bearing.**
+> Everything it does is synchronous and slow — provider reads, GDAL, CMEMS, particle
+> integration — and none of it awaits. Declared `async`, a single drift run stalls the entire
+> event loop: while one waited ~50 s for CMEMS, every other request queued behind it,
+> `/health` included, and the worker reported `fetch failed` on unrelated jobs. That reads
+> like a network fault and was self-inflicted head-of-line blocking. Declared `def`, Starlette
+> runs it in its threadpool, so slow work occupies one thread and the loop stays free.
 
 ### 7.3.3 Backward integration
 
@@ -461,11 +629,35 @@ def backtrack(slick_polygon, t_obs, horizon_h=24, n_particles=5000,
                        alpha=alpha, theta=theta, params=locals_snapshot())
 ```
 
-Production runs use **OpenDrift** (`OceanDrift` / `OpenOil`) with `time_step` negative
-rather than this hand-rolled stepper. OpenDrift is MET Norway's operational model, is
-peer-reviewed and validated, supports oil weathering, and handles coastline stranding. The
-code above documents the mechanism; the shipped implementation defers to the established
-library. The hand-rolled stepper is retained only as a cross-check in tests.
+> ### ⚠️ Correction: the stepper above **is** the shipped implementation
+>
+> This section previously specified **OpenDrift** (`OceanDrift` / `OpenOil`) as the integrator,
+> with the stepper above retained only as a test cross-check. **The roles are inverted in the
+> shipped system**, and the reason is a hard dependency constraint, not a preference:
+> OpenDrift requires cartopy/GEOS, which would not install in this environment.
+>
+> So `services/ml/varuna_ml/drift/backtrack.py` — the stepper above — is **primary**, and it is
+> **directly tested against analytic solutions** rather than against another library's output.
+> That is a weaker validation story than deferring to MET Norway's peer-reviewed operational
+> model, and it is stated here rather than left implied.
+>
+> **What is lost by not running OpenDrift:** oil weathering and coastline stranding are not
+> modelled. For a 24-hour back-track over open water, advection dominates both, but a
+> back-track that would beach the slick is not handled specially and should be read with that
+> in mind.
+>
+> **What keeps the door open:** the forcing interface is deliberately the same shape OpenDrift
+> expects, so swapping it in later touches only that one file.
+
+**Backward integration** is `-dt` on the same equations. That is exact for advection and
+correct-in-distribution for the diffusive term, since a symmetric random walk run backwards has
+the same statistics.
+
+**Why `α` and `θ` are sampled rather than fixed:** their true values depend on slick thickness,
+sea state and oil properties we do not know. Fixing them would produce a tight,
+confident-looking origin blob whose apparent precision is fictional. Sampling across the
+plausible range makes the resulting spread an honest expression of that ignorance — the
+uncertainty in the answer comes from uncertainty in the physics, not from tuning.
 
 ### 7.3.4 From particle cloud to probability surface
 
@@ -524,12 +716,36 @@ def estimate_release_window(morphology, drift_speeds_kmh, t_obs,
 
 ### 7.3.6 Degradation behaviour
 
-| Condition | `status` | Behaviour |
-|---|---|---|
-| Both currents and winds available | `OK` | Full back-track |
-| Currents available, winds missing | `DEGRADED` | Run with currents only; `α = 0`; UI and report state that wind forcing was unavailable and the origin zone is less reliable |
-| Currents missing | `DEGRADED` | Fall back to `FOOTPRINT_PROXIMITY`: the "origin zone" becomes the slick polygon buffered by 40 km, explicitly labelled as a proximity envelope, **not** a drift result |
-| Region/date outside all model coverage | `UNAVAILABLE` | No origin estimate produced; correlation runs against the footprint with a prominent banner |
+**The two forcing terms fail independently, and the consequences differ**, so one overall
+status cannot express both. No currents means there is no drift result at all; no wind means a
+wind-driven slick has its origin *under-displaced* in a direction the report states. An analyst
+needs to know which of those they are reading, so the origin estimate carries three fields, not
+one:
+
+| Field | Values |
+|---|---|
+| `status` | `OK` · `DEGRADED` · `UNAVAILABLE` — the overall verdict |
+| `currentStatus` | `OBSERVED` · `UNAVAILABLE` |
+| `windStatus` | `OBSERVED` · `UNKNOWN` · `NOT_ATTEMPTED` |
+
+`windStatusReason` carries the prose consequence, and `providerAttempts[]` carries the full
+per-provider record described in §7.3.2.
+
+| Condition | `status` | `currentStatus` | `windStatus` | Behaviour |
+|---|---|---|---|---|
+| Both available | `OK` | `OBSERVED` | `OBSERVED` | Full back-track |
+| Currents available, wind missing | `DEGRADED` | `OBSERVED` | `UNKNOWN` | Run with currents only, **`α = 0`**. UI and report state that wind forcing was unavailable and that a wind-driven slick is under-displaced. |
+| Currents missing | `DEGRADED` | `UNAVAILABLE` | `NOT_ATTEMPTED` | Fall back to `FOOTPRINT_PROXIMITY`: the "origin zone" becomes the slick polygon buffered by 40 km, explicitly labelled a proximity envelope, **not** a drift result |
+| Region/date outside all model coverage | `UNAVAILABLE` | `UNAVAILABLE` | `NOT_ATTEMPTED` | No origin estimate produced; correlation runs against the footprint with a prominent banner |
+
+`NOT_ATTEMPTED` is a distinct state from `UNKNOWN` on purpose: without a current field there is
+no trajectory to apply wind to, so the wind chain is never called, and reporting that as
+"wind unavailable" would blame a provider that was never asked.
+
+**`UNKNOWN` wind is never silently replaced with a constant or a climatological mean.** The
+wind-drift coefficient goes to zero and the run labels itself degraded. A "typical" wind would
+produce a displaced origin zone with no observational basis, which is precisely the failure
+this system exists to avoid.
 
 In every degraded case the confidence intervals on all downstream attribution scores widen,
 and the tier thresholds are not adjusted to compensate — a degraded run should produce
@@ -721,7 +937,7 @@ def tier_for(score, measured):
     return 'INSUFFICIENT_EVIDENCE'
 ```
 
-### 7.5.3 Confidence intervals
+### 7.5.3 Confidence intervals, and whether the ranking is real
 
 ```python
 def bootstrap_ci(features, weights, calibrator, n=500):
@@ -742,6 +958,45 @@ def bootstrap_ci(features, weights, calibrator, n=500):
         samples.append(score_candidate(f2, weights, calibrator).value)
     return (float(np.percentile(samples, 5)), float(np.percentile(samples, 95)))
 ```
+
+#### Is the top candidate actually ahead of the second?
+
+A ranked list invites the reader to act on its order, and nothing above tells them whether the
+order is real. **Two bootstrap intervals cannot answer this**, for a reason that matters:
+
+`bootstrap_ci` resamples each candidate **independently** — that candidate's own origin-zone
+jitter from that candidate's own seed. That is correct for a *marginal* interval on one vessel.
+But there is only **one origin zone**, and its uncertainty is **common-mode**: when the release
+zone is drawn further north, it moves further north for *every* vessel at once. Comparing two
+independently-drawn intervals treats a shared cause as two separate accidents, and answers a
+question nobody asked.
+
+So `apps/api/src/modules/attribution/separation.ts` resamples the whole field **together**: one
+origin-zone draw per iteration, applied to every candidate in that iteration, recording the
+resulting *rank order*. What comes out is the number a reader actually needs —
+
+> in N draws of the evidence, how often does this vessel still come first?
+
+**Positional error stays independent per vessel, deliberately.** An AIS reporting gap on one
+ship tells you nothing about the gap on another. The shared term is the physics; the
+independent term is the measurement. Conflating them either way would be wrong.
+
+| Output | Meaning |
+|---|---|
+| `topRankShare[]` | P(this vessel ranks first) across paired draws, descending |
+| `leader.winShare` | P(leader outscores the runner-up **in the same draw**) — the decision-relevant number |
+| `leader.meanMargin` | Mean score gap across draws. A large win share on a 0.4-point margin is still thin, and both are shown. |
+| `leader.distinguishable` | `winShare ≥ DISTINGUISHABLE_WIN_SHARE` |
+
+`DISTINGUISHABLE_WIN_SHARE = 0.9` is **a convention, not a measurement** — the same status as
+the twelve feature weights, and labelled as such wherever it is reported. It is set at 0.9 to
+match the one-sided reading of the 5th/95th interval already used for scores, so a reader does
+not have to hold two different notions of "confident" in their head while reading one dossier.
+
+Only the front of the field is resampled (`SEPARATION_FIELD_SIZE = 10`): ranking beyond it is
+not decision-relevant and costs N × iterations. Nothing here re-measures anything — it re-asks
+the existing scoring function under drawn inputs, so a separation result can never disagree
+with the score it describes.
 
 ---
 

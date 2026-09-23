@@ -46,7 +46,31 @@ fully-designed outcome — not an error state to be engineered away.
 
 ## 8.2 Journey 1 — First-time user, complete investigation
 
-This is the demo path and the primary user journey.
+This is the primary user journey, and the one that exercises every stage by hand.
+
+> ### The fast path — the verified scenario
+>
+> Steps 1 and 2 below are pure setup, and a demo that needs eight manual steps is a demo that
+> fails in front of an audience. `/dashboard` carries a **verified-scenario card**, described
+> by `GET /api/v1/system/verified-scenario` (never by constants in the frontend, so the card
+> and the runner cannot describe different incidents). Pressing it performs exactly three
+> things:
+>
+> 1. find or create the investigation (`VARUNA-GUAM-2025-09-21`),
+> 2. locate the product with a **live catalogue search** — not a pinned product id, which rots
+>    the first time a provider re-processes its archive, and would then fail at the worst
+>    moment with the least informative error,
+> 3. queue the real ingest.
+>
+> **It then stops, deliberately**, and returns a `nextSteps` list. Detection, back-tracking,
+> correlation and ranking are *not* run: they are the part an evaluator is there to watch, and
+> pre-computing them would turn a live demonstration into a playback. This is the same rule
+> `stage:demo` follows — cache the real **inputs**, never the conclusions.
+>
+> Everything is idempotent: re-pressing finds the existing investigation and de-duplicates the
+> ingest rather than creating a second case and a second multi-second provider read.
+>
+> After pressing it, resume this journey at **Step 3**.
 
 ### Step 0 · Sign in
 `/login` → email + password → argon2id verify → access + refresh cookies set → redirect to
@@ -322,7 +346,7 @@ stateDiagram-v2
 stateDiagram-v2
     [*] --> UNREVIEWED: model output (immutable)
     UNREVIEWED --> CONFIRMED: analyst confirms
-    UNREVIEWED --> REJECTED: analyst rejects (reason required)
+    UNREVIEWED --> REJECTED: analyst rejects (CATEGORY required)
     UNREVIEWED --> EDITED: geometry corrected (new version)
     EDITED --> CONFIRMED
     CONFIRMED --> EDITED: further correction
@@ -333,6 +357,25 @@ stateDiagram-v2
         a new version with actor and timestamp.
     end note
 ```
+
+**A rejection must name a category, not just a reason.** Prose cannot be aggregated and cannot
+become a training label. Each category declares a `kind` — `LOOK_ALIKE` (a statement about the
+imagery) or `OPERATIONAL` (a statement about the workflow) — and a `sarClass`, which is the
+single rule for whether the rejection is usable as a labelled negative: **usable iff
+`sarClass !== null`**.
+
+This turns review into the by-product that fixes the detector's measured weakness: it fires on
+68% of look-alike scenes with a mean self-reported look-alike risk of 0.26 — wrong *and*
+unwarned — and labelled negatives of each look-alike class are the one thing that addresses it
+([07_AIML §7.2.12](07_AIML_Specification.md)).
+
+Two transitions deliberately produce **no** training label:
+
+- an `OPERATIONAL` rejection (`DUPLICATE`, `SUPERSEDED`, `OUT_OF_SCOPE`,
+  `INSUFFICIENT_IMAGE_QUALITY`) — it says nothing about the pixels, and training on
+  "duplicate" would teach the detector that a perfectly good slick is not a slick;
+- `SENSOR_ARTEFACT` — genuinely not oil, but not a valid sample of any *physical* class
+  either, so it is recorded and never trained on.
 
 ---
 
@@ -345,18 +388,27 @@ flowchart LR
     IL --> NEW["/investigations/new"]
     NEW --> WS["/investigations/:id<br/><b>Workspace</b>"]
     IL --> WS
-    WS <--> CAT["…/catalogue"]
-    WS <--> SC["…/scenes/:sceneId"]
-    WS <--> DET["…/detections/:detId"]
-    WS <--> ORG["…/origin"]
-    WS <--> AIS["…/ais"]
-    WS <--> CAND["…/candidates"]
-    CAND <--> EV["…/candidates/:candId<br/>evidence detail"]
+    IL --> DASH["/dashboard"]
+    DASH --> WS
+    DASH --> SYS["/system"]
+    DASH --> CAT["/catalogue"]
+    DASH --> GD["/guide"]
+    DASH --> GL["/globe"]
     WS <--> PR["…/prism"]
+    WS <--> RL["…/relief"]
     WS <--> REP["…/report"]
-    WS <--> JOB["…/jobs"]
-    EV -.->|"click AIS fix"| WS
-    CAND -.->|"select row"| WS
+
+    subgraph P["Panels inside the workspace — not routes (§5.5.1)"]
+      DET["Detections + review"]
+      ORG["Origin + release window"]
+      AIS["AIS tracks + coverage"]
+      CAND["Candidates"]
+      EV["Evidence drill-down"]
+      JOB["Job activity"]
+    end
+
+    WS -.-> P
+    CAND -.->|"select row"| EV
 
     style WS fill:#101823,stroke:#22C9D1,color:#E8EFF7
 ```

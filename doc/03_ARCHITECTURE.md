@@ -462,7 +462,10 @@ below the committed threshold on the held-out real test split.
 |---|---|---|---|
 | Satellite provider down | Circuit breaker opens after 5 consecutive failures | Fall back to next provider in chain (CDSE → MPC → ASF) | Banner: "Primary catalogue unavailable, using Planetary Computer" |
 | All satellite providers down | Chain exhausted | Return `UNAVAILABLE` | "Scene catalogue unavailable. Cached scenes remain usable." No fake results. |
-| CMEMS/ERA5 unavailable for date | Fetch returns empty/404 | Origin estimate `status: DEGRADED`, `method: FOOTPRINT_PROXIMITY` | Explicit banner + the PDF states the degradation and its effect on confidence |
+| **Currents** unavailable for date | Chain exhausted: CMEMS → HYCOM archive → HYCOM operational | `status: DEGRADED`, `currentStatus: UNAVAILABLE`, `method: FOOTPRINT_PROXIMITY`, `windStatus: NOT_ATTEMPTED` | Explicit banner + the PDF states the degradation and its effect on confidence |
+| **Wind** unavailable for date | Chain exhausted: ERA5 local file → ERA5 CDS | `windStatus: UNKNOWN`, wind-drift coefficient **`α = 0`**, run still `DEGRADED` | "A wind-driven slick will have its origin under-displaced" — stated, never silently substituted with a climatological mean |
+| A forcing provider fails but a later one succeeds | Every attempt is recorded, not just the winner | Attempts persisted as `providerAttempts[]` | Provenance panel shows "CMEMS: AUTH_FAILED_401, fell back to HYCOM" rather than only naming HYCOM |
+| **A slow forcing provider stalls the ML service** | Handler declared blocking (`def`, not `async def`) so Starlette runs it in its threadpool | One slow drift run occupies one thread; the event loop stays free | Other requests, `/health` included, keep answering. See below. |
 | No AIS coverage for region | Zero rows returned | Candidate list empty with `reason: NO_AIS_COVERAGE` | "No AIS records for this envelope from the configured sources." Never an empty-looking success. |
 | GPU OOM during inference | Exception in ML service | Retry at reduced batch size, then CPU fallback | Progress message: "Retrying at lower batch size" |
 | ML service unreachable | Health check + timeout | Job fails with retry; API stays up | Job card shows FAILED with reason and a retry button |
@@ -473,6 +476,33 @@ below the committed threshold on the held-out real test split.
 
 **The invariant across every row:** no failure path produces a plausible-looking wrong
 number. Every one produces an explicit, labelled absence.
+
+> ### A failure mode that looked like a network fault and was self-inflicted
+>
+> `/backtrack` was an `async def` handler doing entirely synchronous work — provider reads,
+> GDAL, CMEMS, particle integration, none of it awaiting. An `async def` runs **on the event
+> loop**, so a single drift run stalled the whole service: while one waited ~50 s for CMEMS,
+> every other request queued behind it, `/health` included. The worker then reported
+> `fetch failed` on unrelated jobs, which reads like a network fault.
+>
+> Declaring the handler a plain `def` makes Starlette run it in its threadpool instead, so
+> slow work occupies one thread and the loop stays free. **Blocking work in an async handler is
+> not a performance issue — it is a liveness issue**, and it is the reason the ML service's
+> slow endpoints are deliberately declared blocking.
+
+> ### Configuration that failed silently and degraded every result
+>
+> The ML service read `env_file=".env"`, which resolves relative to the **process working
+> directory**. The documented way to start it is `cd services/ml && uvicorn ...`, which looks
+> for `services/ml/.env` — a file that does not exist. The credentials live in the repo-root
+> `.env` the Node side already reads.
+>
+> The consequence was not a crash but something worse: `cmems_username` came back `None`, the
+> currents chain fell through to HYCOM, HYCOM has no coverage for the demo date, and **every
+> origin estimate degraded to `FOOTPRINT_PROXIMITY` while a working CMEMS credential sat in a
+> file three directories up.** Settings now resolve the repo root from `__file__` and read both
+> env files, service-local last so it wins; a real environment variable still beats both, so
+> containers and CI are unaffected.
 
 ---
 

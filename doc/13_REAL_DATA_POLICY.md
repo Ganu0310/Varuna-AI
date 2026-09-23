@@ -320,8 +320,10 @@ content of observations*.
 |---|---|---|
 | No satellite coverage for the date | Widen the window; state the gap in the report | Substitute a different date's scene and present it as the incident |
 | No AIS for the region | Return `NO_AIS_COVERAGE`, list every source queried with its coverage window | Generate plausible vessel tracks |
-| No current data | Run `DEGRADED` in footprint-proximity mode with a persistent banner | Assume zero drift silently, or invent a current field |
-| No wind data | Drop the wind term, widen intervals, state it | Assume a "typical" wind speed |
+| No current data | `status=DEGRADED`, `currentStatus=UNAVAILABLE`, `method=FOOTPRINT_PROXIMITY` with a persistent banner. `windStatus=NOT_ATTEMPTED` — without a trajectory there is nothing to apply wind to. | Assume zero drift silently, or invent a current field, or serve the nearest-in-time field from another year |
+| No wind data | `windStatus=UNKNOWN`, wind-drift coefficient **`α = 0`**, run labelled `DEGRADED`, and the report states that a wind-driven slick is **under-displaced** | Assume a "typical" wind speed, or a climatological mean |
+| A provider in a chain fails but a later one succeeds | Record **every** attempt with its outcome in `providerAttempts[]` and show them all | Report only the provider that answered, which is indistinguishable from never having tried the others |
+| A stage cannot run at all | Report it as `UNAVAILABLE` in the capability matrix, with the `consequence` for the conclusion | Show a green light because the process is up |
 | A feature cannot be measured | Mark `MISSING`; renormalise over measured features; display the row as `NOT MEASURED` | Impute a neutral value |
 | Fewer than 6 measurable features | Force `INSUFFICIENT_EVIDENCE` | Present a ranking anyway |
 | Training dataset request not yet approved | Train on secondary real datasets; state the reduced training set | Generate synthetic slicks |
@@ -330,6 +332,50 @@ content of observations*.
 
 Every row has the same shape: **an explicit, labelled absence** rather than a
 plausible-looking value.
+
+### 13.8.1 Degradation is a first-class state, not an error path
+
+The two forcing terms fail **independently and for different reasons**, so the origin estimate
+carries three fields rather than one overall verdict:
+
+| Field | Values | Why separate |
+|---|---|---|
+| `status` | `OK` · `DEGRADED` · `UNAVAILABLE` | The overall verdict |
+| `currentStatus` | `OBSERVED` · `UNAVAILABLE` | No currents means **no drift result at all** |
+| `windStatus` | `OBSERVED` · `UNKNOWN` · `NOT_ATTEMPTED` | No wind means the origin is **under-displaced**, which is a different and smaller error |
+
+Collapsing these into one flag would tell an analyst that something is wrong without telling
+them *what it costs them*, which is the only part they can act on.
+
+### 13.8.2 The capability matrix
+
+`GET /api/v1/system/capabilities` answers one question for every stage of the chain: **can
+this stage do its job right now, and if not, what exactly is missing and what does that cost
+the answer?**
+
+Three states, and **the middle one is the point**: `AVAILABLE`, `DEGRADED`, `UNAVAILABLE`. A
+binary up/down would collapse `DEGRADED` into one of the other two, and `DEGRADED` is the
+state this system spends most of its life in — a keyless deployment back-tracking a 2025
+incident is degraded by default, because of a real coverage gap
+([10_DATASETS §10.5.2](10_DATASETS_and_Sources.md)).
+
+Every capability carries **two** strings, and the distinction is the whole design:
+
+- `reason` — what is missing. **Operator-facing.**
+- `consequence` — what this state costs the conclusion. **Analyst- and judge-facing.**
+
+A judge, an analyst and a regulator all need the second one; only an operator needs the first.
+`overall` is the **weakest link**, because the chain is only as strong as it.
+
+It is authenticated but **not admin-gated**, deliberately: an analyst must be able to see that
+the ocean-current chain is degraded *before* they read an origin estimate, not after they have
+filed the dossier. It reports whether a credential is **configured**, never its value, and it
+**never probes a provider over the network** — reporting configuration and recorded health
+cannot itself fail in a way that makes the status panel lie.
+
+> This is the policy's strongest claim in operational form. A system that only reports success
+> is indistinguishable from one that fabricates it. The capability matrix is what makes
+> "zero mock data" checkable by a stranger in about ten seconds, rather than a promise.
 
 ---
 

@@ -365,22 +365,55 @@ The focused feature is also announced and mirrored in the parallel accessible fe
 
 ### 5.5.1 Route map
 
-| Route | Screen | Auth |
-|---|---|---|
-| `/` | Landing | public |
-| `/login`, `/register` | Auth | public |
-| `/investigations` | Investigation list | analyst+ |
-| `/investigations/new` | Create wizard | analyst+ |
-| `/investigations/:id` | **Workspace** (default: map) | member |
-| `/investigations/:id/catalogue` | Scene search | member |
-| `/investigations/:id/scenes/:sceneId` | Scene detail | member |
-| `/investigations/:id/detections/:detId` | Detection review | member |
-| `/investigations/:id/candidates` | Candidate ranking | member |
-| `/investigations/:id/candidates/:candId` | Evidence detail | member |
-| `/investigations/:id/prism` | Space-time prism | member |
-| `/investigations/:id/report` | Report preview (also the PDF render target) | member |
-| `/investigations/:id/jobs` | Job console | member |
-| `/admin/*` | Users, quotas, providers, audit | admin |
+As implemented in `apps/web/src/app/App.tsx`. Every authenticated route is wrapped in
+`RequireAuth` + `AppChrome`, with the one deliberate exception noted below.
+
+| Route | Screen | Auth | Notes |
+|---|---|---|---|
+| `/` | Landing | **public** | The public front door — an evaluator should meet the system before meeting its login form |
+| `/login`, `/register` | Auth | public | |
+| `/dashboard` | **Operations dashboard** | auth | Scoped tiles + the verified-scenario card |
+| `/system` | **System status** | auth | The capability matrix, rendered |
+| `/investigations` | Investigation list | auth | |
+| `/investigations/new` | Create wizard | auth | |
+| `/investigations/:id` | **Workspace** (default: map) | auth | Code-split (`Suspense`); detections, candidates, evidence and jobs are **panels within it**, not routes |
+| `/catalogue` | Scene search | auth | **Top-level, not nested under an investigation** |
+| `/guide` | In-product feature guide | auth | The short version of `FEATURE_GUIDE.md` |
+| `/globe` | Orbital globe (Surface A) | auth | Code-split |
+| `/investigations/:id/relief` | Slick relief from SAR backscatter (Surface B) | auth | Code-split |
+| `/investigations/:id/prism` | Space-time prism (Surface C) | auth | Code-split |
+| `/investigations/:id/report` | Report preview / PDF render target | auth | **Renders standalone with no `AppChrome`**, so the printed page is only the dossier |
+| `/admin` | Users, quotas, providers, audit, training labels | auth (admin content) | Single route, not `/admin/*` |
+| `*` | Not found | — | |
+
+> **Routes previously specified here that were not built as routes.**
+> `/investigations/:id/catalogue`, `/investigations/:id/scenes/:sceneId`,
+> `/investigations/:id/detections/:detId`, `/investigations/:id/candidates`,
+> `/investigations/:id/candidates/:candId` and `/investigations/:id/jobs` are **panels inside
+> the workspace**, not addressable screens. This follows from §5.4.1 — *one map, forever*. If
+> reviewing a detection navigated away from the workspace, the map would unmount and remount,
+> which is the exact cost that section exists to avoid. The trade-off is real and accepted:
+> those views are not deep-linkable.
+
+### 5.5.1.1 Dashboard (`/dashboard`)
+
+| Element | Behaviour |
+|---|---|
+| Scoped tiles | Counts from `GET /api/v1/system/overview`. **The `scope` field is displayed**, not hidden — an analyst's tiles count their own cases and an admin's count the instance, and a number without its denominator is a number nobody can act on. |
+| Verified-scenario card | Described by `GET /api/v1/system/verified-scenario`, **never by constants in the frontend**, so the card and the runner cannot drift into describing different incidents. |
+| Run button | `POST /api/v1/system/verified-scenario`. Sets up and queues a real ingest, then **stops** and hands the analyst a `nextSteps` list. It does not run detection, back-tracking or ranking — pre-computing those would make a live demonstration a playback. |
+
+### 5.5.1.2 System status (`/system`)
+
+Renders `GET /api/v1/system/capabilities`. Three states per stage — `AVAILABLE`, `DEGRADED`,
+`UNAVAILABLE` — and the panel is built around the middle one, because that is the state the
+system spends most of its life in.
+
+Each row shows **both** strings the API returns: `reason` (what is missing) and `consequence`
+(what it costs the conclusion). The consequence is given the visual weight, because a judge, an
+analyst and a regulator all need it and only an operator needs the reason. The page is reachable
+from every screen — an analyst must be able to see that the ocean-current chain is degraded
+*before* reading an origin estimate, not after filing the dossier.
 
 ### 5.5.2 Landing (`/`)
 

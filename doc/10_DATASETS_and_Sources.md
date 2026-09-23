@@ -309,13 +309,28 @@ cm.subset(
 )
 ```
 
-### 10.5.2 Ocean currents — fallbacks
+### 10.5.2 Ocean currents — fallbacks, and a real coverage gap
 
 | Source | Access | Note |
 |---|---|---|
-| **HYCOM** | `hycom.org` — OPeNDAP/NetCDF, **no key** | Global, good historical coverage |
-| **OSCAR** (NASA PO.DAAC) | Earthdata login | 5-day mean surface currents; too coarse for short-horizon back-tracking but useful as a sanity check |
-| **INCOIS** | `incois.gov.in` | Indian Ocean currents; the right regional source for Phase 3 |
+| **HYCOM archive** | `tds.hycom.org` OPeNDAP, **no key** — `GLBy0.08/expt_93.0/uv3z` | Global reanalysis. **Ends 2024-09-05.** |
+| **HYCOM operational** | `tds.hycom.org` OPeNDAP, **no key** — `FMRC_ESPC-D-V02_uv3z_best.ncd` | Roughly the last **two weeks** only |
+| **OSCAR** (NASA PO.DAAC) | Earthdata login | 5-day mean surface currents; too coarse for short-horizon back-tracking but useful as a sanity check. **Not wired in.** |
+| **INCOIS** | `incois.gov.in` | Indian Ocean currents; the right regional source for Phase 3. **Not wired in.** |
+
+> ### ⚠️ The keyless current gap — found by probing, not assumed
+>
+> The HYCOM archive ends **2024-09-05** and the operational feed holds only about the last two
+> weeks. **Every date in between has no keyless ocean-current coverage at all.**
+>
+> An incident in that gap therefore **requires CMEMS credentials**. `forcing.coverage()`
+> checks the dataset's actual temporal extent and reports the gap honestly rather than
+> silently returning the nearest available field — which would attribute a spill using
+> currents from a *different year* and produce an origin zone that looks authoritative and
+> means nothing.
+>
+> This is the single most common cause of a `DEGRADED` origin estimate on a historic incident,
+> and it is a data-availability fact, not a bug.
 
 ### 10.5.3 Winds — ERA5 via Copernicus Climate Data Store ⭐
 
@@ -345,10 +360,42 @@ cdsapi.Client().retrieve('reanalysis-era5-single-levels', {
 2. The **detectability gate** — wind speed at acquisition determines whether SAR could
    reliably see oil at all ([07_AIML §7.2.3](07_AIML_Specification.md)).
 
-### 10.5.4 Winds — near-real-time fallback
+### 10.5.4 Winds — the local-file route, and why GFS is not a fallback
 
-**NOAA NOMADS / GFS** (`nomads.ncep.noaa.gov`) — free, **no key**, global forecast and
-analysis at 0.25°. Use when ERA5's 5-day latency is too slow (Phase-2 monitoring).
+**Route 1 — an operator-supplied ERA5 file (`ERA5_LOCAL_PATH`).** A GRIB or NetCDF file
+already on disk holding 10 m `u10`/`v10`. This is tried **before** the CDS API, for two
+reasons: it costs no network round trip, and it cannot fail mid-demo behind a queue. Real ERA5
+retrieved by hand is *the same reanalysis the API serves*, so this is a **second route to the
+same source, not a weaker substitute** — which is why it is compatible with the real-data
+policy where a "typical wind" would not be.
+
+It is accepted **only where the file genuinely covers the requested box and window.** A file
+that stops short is refused, never stretched to the nearest hours it happens to hold.
+
+**NOAA NOMADS / GFS is not a wind fallback, despite being keyless.** NOMADS retains roughly
+**ten days**, so it cannot serve a historic incident — which is the case this system is built
+for. Rather than pretend otherwise, the chain records the attempt as
+`NOAA_GFS: RETENTION_TOO_SHORT_FOR_HISTORIC_DATE` and the run degrades to `α = 0` with
+`windStatus = UNKNOWN`. It remains listed as a Phase-2 near-real-time monitoring source, where
+the ten-day window is not a problem.
+
+### 10.5.5 The chains as implemented
+
+`services/ml/varuna_ml/drift/forcing.py`. Best quality first, keyless last, **no synthetic
+fallback at any position**.
+
+| Chain | Order | Credential |
+|---|---|---|
+| **CURRENTS** | CMEMS → HYCOM archive → HYCOM operational | `CMEMS_USERNAME` / `CMEMS_PASSWORD`, then keyless |
+| **WIND** | ERA5 local file → ERA5 CDS API | `ERA5_LOCAL_PATH`, then `CDSAPI_KEY` |
+
+**Every attempt is recorded and returned**, including ones that failed before a later provider
+succeeded — `provider`, `outcome`, and where relevant `datasetId`, `covers`, `detail`. A chain
+that falls through silently is indistinguishable from one that was never tried, and the
+difference is exactly what an analyst needs when the origin estimate comes back degraded. The
+record is persisted on the origin estimate as `providerAttempts[]` and rendered in the
+provenance panel and the dossier. Full behaviour in
+[07_AIML §7.3.2](07_AIML_Specification.md).
 
 ---
 

@@ -181,6 +181,20 @@ token, an icon, and a position in an ordered list.
 The workspace is dark-first, but a light theme exists for the **report** and for printing,
 where dark backgrounds are wrong. Tokens are redefined; no component hardcodes a colour.
 
+**It is also a user preference, not only a print mode.** `apps/web/src/lib/theme.ts` exposes a
+persisted `dark`/`light` toggle (`varuna.theme` in `localStorage`), and two implementation
+details are load-bearing:
+
+- **`data-theme` is set on `document.documentElement`, not inside `AppChrome`.** When it lived
+  in the chrome, `/login`, `/register` and `/investigations/:id/report` — the screens that
+  render *without* chrome — never had the attribute set at all. They were stuck dark whatever
+  the preference was, and switching to light after signing in produced a jarring flip back on
+  sign-out. **The theme belongs to the document, not to one component.**
+- **Storage access is wrapped in `try`/`catch` on read as well as write.** In a private window,
+  or a browser set to block site data, *reading* `localStorage` throws rather than returning
+  null. A remembered preference is a convenience; failing to read one must never stop the app
+  rendering.
+
 ```css
 :root[data-theme="light"] {
   --surface-0: #F7F9FB;  --surface-1: #FFFFFF;  --surface-2: #F1F5F9;

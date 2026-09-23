@@ -67,7 +67,7 @@ the four workstreams (frontend, backend, ML, DevOps). It also carries the comple
 | Raster I/O | rasterio + GDAL | COG read/write, windowed reads, affine transforms, reprojection. |
 | SAR preprocessing | ESA SNAP (`snappy` / `gpt` graphs) or pre-processed RTC from Planetary Computer | SNAP is the reference implementation for Sentinel-1. RTC lets us skip it when available. |
 | Vector | Shapely 2 + GeoPandas + pyproj | Polygonisation, geodesic area, morphology. |
-| Drift | OpenDrift (`OceanDrift` / `OpenOil`) | MET Norway's operational Lagrangian model; supports backward integration natively. |
+| Drift | **In-house Lagrangian stepper** (`varuna_ml/drift/backtrack.py`) | OpenDrift was specified, but requires cartopy/GEOS which would not install here. The stepper is tested directly against analytic solutions; oil weathering and coastline stranding are consequently **not** modelled. The forcing interface keeps OpenDrift's shape so it can be swapped in later. See [07_AIML §7.3.3](07_AIML_Specification.md). |
 | Env data | `copernicusmarine` toolbox, `cdsapi`, xarray + netCDF4 | Official clients for CMEMS and ERA5. |
 | Tiles | TiTiler (`titiler.application`) | Serves XYZ/WMTS directly from COGs in S3. |
 | Tracking | MLflow (self-hosted) or Weights & Biases | Experiment provenance is part of the real-data policy. |
@@ -513,25 +513,45 @@ score = 100 * calibrate(raw / denom)
 
 Full endpoint reference in [06_BACKEND_Specification.md](06_BACKEND_Specification.md).
 
+**85 operations are mounted.** The table is grouped by router; the mount table itself is
+`ROUTE_MOUNTS` in `apps/api/src/app.ts`.
+
 | Group | Base path | Notes |
 |---|---|---|
+| Health | `/health`, `/health/deep` | unauthenticated liveness; deep check probes dependencies |
 | Auth | `/api/v1/auth` | register, login, refresh, logout, me |
-| Investigations | `/api/v1/investigations` | CRUD, AOI, timeline, members |
-| Catalogue | `/api/v1/catalogue` | live provider search, no persistence |
-| Scenes | `/api/v1/scenes` | ingest, status, tiles metadata, bands |
-| Detections | `/api/v1/detections` | run, list, get, review, correct |
-| Origin | `/api/v1/origin` | run back-track, get field, frames |
-| AIS | `/api/v1/ais` | import, query envelope, tracks, quality |
-| Candidates | `/api/v1/candidates` | list, get, evidence, exclude, reweight |
-| Reports | `/api/v1/reports` | generate, status, download, exports |
-| Jobs | `/api/v1/jobs` | list, get, cancel |
-| Admin | `/api/v1/admin` | users, quotas, audit, provider health |
+| Investigations | `/api/v1/investigations` | CRUD, AOI, members, summary, audit trail, comments |
+| Catalogue | `/api/v1/catalogue` | live provider search + provider status; no persistence |
+| Scenes | `/api/v1/investigations/:id/scenes` | ingest, **upload** (operator GeoTIFF), list, tiles |
+| Detections | `/api/v1/detections` | list, get, geometry, tiles, versions, review, **rejection-categories** |
+| Origin | `/api/v1/origin`, `/api/v1/investigations/:id/origin` | run back-track, get field, frames |
+| AIS | `/api/v1/ais`, `/api/v1/investigations/:id/ais` | import, coverage, tracks, vessels, vessel detail |
+| Candidates | `/api/v1/candidates`, `/api/v1/investigations/:id/candidates` | correlate, list, get, evidence drill-down, exclude, reweight, weight-profiles |
+| Reports | `/api/v1/investigations/:id/report`, `/exports` | generate, data, PDF, GeoJSON / CSV / manifest exports |
+| Jobs | `/api/v1/jobs` | list, get, cancel, retry |
+| Admin | `/api/v1/admin` | users, roles, quotas, audit, provider health, investigations, reports, **training-labels** |
+| **System** | `/api/v1/system` | **capabilities matrix, operations overview, verified scenario (GET describes / POST runs)** |
+| **Public** | `/api/v1/public` | **unauthenticated by design — the demo incident behind the landing page. The router is itself the security boundary.** |
 | Tiles | `/tiles/...` | proxied TiTiler, signed |
 | WebSocket | `/ws` | `job:progress`, `ais:tick`, `investigation:update` |
 
 **Conventions:** cursor pagination (`?cursor=&limit=`), `ETag` + `If-None-Match` on
 geometry-heavy GETs, RFC 9457 `application/problem+json` error bodies, `X-Request-Id`
 echoed everywhere, `X-Provenance-Count` header on collection responses.
+
+**Two routers are mounted twice** — AIS, origin and candidates each answer both under
+`/api/v1/investigations/:id/...` and bare `/api/v1/...`, because some resources are addressed
+by investigation and some by their own id.
+
+### OpenAPI coverage is a ratchet, not a claim
+
+`doc/openapi.json` is generated from the Zod schemas. **17 of 85 operations are documented in
+it**; the remainder are listed in `doc/openapi-coverage.json`. That file is a **ratchet**: the
+`undocumented` count may fall freely, and **the build fails when it rises**. Documenting a
+route means adding it to `apps/api/src/openapi.ts` and re-running with `--write`.
+
+This is stated rather than rounded up, because "we have an OpenAPI spec" and "our API is fully
+specified" are different claims and only the first is true today.
 
 ---
 

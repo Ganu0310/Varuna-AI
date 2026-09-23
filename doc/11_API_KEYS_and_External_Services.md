@@ -91,12 +91,29 @@
 | **Purpose** | 10 m wind fields — used **both** for the drift wind term **and** the SAR detectability gate |
 | **Signup** | `cds.climate.copernicus.eu` → Register → **accept the ERA5 dataset licence on the dataset page** (required, easily missed) |
 | **Credential type** | UID + API key, normally written to `~/.cdsapirc` |
-| **Env vars** | `CDSAPI_URL`, `CDSAPI_KEY` (format: `UID:api-key`) |
+| **Env vars** | `CDSAPI_URL`, `CDSAPI_KEY` (format: `UID:api-key`), `ERA5_LOCAL_PATH` |
 | **Cost** | Free |
 | **Quota** | Request queue; large requests can wait minutes to hours. **Pre-fetch demo data — do not request ERA5 live during a presentation.** |
 | **Latency** | ERA5 is a reanalysis, ~5 days behind real time |
-| **On failure** | Fall through to NOAA GFS (no key) |
+| **Chain position** | **Second.** `ERA5_LOCAL_PATH` is tried first — see below. |
+| **On failure** | **Wind is dropped**, not substituted: `α = 0`, `windStatus = UNKNOWN`, run labelled `DEGRADED`. It does *not* fall through to NOAA GFS — see the correction below. |
 | **Signup effort** | ~10 minutes plus licence acceptance |
+
+**`ERA5_LOCAL_PATH` — the pre-fetch route, promoted to first place.** A GRIB or NetCDF file
+already on disk holding 10 m `u10`/`v10`. It is tried *before* the CDS API because it costs no
+network round trip and cannot fail mid-demo behind a queue. Given the CDS queue warning above,
+this is the route a presentation should actually rely on.
+
+Real ERA5 retrieved by hand is **the same reanalysis the API serves**, so this is a second
+route to the same source, not a weaker substitute — which is exactly why it satisfies the
+real-data policy. It is used **only where the file genuinely covers the requested box and
+window**; a file that stops short is refused rather than stretched.
+
+> **Correction to an earlier assumption in this register: NOAA GFS is not a wind fallback.**
+> NOMADS retains roughly ten days, so it cannot serve a historic incident — the case this
+> system exists for. The chain records `NOAA_GFS: RETENTION_TOO_SHORT_FOR_HISTORIC_DATE` and
+> degrades rather than pretending. GFS remains a valid Phase-2 near-real-time source, where a
+> ten-day window is not a problem.
 
 ### A6 · Global Fishing Watch API
 
@@ -185,8 +202,9 @@ These have no key but are hard dependencies and must be documented as such.
 |---|---|---|---|---|
 | B1 | **NOAA Marine Cadastre AIS** | `marinecadastre.gov/ais/` | ⭐ Free bulk historical AIS, US waters, 1-minute resolution, 2009→present | Chain falls to DMA / GFW |
 | B2 | **Danish Maritime Authority AIS** | `web.ais.dk/aisdata/` | ⭐ Free daily AIS CSVs, Danish waters, 2006→present | Chain falls through |
-| B3 | **NOAA NOMADS (GFS)** | `nomads.ncep.noaa.gov` | Wind fallback when ERA5 is unavailable or too slow | Drift runs `DEGRADED` |
-| B4 | **HYCOM** | `hycom.org` | Ocean-current fallback | Drift runs `DEGRADED` |
+| B3 | **NOAA NOMADS (GFS)** | `nomads.ncep.noaa.gov` | **Phase-2 near-real-time wind only.** ~10-day retention makes it unusable for historic incidents, so it is *not* in the wind chain. | Wind dropped, `α = 0`, `windStatus = UNKNOWN` |
+| B4 | **HYCOM archive** | `tds.hycom.org` — `GLBy0.08/expt_93.0/uv3z` | Keyless ocean-current fallback. **Coverage ends 2024-09-05.** | Falls to HYCOM operational |
+| B4b | **HYCOM operational** | `tds.hycom.org` — `FMRC_ESPC-D-V02_uv3z_best.ncd` | Keyless, but only ~the last two weeks. **Dates between 2024-09-05 and two weeks ago have no keyless current coverage at all — CMEMS credentials are required.** | Origin estimate `DEGRADED`, `FOOTPRINT_PROXIMITY` |
 | B5 | **Element 84 Earth Search** | `earth-search.aws.element84.com/v1` | Sentinel-2 COGs on AWS, no key | Optical unavailable (non-blocking) |
 | B6 | **GSHHG / OSM coastlines** | `soest.hawaii.edu/pwessel/gshhg/` | Land masking | Downloaded once and vendored |
 | B7 | **GEBCO bathymetry** | `gebco.net` | Map context | Cosmetic only |
@@ -284,6 +302,12 @@ CMEMS_PASSWORD=REPLACE_ME
 CDSAPI_URL=https://cds.climate.copernicus.eu/api
 CDSAPI_KEY=REPLACE_ME
 
+# An ERA5 file (GRIB or NetCDF) already on disk holding 10 m u/v wind, tried BEFORE the CDS
+# API. Real ERA5 retrieved by hand is the same reanalysis, so this is a second route to the
+# same source — not a substitute. Used only where the file genuinely covers the requested box
+# and window; one that stops short is refused, never stretched. Leave blank if you have none.
+ERA5_LOCAL_PATH=
+
 # ── A6  Global Fishing Watch ──────────────────────────────────────────
 GFW_API_TOKEN=REPLACE_ME
 
@@ -354,6 +378,7 @@ const EnvSchema = z.object({
   CMEMS_USERNAME: z.string().optional(),
   CMEMS_PASSWORD: z.string().optional(),
   CDSAPI_KEY: z.string().optional(),
+  ERA5_LOCAL_PATH: z.string().optional(),   // empty string normalised to unset
   GFW_API_TOKEN: z.string().optional(),
   AISSTREAM_API_KEY: z.string().optional(),
 });
@@ -492,6 +517,7 @@ TIER A — REQUIRED (all free)
 [ ] A3  NASA Earthdata ...... registered · EULA accepted · asf_search download tested
 [ ] A4  CMEMS ............... registered · copernicusmarine subset tested
 [ ] A5  CDS / ERA5 .......... registered · dataset licence ACCEPTED · cdsapi retrieve tested
+[ ] A5b ERA5_LOCAL_PATH ..... OPTIONAL but recommended for demos · file covers the demo box+window
 [ ] A6  Global Fishing Watch  requested (⚠ may take days) · token received · call tested
 [ ] A7  AISStream ........... key issued · websocket subscription tested
 [ ] A8  MongoDB ............. local replica set running  (Atlas M0 optional, 512 MB cap)

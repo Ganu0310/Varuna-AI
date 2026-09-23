@@ -642,6 +642,80 @@ it happened.
 
 ---
 
+### F-36 · Categorised rejections — review that produces training labels ⭐
+
+**How it works.** Rejecting a detection requires a **category**, not just prose. Each category
+declares a `kind` (`LOOK_ALIKE` — about the imagery; `OPERATIONAL` — about the workflow) and a
+`sarClass`. A rejection is usable as a labelled negative **iff `sarClass !== null`**.
+`GET /api/v1/admin/training-labels` assembles the set and counts it.
+
+**Why we use it.** Prose cannot be aggregated and cannot be trained on. The detector's measured
+weakness is look-alikes — it fires on 68% of look-alike scenes — and the one thing that
+addresses that is labelled negatives of each physical class. The imagery is free; the labelling
+is not, and ordinary analyst work already produces it. This makes the system's own operation
+the source of its improvement.
+
+**What breaks without it.** The 68% false-positive rate has no route to improvement except
+buying labels. Three guards keep the set honest: an `UNREVIEWED` detection is not a label,
+an `OPERATIONAL` rejection is not a negative, and a pre-taxonomy rejection is `UNCATEGORISED`
+rather than guessed.
+
+---
+
+### F-37 · Rank separation — is the leader actually ahead? ⭐
+
+**How it works.** Resamples the **whole candidate field together** — one origin-zone draw per
+iteration applied to every candidate — and records how often each vessel still ranks first, plus
+the leader's win share against the runner-up *in the same draw* and the mean margin.
+
+**Why we use it.** A ranked list invites the reader to act on its order, and nothing else in the
+system told them whether the order was real. Two bootstrap intervals cannot answer it: origin-zone
+uncertainty is **common-mode** — when the release zone is drawn further north it moves north for
+*every* vessel at once — so comparing independently-drawn intervals treats one shared cause as
+two separate accidents. Positional error stays independent per vessel, because an AIS gap on one
+ship says nothing about another. The shared term is the physics; the independent term is the
+measurement.
+
+**What breaks without it.** A 0.02-point lead and a 0.4-point lead look identical on the screen.
+
+---
+
+### F-38 · The capability matrix — three states, and the middle one is the point ⭐
+
+**How it works.** `GET /api/v1/system/capabilities` reports every stage as `AVAILABLE`,
+`DEGRADED` or `UNAVAILABLE`, each with a `reason` (what is missing — operator-facing) and a
+`consequence` (what it costs the conclusion — analyst- and judge-facing). `overall` is the
+weakest link.
+
+**Why we use it.** A binary up/down collapses `DEGRADED` into one of the other two, and
+`DEGRADED` is the state this system spends most of its life in. It is authenticated but **not**
+admin-gated: an analyst must see that the current chain is degraded *before* reading an origin
+estimate, not after filing the dossier. It never probes providers over the network, so the panel
+cannot itself fail in a way that makes it lie, and it reports whether a credential is configured,
+never its value.
+
+**What breaks without it.** "Zero mock data" stays a promise instead of something a stranger can
+check in ten seconds.
+
+---
+
+### F-39 · Recorded provider attempts, and ingestibility decided at search time
+
+**How it works.** Every forcing provider the chain touches appends an attempt record — provider,
+outcome, dataset, coverage — kept even when a later provider succeeds, persisted as
+`providerAttempts[]`. Separately, catalogue results are stamped `ingestible` / `ingestibleReason`
+after merge and dedupe.
+
+**Why we use it.** A chain that falls through silently is indistinguishable from one that was
+never tried; the dossier could not tell an analyst whether CMEMS was misconfigured or simply
+absent. And the chain has three *search* providers but one *ingestible* collection, so a CDSE or
+ASF record is a real acquisition this pipeline cannot read — discovering that only when the job
+failed produced `HTTP_404` after a queue round trip, which reads like an outage and is a provider
+mismatch. Provider clients return a type that **lacks** the two flags, so a new client physically
+cannot forget to set them.
+
+---
+
 ## Part 2 — Presentation Q&A
 
 ### Category A — Scope and ethics
@@ -698,13 +772,28 @@ raster geodesy is engineering judgement, not a deviation from the stack.
 
 > **"How accurate is your model?"**
 
-Our MVP targets are oil-class IoU ≥ 0.55 and Dice ≥ 0.70, measured on a held-out real test
-split. Those targets are anchored to published benchmarks on the same five-class Sentinel-1
-dataset, where mean IoU sits in the mid-60s and the look-alike class is the hardest. If we
-claimed 0.95 you should be sceptical — this is a hard problem and the published state of the
-art says so. We also split by scene and geography, never by random tile, because random tile
-splitting leaks overlapping views of the same slick into train and test and inflates
-metrics.
+**Measured, on 66 held-out real scenes — 22 oil, 22 look-alike, 22 clean sea, split by whole
+geographic cells and measured once:** oil mean IoU **0.564**, oil detection rate **1.00** — it
+missed none of the 22 oil scenes. Both meet our MVP targets.
+
+**And one target we miss badly, which you should hear from us rather than find:** the
+look-alike false-positive rate is **0.682** against a target of ≤ 0.20. Worse, on those false
+positives the detector's own look-alike warning averages **0.259** — barely above what it
+assigns a true slick. It is not merely wrong; it is wrong *without warning*.
+
+We tried to fix it with parameters and failed, and kept the negative result: a full sweep of
+contrast, area, elongation and risk gates over 384 development scenes found a configuration
+that removed 8.5 points of false positives — which **did not transfer**, leaving the held-out
+rate unchanged at 68.2% while costing IoU. **We did not adopt it.** That establishes the
+problem is not reachable by thresholds on a classical detector; what remains is focal loss and
+a trained look-alike classifier, fed by the labelled negatives our own review flow now produces.
+
+Two things this does *not* undermine. Recall is perfect on the test set, so the detector is a
+**high-recall candidate generator** — the right shape for a system where a human reviews every
+detection before it becomes evidence. And splits are by scene and geography, never by random
+tile, because random tile splitting leaks overlapping views of the same slick into train and
+test and inflates exactly the number we are quoting. If we claimed 0.95 you should be
+sceptical; this is a hard problem and the published state of the art says so.
 
 > **"What's genuinely novel here?"**
 
@@ -724,6 +813,11 @@ between roughly 3 and 10 m/s, and outside that window we flag the detection as u
 regardless of model confidence. And mandatory human review before any dossier is finalised.
 We reduce look-alike confusion; we do not claim to eliminate it, and neither does anyone
 else.
+
+**Be direct about the number if asked:** we measure a 68.2% look-alike false-positive rate on
+our held-out split, against a 20% target. That is why human review is *mandatory* rather than
+advisory, and why every rejection is now recorded as a categorised, trainable negative — the
+review step is both the safeguard and the route to fixing the detector.
 
 > **"What was the hardest technical problem?"**
 
