@@ -96,6 +96,10 @@ jobs:
           fetch-depth: 0
       - uses: gitleaks/gitleaks-action@v2
         env:
+          # Required since gitleaks-action's breaking update: a pull_request run fetches the
+          # diff via the GitHub API, which needs an authenticated token even for a public repo.
+          # https://github.com/gitleaks/gitleaks-action#-announcement
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITLEAKS_ENABLE_UPLOAD_ARTIFACT: false
 
   python:
